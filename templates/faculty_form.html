@@ -496,11 +496,7 @@
           <div class="l2">Office of Academics — Jain University</div>
         </div>
       </div>
-      <div>
-        <a href="/login" class="btn"
-          style="padding: 6px 12px; font-size: 11px; font-weight: 700; border-radius: 6px; border: 2px solid var(--navy); background: var(--navy); color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-family: inherit;">🔐
-          HOD Login</a>
-      </div>
+
     </div>
   </header>
 
@@ -570,7 +566,8 @@
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div class="card-title" style="margin-bottom: 0;">Course Details</div>
-        <button type="button" class="btn" id="addCourseBtn" onclick="addCourseBlock()" style="padding: 6px 14px; font-size: 11px; font-weight: 700; border-radius: 6px; border: 2px solid var(--navy); background: transparent; color: var(--navy); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin: 0; font-family: inherit; transition: all 0.15s ease;">
+        <button type="button" class="btn" id="addCourseBtn" onclick="addCourseBlock()"
+          style="padding: 6px 14px; font-size: 11px; font-weight: 700; border-radius: 6px; border: 2px solid var(--navy); background: transparent; color: var(--navy); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin: 0; font-family: inherit; transition: all 0.15s ease;">
           ➕ Add Course
         </button>
       </div>
@@ -620,7 +617,7 @@
       "Department of Electrical and Electronics Engineering": ["B.Tech", "M.Tech"],
       "Department of Electronics and Communication Engineering": ["B.Tech", "M.Tech"],
       "Department of Food Technology": ["B.Tech", "M.Tech"],
-      
+
       "Department of Humanities & Social Sciences": ["B.A", "M.A", "M.P.A"],
       "Department of Economics": ["B.A", "M.A", "M.P.A"],
       "Department of Performing Arts and Cultural Studies": ["B.A", "M.A", "M.P.A"],
@@ -629,9 +626,9 @@
       "Department of CERSSE": ["B.A", "M.A", "M.P.A"],
       "Department of SSER": ["B.A", "M.A", "M.P.A"],
       "Department of Jainology": ["B.A", "M.A", "M.P.A"],
-      
+
       "Department of Law": ["M. Law"],
-      
+
       "Department of Chemistry and Biochemistry": ["B.Sc", "M.Sc"],
       "Department of Biotechnology and Genetics": ["B.Sc", "M.Sc"],
       "Department of Microbiology and Botany": ["B.Sc", "M.Sc"],
@@ -640,15 +637,15 @@
       "Department of Physics and Electronics": ["B.Sc", "M.Sc"],
       "Department of Psychology and Allied Sciences": ["B.Sc", "M.Sc"],
       "Department of Marine Science": ["B.Sc", "M.Sc"],
-      
+
       "Department of Allied Healthcare and Sciences": ["B.Sc", "M.Sc", "B.Physio", "B. PE & Sc"],
-      
+
       "Department of Computer Science and IT": ["BCA", "MCA", "B.Sc", "M.Sc"],
-      
+
       "Department of Commerce": ["B.Com", "M.Com"],
-      
+
       "Department of Management Studies": ["BBA", "BMS", "MBA"],
-      
+
       "Department of Design": ["B.Sc", "B.A", "B.F.A", "M.Sc", "M.A", "M.F.A"],
       "Department of Art and Design": ["B.Sc", "B.A", "B.F.A", "M.Sc", "M.A", "M.F.A"],
       "Department of Animation and Virtual Reality": ["B.Sc", "B.A", "B.F.A", "M.Sc", "M.A", "M.F.A"]
@@ -739,25 +736,25 @@
         method: 'POST',
         body: formData
       })
-      .then(r => r.json())
-      .then(res => {
-        if (res.ok) {
-          document.getElementById('rem_' + itemId).value = window.location.origin + res.url;
-          statusSpan.innerHTML = '✅ File uploaded successfully!';
-          statusSpan.style.color = 'var(--success)';
-          showToast('File uploaded successfully!');
-        } else {
-          statusSpan.innerHTML = '❌ Upload failed: ' + (res.error || 'Unknown error');
+        .then(r => r.json())
+        .then(res => {
+          if (res.ok) {
+            document.getElementById('rem_' + itemId).value = window.location.origin + res.url;
+            statusSpan.innerHTML = '✅ File uploaded successfully!';
+            statusSpan.style.color = 'var(--success)';
+            showToast('File uploaded successfully!');
+          } else {
+            statusSpan.innerHTML = '❌ Upload failed: ' + (res.error || 'Unknown error');
+            statusSpan.style.color = 'var(--danger)';
+            showToast('Upload failed: ' + (res.error || 'Unknown error'));
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          statusSpan.innerHTML = '❌ Upload error';
           statusSpan.style.color = 'var(--danger)';
-          showToast('Upload failed: ' + (res.error || 'Unknown error'));
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        statusSpan.innerHTML = '❌ Upload error';
-        statusSpan.style.color = 'var(--danger)';
-        showToast('Network error during upload');
-      });
+          showToast('Network error during upload');
+        });
     }
 
     function collectChecklist() {
@@ -927,10 +924,10 @@
     function resetForm() {
       document.getElementById('successArea').style.display = 'none';
       document.getElementById('formArea').style.display = 'block';
-      
+
       const container = document.getElementById('courseBlocksContainer');
       container.innerHTML = '';
-      
+
       const submitBtn = document.querySelector('button[onclick="submitFacultyForm()"]');
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -960,4 +957,5 @@
   </script>
   <script src="/static/loading.js"></script>
 </body>
+
 </html>
