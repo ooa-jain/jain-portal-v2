@@ -544,6 +544,52 @@ def index():
     }
     return render_template('dashboard.html', user=user, settings=settings, departments=DEPARTMENTS)
 
+@app.route('/analysis')
+def hod_analysis_page():
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+    user_doc = users_col.find_one({'email': session['user_email']})
+    user = {
+        'email': session['user_email'],
+        'name': session['user_name'],
+        'department': user_doc.get('department', '') if user_doc else '',
+        'first_time_login': user_doc.get('first_time_login', True) if user_doc else False
+    }
+    return render_template('analysis.html', user=user)
+
+@app.route('/api/hod/analysis')
+def hod_analysis_api():
+    if 'user_email' not in session:
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    
+    email = session['user_email']
+    hod_subs = list(submissions_col.find({'identity.submitterEmail': email}))
+    parent_ids = [str(s['_id']) for s in hod_subs]
+    parent_map = {str(s['_id']): s for s in hod_subs}
+    
+    fac_subs = list(faculty_submissions_col.find({'parent_submission_id': {'$in': parent_ids}}))
+    
+    results = []
+    for f in fac_subs:
+        parent = parent_map.get(f['parent_submission_id'])
+        if not parent:
+            continue
+        results.append({
+            '_id': str(f['_id']),
+            'faculty_name': f.get('faculty_name', ''),
+            'faculty_email': f.get('faculty_email', ''),
+            'form_type': f.get('form_type', 'readiness'),
+            'program': f.get('program', ''),
+            'course_name': f.get('course_name', ''),
+            'course_code': f.get('course_code', ''),
+            'timestamp': f.get('timestamp', ''),
+            'parent_semester': parent.get('identity', {}).get('semester', ''),
+            'parent_ac_year': parent.get('identity', {}).get('acYear', ''),
+            'parent_dept': parent.get('identity', {}).get('dept', '')
+        })
+        
+    return jsonify({'ok': True, 'data': results})
+
 def has_access_override(email, module_type):
     user = users_col.find_one({'email': email})
     if user:
@@ -660,7 +706,7 @@ def faculty_form(share_token):
                      or hod_submission.get('identity', {}).get('sem', ''),
         'ac_year': hod_submission.get('identity', {}).get('acYear', '')
                     or hod_submission.get('identity', {}).get('ac_year', ''),
-        'programs': hod_submission.get('identity', {}).get('programs', ''),
+        'programs': hod_submission.get('programs') or hod_submission.get('identity', {}).get('programs', ''),
         'submission_id': str(hod_submission['_id']),
         'faculty_sections': faculty_sections,
     }
@@ -1097,6 +1143,15 @@ def update_profile():
     dept = request.json.get('department')
     users_col.update_one({'email': session['user_email']}, {'$set': {
         'department': dept,
+        'first_time_login': False
+    }})
+    return jsonify({'ok': True})
+
+@app.route('/api/complete-tour', methods=['POST'])
+def complete_tour():
+    if 'user_email' not in session:
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    users_col.update_one({'email': session['user_email']}, {'$set': {
         'first_time_login': False
     }})
     return jsonify({'ok': True})

@@ -277,15 +277,95 @@
       cursor: not-allowed;
     }
 
+    /* Premium Onboarding Tour Styling */
     .introjs-tooltip {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      border-radius: 12px;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
+      background-color: #0a2540 !important;
+      color: #ffffff !important;
+      border-radius: 16px !important;
+      box-shadow: 0 20px 50px rgba(10, 37, 64, 0.35) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      padding: 24px !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+      max-width: 320px !important;
+    }
+
+    .introjs-tooltiptext {
+      font-size: 13px !important;
+      line-height: 1.6 !important;
+      color: #e2e8f0 !important;
+      margin-bottom: 12px !important;
+    }
+
+    .introjs-tooltip-title {
+      color: #ffffff !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+      font-size: 16px !important;
+      font-weight: 700 !important;
+      margin-bottom: 8px !important;
+    }
+
+    .introjs-arrow {
+      border-color: transparent !important;
+    }
+    .introjs-arrow.top {
+      border-bottom-color: #0a2540 !important;
+    }
+    .introjs-arrow.bottom {
+      border-top-color: #0a2540 !important;
+    }
+    .introjs-arrow.left {
+      border-right-color: #0a2540 !important;
+    }
+    .introjs-arrow.right {
+      border-left-color: #0a2540 !important;
+    }
+
+    .introjs-progress {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      height: 6px !important;
+      border-radius: 99px !important;
+      overflow: hidden !important;
+    }
+
+    .introjs-progressbar {
+      background-color: var(--gold) !important;
+      border-radius: 99px !important;
     }
 
     .introjs-button {
-      border-radius: 6px;
-      font-weight: 600;
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      text-shadow: none !important;
+      box-shadow: none !important;
+      font-weight: 700 !important;
+      font-size: 11px !important;
+      padding: 6px 14px !important;
+      border-radius: 8px !important;
+      transition: all 0.2s ease !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
+
+    .introjs-button:hover {
+      background: var(--gold) !important;
+      color: var(--navy) !important;
+      border-color: var(--gold) !important;
+    }
+
+    .introjs-skipbutton {
+      color: #94a3b8 !important;
+      font-size: 11px !important;
+      font-weight: 500 !important;
+    }
+
+    .introjs-skipbutton:hover {
+      color: #fca5a5 !important;
+    }
+
+    .introjs-helperLayer {
+      background: rgba(10, 37, 88, 0.25) !important;
+      border: 2px solid var(--gold) !important;
+      box-shadow: 0 0 24px rgba(255, 215, 0, 0.5) !important;
     }
 
     #lockScreen {
@@ -437,6 +517,8 @@
       <div class="hdr-right" id="hdrRight" style="display: flex; align-items: center; gap: 12px;">
         <a href="/" class="btn-profile"
           style="background: transparent; border: none; color: var(--navy); box-shadow: none;">Home</a>
+        <a href="/analysis" class="btn-profile"
+          style="background: transparent; border: none; color: var(--navy); box-shadow: none;">Analysis</a>
         {% if session.get('admin') %}
         <a href="/admin" class="btn-profile"
           style="color: var(--navy); border-color: var(--gold); background: #fffbeb; font-weight: bold;">Admin
@@ -637,14 +719,20 @@
 
 
     function startTour() {
-      introJs().setOptions({
+      localStorage.setItem('hasCompletedTour', 'true');
+      fetch('/api/complete-tour', { method: 'POST' }).catch(() => {});
+
+      const tour = introJs().setOptions({
         showProgress: true,
         showBullets: false,
-        doneLabel: 'Complete Tour',
-        tooltipClass: 'customTooltip'
-      }).start().oncomplete(function () {
+        doneLabel: 'Complete Tour'
+      });
+      
+      tour.oncomplete(function () {
         openProfile();
       });
+      
+      tour.start();
     }
 
     function openWorkflowModal() {
@@ -656,7 +744,9 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       {% if user.first_time_login %}
-      startTour();
+      if (!localStorage.getItem('hasCompletedTour')) {
+        startTour();
+      }
       {% endif %}
     });
 

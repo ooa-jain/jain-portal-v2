@@ -1,4 +1,4 @@
-const CACHE_NAME = 'srp-v5';
+const CACHE_NAME = 'srp-v6';
 const urlsToCache = [
   '/static/images/applogo.png',
   '/static/images/jain.png',

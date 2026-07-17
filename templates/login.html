@@ -275,6 +275,30 @@
       box-shadow: 0 0 0 3px rgba(10, 37, 88, 0.1);
     }
 
+    .password-wrapper {
+      position: relative;
+    }
+    .password-wrapper input {
+      padding-right: 40px !important;
+    }
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+      color: var(--ink3);
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -418,8 +442,11 @@
           </div>
           <div class="field" style="margin-bottom: 8px;">
             <label>Password <span class="req">*</span></label>
-            <input type="password" id="auth_l_password" placeholder="••••••••"
-              onkeydown="if(event.key==='Enter') doLogin(this.closest('#authLogin').querySelector('.btn'))">
+            <div class="password-wrapper">
+              <input type="password" id="auth_l_password" placeholder="••••••••"
+                onkeydown="if(event.key==='Enter') doLogin(this.closest('#authLogin').querySelector('.btn')))">
+              <button type="button" class="toggle-password" onclick="togglePasswordVisibility('auth_l_password', this)">👁️</button>
+            </div>
           </div>
           <div style="text-align: right; margin-bottom: 20px;">
             <a href="#" onclick="showForgotPassword(); return false;"
@@ -440,8 +467,11 @@
           </div>
           <div class="field" style="margin-bottom: 20px;">
             <label>Set Password <span class="req">*</span></label>
-            <input type="password" id="auth_r_password" placeholder="Min 6 characters"
-              onkeydown="if(event.key==='Enter') doRegister(this.closest('#authRegister').querySelector('.btn'))">
+            <div class="password-wrapper">
+              <input type="password" id="auth_r_password" placeholder="Min 6 characters"
+                onkeydown="if(event.key==='Enter') doRegister(this.closest('#authRegister').querySelector('.btn')))">
+              <button type="button" class="toggle-password" onclick="togglePasswordVisibility('auth_r_password', this)">👁️</button>
+            </div>
           </div>
           <button class="btn btn-primary" style="width: 100%; justify-content: center;"
             onclick="doRegister(this)">Register</button>
@@ -472,7 +502,10 @@
           </div>
           <div class="field" style="margin-bottom: 20px;">
             <label>New Password <span class="req">*</span></label>
-            <input type="password" id="auth_reset_password" placeholder="Min 6 characters">
+            <div class="password-wrapper">
+              <input type="password" id="auth_reset_password" placeholder="Min 6 characters">
+              <button type="button" class="toggle-password" onclick="togglePasswordVisibility('auth_reset_password', this)">👁️</button>
+            </div>
           </div>
           <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 12px;"
             onclick="resetPassword(this)">Reset Password</button>
@@ -614,6 +647,17 @@
       }
     }
 
+
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
 
     function showToast(msg) {
       const el = document.getElementById('toast');

@@ -205,7 +205,7 @@
 
     .ps.active {
       color: var(--navy);
-      border-bottom-color: var(--amber);
+      border-bottom-color: var(--navy);
       font-weight: 700
     }
 
@@ -1245,7 +1245,80 @@
           opacity: 1;
           transform: translateY(0);
         }
-      }
+
+    /* Dynamic Tables */
+    .dyn-wrap {
+      overflow-x: auto;
+      margin-bottom: 10px;
+      border-radius: var(--r2);
+      border: 1px solid #dde3f0
+    }
+
+    .dyn-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 580px
+    }
+
+    .dyn-table thead tr {
+      background: var(--navy)
+    }
+
+    .dyn-table thead th {
+      padding: 11px 10px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 11px;
+      color: #fff;
+      letter-spacing: .05em;
+      white-space: nowrap
+    }
+
+    .dyn-table tbody tr {
+      border-bottom: 1px solid #edf0f8;
+      transition: .1s
+    }
+
+    .dyn-table tbody tr:hover {
+      background: #f5f8ff
+    }
+
+    .dyn-table tbody td {
+      padding: 7px 8px;
+      vertical-align: middle
+    }
+
+    .dyn-table td input,
+    .dyn-table td select {
+      width: 100%;
+      border: 1.5px solid transparent;
+      background: transparent;
+      padding: 6px 8px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      outline: none;
+      border-radius: 5px;
+      transition: .12s
+    }
+
+    .dyn-table td input:focus,
+    .dyn-table td select:focus {
+      border-color: var(--navy3);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(26, 74, 154, .08)
+    }
+
+    .dyn-table tfoot {
+      background: #f0f4ff
+    }
+
+    .dyn-table tfoot td {
+      padding: 9px 10px;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--navy)
     }
   </style>
 </head>
@@ -1268,6 +1341,7 @@
       <div class="hdr-right" id="hdrRight" style="display: flex; align-items: center; gap: 12px;">
         <div class="hdr-user" style="display: flex; align-items: center; gap: 8px;">
           <a href="/" class="btn-profile">Home</a>
+          <a href="/analysis" class="btn-profile">Analysis</a>
           {% if session.get('admin') %}
           <a href="/admin" class="btn-profile"
             style="color: var(--navy); border-color: var(--gold); background: #fffbeb; font-weight: bold;">Admin
@@ -1435,9 +1509,6 @@
               %}
             </select>
           </div>
-          <div class="field"><label>Program(s)</label>
-            <input type="text" id="f_programs" placeholder="e.g. B.Tech CSE, M.Tech AI">
-          </div>
         </div>
       </div>
 
@@ -1491,6 +1562,8 @@
           <div class="field"><label>Last Day for Faculty Submission</label><input type="date" id="f_hod_deadline"></div>
         </div>
       </div>
+
+
 
       <div class="nav-bar"><button class="btn btn-ghost" onclick="saveDraftManual(false, this)">💾 Save Draft</button><button
           class="btn btn-primary" onclick="goTo(1)">Next: Share &amp; Review Faculty Link →</button></div>
@@ -1676,7 +1749,6 @@
     const VIEW_MODE = "{{ view_mode }}";
     const EDIT_ID = "{{ edit_id or '' }}";
 
-
     let submissionsCache = [];
     let activeAcYearFilter = 'All';
     let activeSemFilter = 'All';
@@ -1817,11 +1889,6 @@
       setVal('f_campus', '');
       const userDept = USER.department || '';
       setVal('f_dept', userDept);
-      if (userDept && DEPT_PROGRAMS[userDept]) {
-        setVal('f_programs', DEPT_PROGRAMS[userDept].join(', '));
-      } else {
-        setVal('f_programs', '');
-      }
       setVal('f_hod_name', USER.name || '');
       setVal('f_hod_email', USER.email || '');
       setVal('f_semester', 'Odd 2025-26');
@@ -1891,7 +1958,6 @@
         if (d.identity) {
           setVal('f_campus', d.identity.campus);
           setVal('f_dept', d.identity.dept);
-          setVal('f_programs', d.identity.programs);
           setVal('f_hod_name', d.identity.hodName || d.identity.hod);
           setVal('f_hod_email', d.identity.hodEmail || d.identity.email);
           setVal('f_semester', d.identity.semester || d.identity.sem);
@@ -1968,7 +2034,7 @@
           <h3>🔗 Faculty Closure Link</h3>
           <div class="share-link-row">
             <input type="text" readonly value="${shareUrl}" id="modalShareLink">
-            <button class="share-copy-btn" onclick="copyAndSuggest('${shareUrl}')">📋 Copy Link</button>
+            <button class="share-copy-btn" onclick="copyAndSuggest(this, '${shareUrl}')">📋 Copy Link</button>
           </div>
         </div>
         <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap">
@@ -2123,13 +2189,18 @@
       document.getElementById('previewBody').innerHTML = '';
     }
 
-    function copyAndSuggest(url) {
+    function copyAndSuggest(btn, url) {
+      if (typeof btn === 'string') {
+        url = btn;
+        btn = window.event ? (window.event.currentTarget || window.event.srcElement) : null;
+      }
       navigator.clipboard.writeText(url).then(() => {
-        const btn = event.currentTarget;
-        const orig = btn.textContent;
-        btn.textContent = '✓ Copied!';
-        btn.style.background = '#16a34a';
-        setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 2000);
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = '✓ Copied!';
+          btn.style.background = '#16a34a';
+          setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 2000);
+        }
         let panel = document.getElementById('prevFacPanel');
         if (!panel) {
           const content = document.getElementById('facSubModalContent');
@@ -2172,7 +2243,7 @@
           </div>
           <div style="max-height:200px;overflow-y:auto;border:1px solid #bae6fd;border-radius:8px;background:#fff;margin-bottom:12px">${rows}</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <button onclick="sendFacultyLink(${JSON.stringify(faculty)}, '${shareUrl.replace(/'/g,\"\\'\")}')"
+            <button onclick="sendFacultyLink(${JSON.stringify(faculty)}, '${shareUrl.replace(/'/g,"\\'")}')"
               style="background:#0a2540;color:#fff;border:none;border-radius:7px;padding:9px 20px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✉️ Send to Selected</button>
             <span id="sendFacStatus" style="font-size:12px;color:#64748b"></span>
           </div>`;
@@ -2241,17 +2312,6 @@
     }
 
     function saveDraftManual(silent = false, btn = null) {
-      const campus = document.getElementById('f_campus').value;
-      const dept = document.getElementById('f_dept').value;
-      const hodName = document.getElementById('f_hod_name').value;
-      if (!campus || !dept || !hodName) {
-        if (!silent) {
-          showToast('⚠ Please fill Campus, Department & HOD Name (Step 1) before saving draft');
-          goTo(0);
-        }
-        return;
-      }
-
       const payload = collectData();
       payload._draft = true;
       if (!silent) {
@@ -2267,6 +2327,8 @@
         if (res.ok) {
           currentSubmissionId = res.id;
           currentShareToken = res.share_token;
+          showShareLink(res.share_token);
+          loadFacultySubmissions();
           if (!silent) {
             showToast('✓ Progress saved as Draft!');
             loadDashboard();
@@ -2280,8 +2342,6 @@
         if (!silent) LoadingButton.off(btn);
         if (!silent) showToast('⚠ Network error');
       });
-    }
-
     }
 
     function showShareLink(token) {
@@ -2419,11 +2479,12 @@
       const payload = {
         identity: {
           submitterEmail: USER.email, submitterName: USER.name,
-          campus: v('f_campus'), dept: v('f_dept'), programs: v('f_programs'),
+          campus: v('f_campus'), dept: v('f_dept'),
           hodName: v('f_hod_name'), hodEmail: v('f_hod_email'),
           semester: v('f_semester'), acYear: v('f_ac_year'),
           subDate: v('f_sub_date'), hodDeadline: v('f_hod_deadline')
         },
+        programs: [],
         hodReport: hodRpt,
         form_type: 'closure'
       };
@@ -2452,11 +2513,11 @@
       <div class="rev-header">Department Identity<span class="rev-badge">${idt.campus || '—'}</span></div>
       <div class="rev-body">
         <div class="rb-row"><span class="rb-label">Department</span><span class="rb-val">${idt.dept || '—'}</span></div>
-        <div class="rb-row"><span class="rb-label">Program(s)</span><span class="rb-val">${idt.programs || '—'}</span></div>
         <div class="rb-row"><span class="rb-label">HOD</span><span class="rb-val">${idt.hodName || idt.hod || '—'} · ${idt.hodEmail || idt.email || '—'}</span></div>
         <div class="rb-row"><span class="rb-label">Semester</span><span class="rb-val">${idt.semester || idt.sem || '—'} · A.Y. ${idt.acYear || '—'}</span></div>
       </div>
     </div>`;
+
       html += `<div class="rev-block">
       <div class="rev-header">HOD Closure Report <span class="rev-badge">${filled}/${HOD_CLOSURE_SECTIONS.length} filled</span></div>
       <div class="rev-body">`;
@@ -2527,13 +2588,6 @@
 
     // ─── Init ───
     buildHodReport();
-    document.getElementById('f_dept').addEventListener('change', function() {
-      const dept = this.value;
-      if (dept && DEPT_PROGRAMS[dept]) {
-        const progField = document.getElementById('f_programs');
-        progField.value = DEPT_PROGRAMS[dept].join(', ');
-      }
-    });
     document.getElementById('f_sub_date').value = new Date().toISOString().split('T')[0];
 
     if (VIEW_MODE === 'form') {

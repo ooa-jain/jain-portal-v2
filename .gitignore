@@ -33,3 +33,10 @@ uploads/
 
 
 .git copy/
+
+# Scratch and temp files
+scratch/
+scratch_*
+console_logs.txt
+raw_*
+rendered_*

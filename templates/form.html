@@ -1536,6 +1536,7 @@
       <div class="hdr-right" id="hdrRight" style="display: flex; align-items: center; gap: 12px;">
         <div class="hdr-user" style="display: flex; align-items: center; gap: 8px;">
           <a href="/" class="btn-profile">Home</a>
+          <a href="/analysis" class="btn-profile">Analysis</a>
           {% if session.get('admin') %}
           <a href="/admin" class="btn-profile"
             style="color: var(--navy); border-color: var(--gold); background: #fffbeb; font-weight: bold;">Admin
@@ -1757,6 +1758,8 @@
         </div>
       </div>
 
+
+
       <div class="nav-bar"><button class="btn btn-ghost" onclick="saveDraftManual(false, this)">💾 Save Draft</button><button
           class="btn btn-primary" onclick="goTo(1)">Next: Share &amp; Review Faculty Link →</button></div>
     </div>
@@ -1932,7 +1935,6 @@
       "Department of Art and Design": ["B.Sc", "B.A", "B.F.A", "M.Sc", "M.A", "M.F.A"],
       "Department of Animation and Virtual Reality": ["B.Sc", "B.A", "B.F.A", "M.Sc", "M.A", "M.F.A"]
     };
-    let progCount = 0;
     let currentSubmissionId = null;
     let currentShareToken = null;
     const USER = {{ user | tojson }};
@@ -2101,20 +2103,7 @@
         if (sel) { sel.value = ''; styleChkSel(sel); }
         const rem = document.getElementById('rem_' + item.id);
         if (rem) rem.value = '';
-      }));
-
-      // Clear programs table and pre-populate
-      const progBody = document.getElementById('progBody');
-      progBody.innerHTML = '';
-      progCount = 0;
-      if (userDept && DEPT_PROGRAMS[userDept]) {
-        DEPT_PROGRAMS[userDept].forEach(p => {
-          addProgRowWithName(p);
-        });
-      } else {
-        updateProgTotals();
-      }
-    }
+      }));    }
 
 
     function submitExtensionRequestDirect(e, moduleName) {
@@ -2180,37 +2169,6 @@
           }
         }
 
-        // Load programs
-        const progBody = document.getElementById('progBody');
-        progBody.innerHTML = '';
-        progCount = 0;
-        if (d.programs && d.programs.length) {
-          d.programs.forEach(p => {
-            progCount++;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td style="text-align:center;color:var(--ink3);font-size:12px;font-weight:700">${progCount}</td>
-              <td><input type="text" value="${p.name || ''}" placeholder="e.g. B.Tech CSE" class="prog-name"></td>
-              <td><input type="number" min="0" value="${p.courses || ''}" placeholder="0" class="prog-courses" oninput="updateProgTotals()"></td>
-              <td><input type="number" min="0" value="${p.students || ''}" placeholder="0" class="prog-students" oninput="updateProgTotals()"></td>
-              <td><input type="number" min="0" value="${p.faculty || ''}" placeholder="0" class="prog-faculty" oninput="updateProgTotals()"></td>
-              <td><input type="text" value="${p.coord || ''}" placeholder="Coordinator name" class="prog-coord"></td>
-              <td><input type="email" value="${p.coordEmail || ''}" placeholder="Email" class="prog-coord-email"></td>
-              <td><button class="del-btn" onclick="this.closest('tr').remove();updateProgTotals()" title="Remove">×</button></td>`;
-            progBody.appendChild(tr);
-          });
-          updateProgTotals();
-        } else {
-          const dept = d.identity?.dept;
-          if (dept && DEPT_PROGRAMS[dept]) {
-            DEPT_PROGRAMS[dept].forEach(p => {
-              addProgRowWithName(p);
-            });
-          } else {
-            updateProgTotals();
-          }
-        }
-
 
         // Show share section if we already have a token
         if (currentShareToken) {
@@ -2261,7 +2219,7 @@
           <h3>🔗 Faculty Submission Link</h3>
           <div class="share-link-row">
             <input type="text" readonly value="${shareUrl}" id="modalShareLink">
-            <button class="share-copy-btn" onclick="copyAndSuggest('${shareUrl}')">📋 Copy Link</button>
+            <button class="share-copy-btn" onclick="copyAndSuggest(this, '${shareUrl}')">📋 Copy Link</button>
           </div>
         </div>
         <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap">
@@ -2571,17 +2529,6 @@
     }
 
     function saveDraftManual(silent = false, btn = null) {
-      const campus = document.getElementById('f_campus').value;
-      const dept = document.getElementById('f_dept').value;
-      const hodName = document.getElementById('f_hod_name').value;
-      if (!campus || !dept || !hodName) {
-        if (!silent) {
-          showToast('⚠ Please fill Campus, Department & HOD Name (Step 1) before saving draft');
-          goTo(0);
-        }
-        return;
-      }
-
       const payload = collectData();
       payload._draft = true;
       if (!silent) {
@@ -2597,6 +2544,8 @@
         if (res.ok) {
           currentSubmissionId = res.id;
           currentShareToken = res.share_token;
+          showShareLink(res.share_token);
+          loadFacultySubmissions();
           if (!silent) {
             showToast('✓ Progress saved as Draft!');
             loadDashboard();
@@ -2768,36 +2717,6 @@
       else if (v === 'N/A') sel.classList.add('na');
     }
 
-    // ─── Programs ───
-    function addProgRow() {
-      addProgRowWithName('');
-    }
-
-    function addProgRowWithName(name) {
-      progCount++;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="text-align:center;color:var(--ink3);font-size:12px;font-weight:700">${progCount}</td>
-        <td><input type="text" value="${name || ''}" placeholder="e.g. B.Tech CSE" class="prog-name"></td>
-        <td><input type="number" min="0" placeholder="0" class="prog-courses" oninput="updateProgTotals()"></td>
-        <td><input type="number" min="0" placeholder="0" class="prog-students" oninput="updateProgTotals()"></td>
-        <td><input type="number" min="0" placeholder="0" class="prog-faculty" oninput="updateProgTotals()"></td>
-        <td><input type="text" placeholder="Coordinator name" class="prog-coord"></td>
-        <td><input type="email" placeholder="Email" class="prog-coord-email"></td>
-        <td><button class="del-btn" onclick="this.closest('tr').remove();updateProgTotals()" title="Remove">×</button></td>`;
-      document.getElementById('progBody').appendChild(tr);
-      updateProgTotals();
-    }
-
-
-    function updateProgTotals() {
-      const sum = cls => [...document.querySelectorAll('.' + cls)].reduce((a, el) => a + (+el.value || 0), 0);
-      const c = sum('prog-courses'), s = sum('prog-students'), f = sum('prog-faculty');
-      document.getElementById('ft_courses').textContent = c || '—';
-      document.getElementById('ft_students').textContent = s || '—';
-      document.getElementById('ft_faculty').textContent = f || '—';
-    }
-
     // ─── Nav ───
     function goTo(step) {
       // Auto-save draft silently when moving between wizard steps
@@ -2819,18 +2738,6 @@
     const v = id => (document.getElementById(id) || {}).value || '';
 
     function collectData() {
-      const progs = [];
-      document.querySelectorAll('#progBody tr').forEach(tr => {
-        const name = tr.querySelector('.prog-name')?.value || '';
-        if (name) progs.push({
-          name, courses: tr.querySelector('.prog-courses')?.value || '',
-          students: tr.querySelector('.prog-students')?.value || '',
-          faculty: tr.querySelector('.prog-faculty')?.value || '',
-          coord: tr.querySelector('.prog-coord')?.value || '',
-          coordEmail: tr.querySelector('.prog-coord-email')?.value || ''
-        });
-      });
-
       const chk = {};
       HOD_SECTIONS.forEach(sec => sec.items.forEach(item => {
         chk[item.id] = { status: v(`chk_${item.id}`), remark: v(`rem_${item.id}`) };
@@ -2844,7 +2751,7 @@
           semester: v('f_semester'), acYear: v('f_ac_year'),
           subDate: v('f_sub_date'), hodDeadline: v('f_hod_deadline')
         },
-        programs: progs, hodChecklist: chk,
+        programs: [], hodChecklist: chk,
         form_type: 'readiness'
       };
       if (currentSubmissionId) payload._id = currentSubmissionId;
@@ -2880,12 +2787,6 @@
           <div class="rb-row"><span class="rb-label">HOD</span><span class="rb-val">${d.identity?.hodName || '—'} · ${d.identity?.hodEmail || '—'}</span></div>
           <div class="rb-row"><span class="rb-label">Semester</span><span class="rb-val">${d.identity?.semester || '—'} · A.Y. ${d.identity?.acYear || '—'}</span></div>
           <div class="rb-row"><span class="rb-label">Mid Sem Review Date</span><span class="rb-val" style="font-weight: 700; color: var(--navy);">${d.hodChecklist?.['28']?.status || '—'}</span></div>
-        </div>
-      </div>
-      <div class="rev-block">
-        <div class="rev-header">Programs <span class="rev-badge">${d.programs?.length || 0} added</span></div>
-        <div class="rev-body">
-          ${d.programs?.length ? d.programs.map(p => `<div class="rb-row"><span class="rb-label">${p.name}</span><span class="rb-val" style="font-size:13px">${p.courses || '?'} courses · ${p.students || '?'} students · ${p.faculty || '?'} faculty</span></div>`).join('') : '<span style="color:var(--ink3)">No programs entered</span>'}
         </div>
       </div>
       <div class="rev-block">
@@ -2942,17 +2843,6 @@
 
     // ─── Init ───
     buildHodChecklist();
-    document.getElementById('f_dept').addEventListener('change', function() {
-      const dept = this.value;
-      if (dept && DEPT_PROGRAMS[dept]) {
-        const progBody = document.getElementById('progBody');
-        progBody.innerHTML = '';
-        progCount = 0;
-        DEPT_PROGRAMS[dept].forEach(p => {
-          addProgRowWithName(p);
-        });
-      }
-    });
     document.getElementById('f_sub_date').value = new Date().toISOString().split('T')[0];
 
     if (VIEW_MODE === 'form') {
