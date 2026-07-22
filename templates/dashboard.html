@@ -108,11 +108,47 @@
 
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 24px;
       justify-content: center;
-      max-width: 800px;
+      max-width: 980px;
       margin: 0 auto;
+    }
+
+    .sec-chip-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .sec-chip-row .sec-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .badge-new {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: linear-gradient(135deg, var(--gold), #ffc93d);
+      color: var(--navy);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(242, 169, 0, 0.4);
     }
 
     .dash-card {
@@ -613,6 +649,24 @@
           ⚠ Last day to submission is {{ settings.closure_deadline }}
         </div>
         {% endif %}
+      </a>
+      {% endif %}
+
+      {% if settings.iea_enabled %}
+      <a href="/iea" class="dash-card"
+        data-intro="Submit your department's information on Programmes and Courses in Innovation and Emerging Areas (Sections A–E)."
+        data-step="4">
+        <span class="badge-new">New</span>
+        <div class="sec-chip-row">
+          <span class="sec-dot" style="background:#C9A227">A</span>
+          <span class="sec-dot" style="background:#2F6F4E">B</span>
+          <span class="sec-dot" style="background:#2C5F8A">C</span>
+          <span class="sec-dot" style="background:#A85C2C">D</span>
+          <span class="sec-dot" style="background:#6B4A8A">E</span>
+        </div>
+        <div class="card-title">Innovation &amp; Emerging Areas</div>
+        <div class="card-desc">Submission of Information on Programmes and Courses in Innovation and Emerging Areas (AY 2022-23 to AY 2026-27), as per the UGC circular — Sections A to E with supporting evidence.</div>
+        <button class="btn">Go to IEA Submission</button>
       </a>
       {% endif %}
     </div>

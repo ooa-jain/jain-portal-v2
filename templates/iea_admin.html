@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IEA — Consolidated Admin Dashboard | OoA Portal</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap"
+    rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0a2558;
+      --navy2: #143572;
+      --gold: #f2a900;
+      --bg: #ffffff;
+      --ink: #111827;
+      --ink2: #374151;
+      --ink3: #6b7280;
+      --border: #e2e8f0;
+      --sh: 0 4px 16px rgba(10, 37, 88, 0.06);
+      --a: #C9A227; --b: #2F6F4E; --c: #2C5F8A; --d: #A85C2C; --e: #6B4A8A;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(rgba(10, 37, 88, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(10, 37, 88, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    h1, h2, h3 { font-family: 'Playfair Display', serif; }
+
+    .hero {
+      background: linear-gradient(135deg, var(--navy), var(--navy2));
+      color: #fff; position: relative; overflow: hidden;
+    }
+    .hero::after {
+      content: ""; position: absolute; right: -60px; top: -60px; width: 260px; height: 260px;
+      border-radius: 50%; background: radial-gradient(circle, rgba(242, 169, 0, 0.28), transparent 70%);
+    }
+    .hero-inner { max-width: 1220px; margin: 0 auto; padding: 28px 28px 26px; position: relative; z-index: 1; }
+    .eyebrow { color: var(--gold); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; }
+    .hero h1 { font-size: 25px; font-weight: 700; margin-top: 8px; }
+    .hero p { margin: 8px 0 0; color: #cbd7ec; font-size: 13.5px; max-width: 760px; }
+    .header-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .btn { border: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-gold { background: var(--gold); color: var(--navy); }
+    .btn-ghost { background: rgba(255, 255, 255, 0.12); color: #fff; border: 1px solid rgba(255, 255, 255, 0.35); }
+    .btn:hover { filter: brightness(1.06); }
+
+    .wrap { max-width: 1220px; margin: 0 auto; padding: 24px 28px 80px; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 22px; }
+    .kpi-card {
+      background: #fff; border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; border-top: 3px solid var(--kpi-color, var(--navy)); box-shadow: var(--sh);
+    }
+    .kpi-num { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--ink); }
+    .kpi-label { font-size: 11.5px; color: var(--ink3); margin-top: 4px; line-height: 1.3; font-weight: 600; }
+
+    .toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .year-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .year-tab {
+      background: #fff; border: 1.5px solid var(--border); color: var(--ink);
+      padding: 8px 15px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .year-tab:hover { border-color: var(--navy); }
+    .year-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .download-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .download-btn {
+      background: #fff; border: 1.5px solid var(--border); padding: 8px 14px; border-radius: 8px;
+      font-size: 12.5px; font-weight: 700; cursor: pointer; color: var(--navy); font-family: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .download-btn:hover { border-color: var(--gold); }
+
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--sh); }
+    thead th { background: #f1f5fb; text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink3); padding: 12px 14px; border-bottom: 1px solid var(--border); }
+    tbody td { padding: 13px 14px; border-bottom: 1px solid var(--border); font-size: 13.5px; vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #fbfcfe; }
+    .school-name { font-weight: 700; color: var(--navy); }
+    .unit-sub { font-size: 12px; color: var(--ink3); margin-top: 2px; font-weight: 500; }
+    .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+    .pill.has-data { background: #e4f0e8; color: var(--b); }
+    .pill.empty { background: #f1f5f9; color: var(--ink3); }
+    .section-counts { display: flex; gap: 6px; flex-wrap: wrap; }
+    .sc { width: 26px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; }
+    .view-btn { background: none; border: 1.5px solid var(--border); padding: 6px 12px; border-radius: 7px; font-size: 12.5px; font-weight: 700; cursor: pointer; color: var(--navy); font-family: inherit; }
+    .view-btn:hover { border-color: var(--gold); }
+    .del-btn { background: none; border: 1.5px solid #fecaca; padding: 6px 12px; border-radius: 7px; font-size: 12.5px; font-weight: 700; cursor: pointer; color: #b91c1c; font-family: inherit; margin-left: 6px; }
+    .del-btn:hover { background: #fef2f2; }
+
+    .detail-row td { background: #fbfcfe; padding: 18px; }
+    .detail-section { margin-bottom: 16px; border-left: 4px solid var(--accent); padding-left: 12px; }
+    .detail-section h4 { font-size: 13.5px; margin-bottom: 8px; color: var(--ink); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; }
+    .detail-entry { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 12.5px; }
+    .detail-entry .df { margin-bottom: 5px; line-height: 1.5; }
+    .detail-entry .df b { color: var(--ink3); font-weight: 700; }
+    .detail-entry .df a { color: #2563eb; word-break: break-all; }
+    .no-entries { font-size: 12.5px; color: var(--ink3); font-style: italic; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--ink3); background: #fff; border: 1px solid var(--border); border-radius: 12px; }
+    .empty-state h3 { color: var(--ink); margin-bottom: 8px; }
+
+    @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 560px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tbody td { border-bottom: none; padding: 6px 14px; }
+      tbody tr { border-bottom: 1px solid var(--border); padding: 10px 0; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">Office of Academics · JAIN (Deemed-to-be University)</div>
+      <h1>Innovation &amp; Emerging Areas — Consolidated Dashboard</h1>
+      <p>Live view of School / Department submissions for AY 2022-23 to AY 2026-27, as per the UGC circular.</p>
+      <div class="header-actions">
+        <a href="/admin" class="btn btn-ghost">← Admin Dashboard</a>
+        <a href="/admin/iea-export" class="btn btn-gold">Download All Years (.xlsx)</a>
+        <a href="/admin/logout" class="btn btn-ghost">Sign Out</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="toolbar">
+      <div class="year-tabs" id="yearTabs"></div>
+      <div class="download-group" id="downloadGroup"></div>
+    </div>
+
+    <div id="tableWrap"></div>
+  </div>
+
+  <script>
+    const YEARS = {{ iea_years|tojson }};
+    const SECTIONS = {{ iea_sections|tojson }};
+    const allUnits = {{ submissions|tojson }};
+
+    let activeYear = YEARS[0];
+    let expandedUnit = null;
+
+    function escapeHtml(str) { return String(str == null ? '' : str).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+
+    function unitId(u) { return u._id; }
+    function unitTitle(u) { return u.school + ' — ' + u.department + ' (' + u.level + ')'; }
+
+    function totalForSection(sectionKey) {
+      let n = 0;
+      allUnits.forEach(u => YEARS.forEach(y => n += (u.years[y][sectionKey] || []).length));
+      return n;
+    }
+
+    function renderKPIs() {
+      const el = document.getElementById('kpiGrid');
+      const cards = [
+        { label: 'Units Reporting', num: allUnits.length, color: 'var(--navy)' },
+        { label: 'A — New Programmes', num: totalForSection('A'), color: 'var(--a)' },
+        { label: 'B — Programme Innovations', num: totalForSection('B'), color: 'var(--b)' },
+        { label: 'C — Global Recognitions', num: totalForSection('C'), color: 'var(--c)' },
+        { label: 'D — Industry Skilling', num: totalForSection('D'), color: 'var(--d)' },
+        { label: 'E — Competency Learning', num: totalForSection('E'), color: 'var(--e)' },
+      ];
+      el.innerHTML = cards.map(c => '<div class="kpi-card" style="--kpi-color:' + c.color + '"><div class="kpi-num">' + c.num + '</div><div class="kpi-label">' + c.label + '</div></div>').join('');
+    }
+
+    function renderYearTabs() {
+      const el = document.getElementById('yearTabs');
+      el.innerHTML = YEARS.map(y => '<button class="year-tab ' + (y === activeYear ? 'active' : '') + '" data-year="' + y + '">' + y + '</button>').join('');
+    }
+
+    function renderDownloadGroup() {
+      const el = document.getElementById('downloadGroup');
+      el.innerHTML = '<a class="download-btn" href="/admin/iea-export?year=' + encodeURIComponent(activeYear) + '">⬇ Download ' + activeYear + ' (.xlsx)</a>';
+    }
+
+    function renderTable() {
+      const el = document.getElementById('tableWrap');
+      if (allUnits.length === 0) {
+        el.innerHTML = '<div class="empty-state"><h3>No submissions yet</h3><p>Once departments start saving their data in the IEA entry tool, submissions will appear here.</p></div>';
+        return;
+      }
+      let rows = allUnits.map(u => {
+        const counts = SECTIONS.map(s => ({ key: s.key, color: s.color, n: (u.years[activeYear][s.key] || []).length }));
+        const totalThisYear = counts.reduce((a, c) => a + c.n, 0);
+        const isExpanded = expandedUnit === unitId(u);
+        let html = '<tr>' +
+          '<td><div class="school-name">' + escapeHtml(u.school) + '</div><div class="unit-sub">' + escapeHtml(u.department) + ' · ' + escapeHtml(u.level) + '</div></td>' +
+          '<td>' + (totalThisYear > 0 ? '<span class="pill has-data">Has data</span>' : '<span class="pill empty">No entries</span>') + '</td>' +
+          '<td><div class="section-counts">' + counts.map(c => '<div class="sc" style="background:' + c.color + '" title="Section ' + c.key + '">' + c.n + '</div>').join('') + '</div></td>' +
+          '<td>' + (u.lastUpdated ? new Date(u.lastUpdated + (String(u.lastUpdated).endsWith('Z') ? '' : 'Z')).toLocaleString() : '—') + '<div class="unit-sub">' + escapeHtml(u.submitterName || '') + '</div></td>' +
+          '<td style="white-space:nowrap;"><button class="view-btn" data-unit="' + unitId(u) + '">' + (isExpanded ? 'Hide' : 'View') + '</button>' +
+          '<button class="del-btn" data-del="' + unitId(u) + '">Delete</button></td>' +
+          '</tr>';
+        if (isExpanded) {
+          html += '<tr class="detail-row"><td colspan="5">' + renderUnitDetail(u) + '</td></tr>';
+        }
+        return html;
+      }).join('');
+
+      el.innerHTML = '<table><thead><tr><th>School / Department (Level)</th><th>Status (' + activeYear + ')</th><th>Entries by Section (A–E)</th><th>Last Updated</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+
+      el.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.unit;
+          expandedUnit = expandedUnit === id ? null : id;
+          renderTable();
+        });
+      });
+      el.querySelectorAll('.del-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteUnit(btn.dataset.del));
+      });
+    }
+
+    function renderUnitDetail(u) {
+      return SECTIONS.map(s => {
+        const entries = u.years[activeYear][s.key] || [];
+        return '<div class="detail-section" style="--accent:' + s.color + '">' +
+          '<h4>' + s.key + ' — ' + s.title + ' (' + entries.length + ')</h4>' +
+          (entries.length === 0 ? '<p class="no-entries">No entries submitted.</p>' :
+            entries.map(e => '<div class="detail-entry">' +
+              s.fields.map(f => '<div class="df"><b>' + f.l + ':</b> ' + (e[f.k] ? escapeHtml(e[f.k]) : '<span class="no-entries">— not filled —</span>') + '</div>').join('') +
+              '<div class="df"><b>Evidence types:</b> ' + ((e.evidenceTypes && e.evidenceTypes.length) ? escapeHtml(e.evidenceTypes.join(', ')) : '<span class="no-entries">— none selected —</span>') + '</div>' +
+              '<div class="df"><b>Evidence Drive link:</b> ' + (e.evidenceLink ? '<a href="' + escapeHtml(e.evidenceLink) + '" target="_blank" rel="noopener">' + escapeHtml(e.evidenceLink) + '</a>' : '<span class="no-entries">— not provided —</span>') + '</div>' +
+              (e.evidenceMissing ? '<div class="df"><b>Evidence missing:</b> ' + escapeHtml(e.evidenceMissing) + '</div>' : '') +
+              '</div>').join('')
+          ) +
+          '</div>';
+      }).join('');
+    }
+
+    function deleteUnit(id) {
+      const u = allUnits.find(x => unitId(x) === id);
+      if (!u) return;
+      if (!confirm('Delete the entire IEA submission for:\n\n' + unitTitle(u) + '\n\nThis removes all years and cannot be undone.')) return;
+      fetch('/admin/iea-delete/' + id, { method: 'POST' })
+        .then(r => r.json())
+        .then(res => {
+          if (res.ok) {
+            const idx = allUnits.findIndex(x => unitId(x) === id);
+            if (idx > -1) allUnits.splice(idx, 1);
+            if (expandedUnit === id) expandedUnit = null;
+            renderKPIs();
+            renderTable();
+          } else alert(res.error || 'Delete failed');
+        })
+        .catch(() => alert('Network error'));
+    }
+
+    document.getElementById('yearTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.year-tab');
+      if (!btn) return;
+      activeYear = btn.dataset.year;
+      renderYearTabs();
+      renderDownloadGroup();
+      renderTable();
+    });
+
+    renderKPIs();
+    renderYearTabs();
+    renderDownloadGroup();
+    renderTable();
+  </script>
+</body>
+
+</html>

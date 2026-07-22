@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Innovation & Emerging Areas — OoA Portal</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a2558">
+  <link rel="apple-touch-icon" href="/static/images/applogo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap"
+    rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0a2558;
+      --navy2: #143572;
+      --gold: #f2a900;
+      --gold-soft: #fde9bd;
+      --bg: #ffffff;
+      --ink: #111827;
+      --ink2: #374151;
+      --ink3: #6b7280;
+      --border: #e2e8f0;
+      --r: 12px;
+      --sh: 0 4px 16px rgba(10, 37, 88, 0.06);
+      --sh2: 0 12px 48px rgba(0, 0, 0, 0.08);
+      --a: #C9A227; --b: #2F6F4E; --c: #2C5F8A; --d: #A85C2C; --e: #6B4A8A;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(rgba(10, 37, 88, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(10, 37, 88, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, h4 { font-family: 'Playfair Display', serif; }
+
+    .site-header {
+      background: #ffffff;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 24px rgba(0, 0, 0, .08);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 28px;
+      height: 68px;
+    }
+
+    .logo-area { display: flex; align-items: center; gap: 14px; }
+    .logo-text .l1 { font-size: 16px; font-weight: 700; color: var(--navy); line-height: 1.1; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .logo-text .l2 { font-size: 11px; color: var(--navy); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; margin-top: 2px; }
+
+    .btn-profile {
+      background: #ffffff;
+      color: var(--ink2);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12.5px;
+      cursor: pointer;
+      border: 1px solid #dde3f0;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .btn-profile:hover { background: #f8fafc; color: var(--navy); border-color: var(--navy); }
+
+    /* ── Hero band ── */
+    .hero {
+      background: linear-gradient(135deg, var(--navy), var(--navy2));
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -60px;
+      top: -60px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(242, 169, 0, 0.28), transparent 70%);
+    }
+    .hero-inner { max-width: 1120px; margin: 0 auto; padding: 34px 28px 30px; position: relative; z-index: 1; }
+    .eyebrow { color: var(--gold); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .hero h1 { font-size: 28px; font-weight: 700; margin-top: 8px; line-height: 1.25; }
+    .hero p { margin: 10px 0 0; color: #cbd7ec; font-size: 14px; max-width: 780px; line-height: 1.6; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .hero .sec-chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    .sec-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px; padding: 5px 13px 5px 6px;
+      font-size: 11.5px; font-weight: 700; color: #e8eefb;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .sec-chip .dot {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10.5px; color: #fff; font-weight: 800;
+    }
+
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 28px 140px; }
+
+    /* ═══ Circular gate ═══ */
+    #gate { max-width: 880px; margin: 0 auto; padding: 34px 28px 80px; }
+    .circular-paper {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 38px 42px;
+      box-shadow: var(--sh2);
+    }
+    .circular-paper .ref-line { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink3); margin-bottom: 18px; flex-wrap: wrap; gap: 6px; font-weight: 600; }
+    .circular-paper h2.circ-title { font-size: 13px; text-transform: uppercase; letter-spacing: .16em; color: var(--navy); text-align: center; margin-bottom: 4px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; }
+    .circular-paper h1.circ-main { font-size: 22px; text-align: center; margin: 8px 0 24px; line-height: 1.45; color: var(--ink); }
+    .circular-paper .to-block { font-size: 13.5px; margin-bottom: 16px; }
+    .circular-paper .to-block b { display: block; margin-bottom: 4px; color: var(--navy); }
+    .circular-paper p.subject { font-size: 13.5px; margin-bottom: 18px; }
+    .circular-paper p.body-text { font-size: 14px; line-height: 1.7; margin-bottom: 20px; color: var(--ink2); }
+    .circ-section { margin-bottom: 18px; border-left: 4px solid var(--sc, var(--navy)); padding-left: 14px; }
+    .circ-section h3 { font-size: 15px; color: var(--ink); margin-bottom: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; }
+    .circ-section ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.8; color: var(--ink2); }
+    .circ-divider { border: none; border-top: 1px solid var(--border); margin: 26px 0; }
+    .circ-note { background: #fff8eb; border: 1px solid var(--gold); border-radius: 10px; padding: 14px 16px; font-size: 13px; color: #9e6f00; margin: 20px 0; font-weight: 500; }
+    .ack-bar { position: sticky; bottom: 0; background: #fff; border-top: 1px solid var(--border); margin: 0 -42px -38px; padding: 18px 42px; text-align: center; border-radius: 0 0 16px 16px; }
+    .ack-check { display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 13px; color: var(--ink3); margin-bottom: 14px; }
+    .ack-check input { accent-color: var(--navy); width: 16px; height: 16px; }
+    .ack-btn {
+      background: var(--navy); color: #fff; border: none; padding: 13px 34px;
+      border-radius: 9px; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit;
+      transition: all .2s;
+    }
+    .ack-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .ack-btn:not(:disabled):hover { background: var(--gold); color: var(--navy); }
+
+    /* ═══ Main app ═══ */
+    .school-bar {
+      background: #fff; border: 1px solid var(--border); border-radius: var(--r);
+      padding: 20px 22px; margin-bottom: 20px; box-shadow: var(--sh);
+    }
+    .school-bar-title { font-size: 11.5px; font-weight: 800; color: var(--ink3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+    .school-bar-grid { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+    .school-bar .field { flex: 1; min-width: 220px; }
+    .school-bar label { font-size: 12px; font-weight: 700; color: var(--ink2); }
+    .school-bar select {
+      width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 14px; margin-top: 6px; font-family: inherit; color: var(--ink); background: #fff;
+    }
+    .school-bar select:disabled { background: #f8fafc; color: var(--ink3); }
+    .school-bar select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(242, 169, 0, 0.18); }
+    .status-pill { font-size: 12.5px; color: var(--ink3); margin-top: 12px; font-weight: 600; }
+    .status-pill.dirty { color: #A85C2C; }
+    .status-pill.saved { color: #2F6F4E; }
+
+    .year-tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+    .year-tab {
+      background: #fff; border: 1.5px solid var(--border); color: var(--ink);
+      padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; transition: all .15s;
+    }
+    .year-tab:hover { border-color: var(--navy); }
+    .year-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .tab-count { background: rgba(10, 37, 88, 0.08); border-radius: 999px; padding: 1px 8px; font-size: 11.5px; }
+    .year-tab.active .tab-count { background: var(--gold); color: var(--navy); }
+
+    .section-panel {
+      background: #fff; border: 1px solid var(--border); border-radius: 14px;
+      margin-bottom: 18px; overflow: hidden; box-shadow: var(--sh);
+    }
+    .section-banner {
+      display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--accent) 8%, white);
+    }
+    .section-num {
+      width: 38px; height: 38px; border-radius: 10px; background: var(--accent); color: #fff;
+      font-family: 'Playfair Display', serif; font-weight: 700; font-size: 18px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .section-title-wrap h3 { font-size: 16.5px; color: var(--ink); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; }
+    .section-sub { margin: 3px 0 0; font-size: 12.5px; color: var(--ink3); }
+    .entry-count { margin-left: auto; font-size: 12px; color: var(--ink3); background: #f8fafc; border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; white-space: nowrap; font-weight: 700; }
+    .entries { padding: 14px 20px 4px; }
+    .empty-hint { color: var(--ink3); font-size: 13.5px; font-style: italic; margin: 6px 0 16px; }
+    .entry-card { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; background: #fcfdff; }
+    .entry-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .entry-idx { font-size: 11.5px; font-weight: 800; color: var(--accent); letter-spacing: .05em; }
+    .remove-btn { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 13px; line-height: 1; padding: 4px 6px; border-radius: 6px; font-family: inherit; font-weight: 600; }
+    .remove-btn:hover { background: #fef2f2; color: #b91c1c; }
+    .entry-fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .field-label { font-size: 12.5px; font-weight: 700; color: var(--ink2); display: flex; flex-direction: column; gap: 6px; }
+    .field-label.full { grid-column: 1/-1; }
+    .entry-fields input[type=text], .entry-fields textarea {
+      font-family: inherit; font-size: 13.5px; color: var(--ink); font-weight: 400;
+      padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 8px; resize: vertical;
+    }
+    .entry-fields input:focus, .entry-fields textarea:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+    .add-entry-btn {
+      margin: 6px 20px 18px; background: var(--accent); color: #fff; border: none;
+      padding: 9px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+    .add-entry-btn:hover { filter: brightness(1.08); }
+
+    .evidence-block { grid-column: 1/-1; background: #fffdf5; border: 1.5px dashed var(--gold); border-radius: 9px; padding: 12px 14px; margin-top: 4px; }
+    .evidence-block h5 { font-family: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #9e6f00; margin: 0 0 8px; }
+    .evidence-types { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 10px; }
+    .evidence-types label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ink2); }
+    .evidence-types input { margin: 0; accent-color: var(--navy); }
+    .evidence-block input[type=text], .evidence-block textarea { width: 100%; font-family: inherit; font-size: 13px; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 7px; margin-top: 5px; }
+    .evidence-row { margin-bottom: 8px; }
+    .evidence-row label { font-size: 12px; font-weight: 700; color: var(--ink2); }
+
+    .save-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--navy); color: #fff; padding: 14px 24px;
+      display: flex; align-items: center; justify-content: center; gap: 18px;
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15); flex-wrap: wrap; z-index: 100;
+    }
+    .save-bar .info { font-size: 13px; color: #cbd7ec; font-weight: 600; }
+    .save-btn {
+      background: var(--gold); color: var(--navy); border: none; padding: 11px 26px;
+      border-radius: 8px; font-weight: 800; font-size: 14.5px; cursor: pointer; font-family: inherit;
+    }
+    .save-btn:hover { filter: brightness(1.05); }
+    .save-btn:disabled { opacity: .6; cursor: wait; }
+    .backup-btn { background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.4); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+    .backup-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    .toast {
+      position: fixed; top: 20px; right: 20px; background: var(--navy); color: #fff;
+      padding: 12px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); opacity: 0; transform: translateY(-8px);
+      transition: all .25s; pointer-events: none; z-index: 500;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.err { background: #8A2C2C; }
+
+    @media (max-width: 640px) {
+      .entry-fields { grid-template-columns: 1fr; }
+      .circular-paper { padding: 24px 20px; }
+      .ack-bar { margin: 0 -20px -24px; padding: 16px 20px; }
+      .hero h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo-area">
+        <img src="/static/images/jain.png" alt="Jain University" style="height: 38px; object-fit: contain;"
+          onerror="this.style.display='none'">
+        <div style="width: 1px; height: 30px; background: #e0e5f2; margin: 0 4px;"></div>
+        <div class="logo-text">
+          <div class="l1">JAIN University</div>
+          <div class="l2">Office of Academics</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="/" class="btn-profile" style="background: transparent; border: none; color: var(--navy);">← Home</a>
+        <a href="/api/logout" class="btn-profile" style="color: #b91c1c; border-color: #fca5a5; background: #fef2f2;">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════ CIRCULAR GATE ═══════════════ -->
+  <div id="gate">
+    <div class="circular-paper">
+      <div class="ref-line"><span>Ref. No.: OOA/2026-27/Acad/IEA/001</span><span>Date: 22.07.2026</span></div>
+      <h2 class="circ-title">JAIN (Deemed-to-be University) · Office of Academics · Circular</h2>
+      <h1 class="circ-main">Submission of Information on Programmes and Courses in Innovation and Emerging Areas<br>(AY 2022–23 to AY 2026–27)</h1>
+
+      <div class="to-block">
+        <b>To:</b>
+        All Deans of Schools &nbsp;•&nbsp; All Heads of Departments
+      </div>
+
+      <p class="subject"><b>Subject:</b> Collection of Information on Programmes and Courses in Innovation and Emerging Areas for AY 2022–23 to AY 2026–27</p>
+
+      <p class="body-text">The Office of Academics is preparing a comprehensive University-level report on <i>"Programmes and Courses in Innovation and Emerging Areas"</i> in accordance with the latest UGC requirements. All Schools are requested to submit the required information for the academic years AY 2022–23 to AY 2026–27 in the prescribed format below.</p>
+
+      <hr class="circ-divider">
+      <h3 style="font-size:15px;margin-bottom:14px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;">Information to be Submitted</h3>
+
+      <div class="circ-section" style="--sc:var(--a)">
+        <h3>A. New Programmes Introduced in Innovation and Emerging Areas</h3>
+        <ul><li>New programmes introduced</li><li>Innovation/Emerging area addressed</li><li>New courses introduced</li><li>Unique programme features</li><li>Industry/Academic collaborations</li></ul>
+      </div>
+      <div class="circ-section" style="--sc:var(--b)">
+        <h3>B. Innovations in Existing Programmes</h3>
+        <ul><li>Curriculum revisions</li><li>New electives/minors/majors/specialisations</li><li>Interdisciplinary pathways</li><li>Experiential learning</li><li>Research integration</li></ul>
+      </div>
+      <div class="circ-section" style="--sc:var(--c)">
+        <h3>C. Recognition by Global Professional Bodies</h3>
+        <ul><li>Accreditations</li><li>Recognitions</li><li>Certifications</li><li>Curriculum mapping</li><li>International benchmarking</li><li>Impact on student outcomes</li></ul>
+      </div>
+      <div class="circ-section" style="--sc:var(--d)">
+        <h3>D. Industry-Integrated Skilling</h3>
+        <ul><li>Industry-integrated courses</li><li>Embedded certifications</li><li>Internships/Apprenticeships</li><li>Skill-based modules</li><li>Joint delivery with industry</li><li>Industry assessment</li></ul>
+      </div>
+      <div class="circ-section" style="--sc:var(--e)">
+        <h3>E. Competency-Based Learning</h3>
+        <ul><li>OBE implementation</li><li>Competency-based curriculum</li><li>Capstone/Innovation projects</li><li>Field immersion/Clinical training</li><li>Assessment reforms</li></ul>
+      </div>
+
+      <hr class="circ-divider">
+      <h3 style="font-size:15px;margin-bottom:14px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;">Supporting Evidence</h3>
+      <ul style="font-size:13.5px;line-height:1.8;padding-left:18px;color:var(--ink2);">
+        <li>BoS Minutes</li><li>Academic Council Approval</li><li>Curriculum &amp; Syllabus</li><li>Programme Brochure</li><li>Industry MoUs</li><li>Professional Body Recognition</li><li>Assessment Rubrics</li><li>Student Project Reports</li><li>Relevant Web Links</li>
+      </ul>
+
+      <div class="circ-note">
+        <b>Submission requirement:</b> supporting evidence must be provided as a shared Google Drive link (with access granted to the Office of Academics) against each entry you submit in the tool below. Where evidence is not yet available, note clearly what is missing so it can be tracked to closure.
+      </div>
+
+      <hr class="circ-divider">
+      <h3 style="font-size:15px;margin-bottom:10px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;">General Instructions</h3>
+      <ul style="font-size:13.5px;line-height:1.8;padding-left:18px;color:var(--ink2);">
+        <li>Submit information only in the prescribed format (the tool below).</li>
+        <li>Ensure all information is complete, verified and evidence-based.</li>
+        <li>Provide supporting documents wherever applicable.</li>
+        <li>All submissions must be approved by the Dean/Head before submission.</li>
+        <li>For any clarification, Schools may contact the Office of Academics.</li>
+      </ul>
+      <p style="font-size:13px;color:var(--ink3);margin-top:22px;">Office of Academics, JAIN (Deemed-to-be University)</p>
+
+      <div class="ack-bar">
+        <div class="ack-check"><input type="checkbox" id="ackCheck"> <label for="ackCheck">I have read and understood the circular above, including the evidence requirements.</label></div>
+        <button class="ack-btn" id="ackBtn" disabled>Read and Understood — Proceed to Data Entry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MAIN APP (hidden until acknowledged) ═══════════════ -->
+  <div id="appShell" style="display:none;">
+    <div class="hero">
+      <div class="hero-inner">
+        <div class="eyebrow">Office of Academics · JAIN (Deemed-to-be University)</div>
+        <h1>Programmes &amp; Courses in Innovation and Emerging Areas</h1>
+        <p>Data collection for AY 2022-23 to AY 2026-27, as per the UGC circular. Add one entry per programme or initiative under each applicable section, for each academic year, with supporting evidence. Save regularly — entries are stored centrally and reviewed by the Office of Academics.</p>
+        <div class="sec-chips">
+          <span class="sec-chip"><span class="dot" style="background:var(--a)">A</span>New Programmes</span>
+          <span class="sec-chip"><span class="dot" style="background:var(--b)">B</span>Programme Innovations</span>
+          <span class="sec-chip"><span class="dot" style="background:var(--c)">C</span>Global Recognition</span>
+          <span class="sec-chip"><span class="dot" style="background:var(--d)">D</span>Industry Skilling</span>
+          <span class="sec-chip"><span class="dot" style="background:var(--e)">E</span>Competency Learning</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div class="school-bar">
+        <div class="school-bar-title">Identify your reporting unit</div>
+        <div class="school-bar-grid">
+          <div class="field">
+            <label for="schoolSelect">School / Centre</label>
+            <select id="schoolSelect"><option value="">Select School</option></select>
+          </div>
+          <div class="field">
+            <label for="deptSelect">Department</label>
+            <select id="deptSelect" disabled><option value="">Select School first</option></select>
+          </div>
+          <div class="field">
+            <label for="levelSelect">Programme Level</label>
+            <select id="levelSelect" disabled><option value="">Select Department first</option></select>
+          </div>
+        </div>
+        <div class="status-pill" id="statusPill">Select School, Department, and Programme Level to begin or resume a submission.</div>
+      </div>
+
+      <div id="mainArea" style="display:none;">
+        <div class="year-tabs" id="yearTabs"></div>
+        <div id="sectionsContainer"></div>
+      </div>
+    </div>
+
+    <div class="save-bar" id="saveBar" style="display:none;">
+      <button class="backup-btn" id="backupBtn">Download my data (backup)</button>
+      <button class="save-btn" id="saveBtn">Save Submission</button>
+      <div class="info" id="saveInfo">Not saved yet</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ═══ Master data injected from the server ═══ */
+    const DEPT_DATA = {{ iea_schools|tojson }};
+    const YEARS = {{ iea_years|tojson }};
+    const EVIDENCE_TYPES = {{ iea_evidence_types|tojson }};
+    const SECTIONS = {{ iea_sections|tojson }};
+
+    let state = null;
+    let activeYear = YEARS[0];
+    let dirty = false;
+
+    /* ── Gate logic ── */
+    document.getElementById('ackCheck').addEventListener('change', (e) => {
+      document.getElementById('ackBtn').disabled = !e.target.checked;
+    });
+    document.getElementById('ackBtn').addEventListener('click', () => {
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('appShell').style.display = 'block';
+      window.scrollTo(0, 0);
+    });
+
+    /* ── Cascading dropdowns ── */
+    const schoolSelect = document.getElementById('schoolSelect');
+    const deptSelect = document.getElementById('deptSelect');
+    const levelSelect = document.getElementById('levelSelect');
+
+    Object.keys(DEPT_DATA).sort().forEach(school => {
+      const opt = document.createElement('option');
+      opt.value = school; opt.textContent = school;
+      schoolSelect.appendChild(opt);
+    });
+
+    schoolSelect.addEventListener('change', () => {
+      deptSelect.innerHTML = '<option value="">Select Department</option>';
+      levelSelect.innerHTML = '<option value="">Select Department first</option>';
+      levelSelect.disabled = true;
+      const school = schoolSelect.value;
+      if (!school) { deptSelect.disabled = true; deptSelect.innerHTML = '<option value="">Select School first</option>'; return; }
+      deptSelect.disabled = false;
+      Object.keys(DEPT_DATA[school]).sort().forEach(dept => {
+        const opt = document.createElement('option');
+        opt.value = dept; opt.textContent = dept;
+        deptSelect.appendChild(opt);
+      });
+    });
+
+    deptSelect.addEventListener('change', () => {
+      levelSelect.innerHTML = '<option value="">Select Programme Level</option>';
+      const school = schoolSelect.value, dept = deptSelect.value;
+      if (!dept) { levelSelect.disabled = true; levelSelect.innerHTML = '<option value="">Select Department first</option>'; return; }
+      levelSelect.disabled = false;
+      DEPT_DATA[school][dept].forEach(level => {
+        const opt = document.createElement('option');
+        opt.value = level; opt.textContent = level;
+        levelSelect.appendChild(opt);
+      });
+    });
+
+    levelSelect.addEventListener('change', () => {
+      if (levelSelect.value) loadUnit(schoolSelect.value, deptSelect.value, levelSelect.value);
+    });
+
+    /* ── Data model ── */
+    function emptyYears() {
+      const o = {};
+      YEARS.forEach(y => { o[y] = {}; SECTIONS.forEach(s => { o[y][s.key] = []; }); });
+      return o;
+    }
+    function slugify(s) { return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
+    function genId() { return 'e' + Math.random().toString(36).slice(2, 9); }
+    function escapeHtml(str) { return String(str == null ? '' : str).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+
+    function emptyEntry(sectionKey) {
+      const s = SECTIONS.find(x => x.key === sectionKey);
+      const obj = { id: genId(), evidenceTypes: [], evidenceLink: '', evidenceMissing: '' };
+      s.fields.forEach(f => obj[f.k] = '');
+      return obj;
+    }
+
+    function mergeWithDefaults(parsed, school, dept, level) {
+      const base = {
+        school: school, department: dept, level: level,
+        years: emptyYears(), lastUpdated: (parsed && parsed.lastUpdated) || null
+      };
+      if (parsed && parsed.years) {
+        YEARS.forEach(y => {
+          if (parsed.years[y]) {
+            SECTIONS.forEach(s => {
+              if (Array.isArray(parsed.years[y][s.key])) {
+                base.years[y][s.key] = parsed.years[y][s.key].map(e => Object.assign(
+                  { evidenceTypes: [], evidenceLink: '', evidenceMissing: '' }, e
+                ));
+              }
+            });
+          }
+        });
+      }
+      return base;
+    }
+
+    function totalEntries(st) {
+      let n = 0;
+      YEARS.forEach(y => SECTIONS.forEach(s => n += st.years[y][s.key].length));
+      return n;
+    }
+
+    function unitLabel(st) {
+      return st.school + ' — ' + st.department + ' (' + st.level + ')';
+    }
+
+    async function loadUnit(school, dept, level) {
+      const statusPill = document.getElementById('statusPill');
+      statusPill.textContent = 'Loading existing submission (if any)...';
+      let parsed = null;
+      try {
+        const res = await fetch('/api/iea/load?school=' + encodeURIComponent(school) +
+          '&dept=' + encodeURIComponent(dept) + '&level=' + encodeURIComponent(level));
+        const json = await res.json();
+        if (json.ok && json.submission) parsed = json.submission;
+      } catch (err) { /* no existing submission — that's fine */ }
+      state = mergeWithDefaults(parsed, school, dept, level);
+      activeYear = YEARS[0];
+      dirty = false;
+      document.getElementById('mainArea').style.display = 'block';
+      document.getElementById('saveBar').style.display = 'flex';
+      renderYearTabs();
+      renderSections();
+      updateStatusBar();
+    }
+
+    function updateStatusBar() {
+      const pill = document.getElementById('statusPill');
+      const info = document.getElementById('saveInfo');
+      const count = totalEntries(state);
+      if (dirty) {
+        pill.textContent = 'Unsaved changes — ' + count + ' entries recorded so far for ' + unitLabel(state) + '.';
+        pill.className = 'status-pill dirty';
+        info.textContent = 'Unsaved changes';
+      } else {
+        const when = state.lastUpdated ? new Date(state.lastUpdated + (state.lastUpdated.endsWith('Z') ? '' : 'Z')).toLocaleString() : 'never';
+        pill.textContent = count + ' entries recorded for ' + unitLabel(state) + '. Last saved: ' + when + '.';
+        pill.className = 'status-pill saved';
+        info.textContent = 'Last saved: ' + when;
+      }
+    }
+
+    function renderYearTabs() {
+      const el = document.getElementById('yearTabs');
+      el.innerHTML = YEARS.map(y => {
+        const count = SECTIONS.reduce((sum, s) => sum + state.years[y][s.key].length, 0);
+        return '<button class="year-tab ' + (y === activeYear ? 'active' : '') + '" data-year="' + y + '">' + y + '<span class="tab-count">' + count + '</span></button>';
+      }).join('');
+    }
+
+    function renderSections() {
+      document.getElementById('sectionsContainer').innerHTML = SECTIONS.map(renderSectionPanel).join('');
+    }
+
+    function renderSectionPanel(s) {
+      const entries = state.years[activeYear][s.key];
+      return '' +
+        '<div class="section-panel" style="--accent:' + s.color + '">' +
+        '<div class="section-banner">' +
+        '<div class="section-num">' + s.key + '</div>' +
+        '<div class="section-title-wrap"><h3>' + s.title + '</h3><p class="section-sub">' + s.sub + '</p></div>' +
+        '<div class="entry-count">' + entries.length + ' ' + (entries.length === 1 ? 'entry' : 'entries') + '</div>' +
+        '</div>' +
+        '<div class="entries">' +
+        (entries.length === 0
+          ? '<p class="empty-hint">No entries yet for ' + activeYear + '. Click "Add Entry" below if this applies to your department.</p>'
+          : entries.map((e, i) => renderEntryCard(s, e, i)).join('')
+        ) +
+        '</div>' +
+        '<button class="add-entry-btn" data-action="add" data-section="' + s.key + '">+ Add Entry</button>' +
+        '</div>';
+    }
+
+    function renderEntryCard(s, e, idx) {
+      return '' +
+        '<div class="entry-card" data-entry="' + e.id + '">' +
+        '<div class="entry-head"><span class="entry-idx">ENTRY #' + (idx + 1) + '</span>' +
+        '<button class="remove-btn" data-action="remove" data-section="' + s.key + '" data-entry="' + e.id + '" title="Remove entry">Remove ✕</button>' +
+        '</div>' +
+        '<div class="entry-fields">' +
+        s.fields.map(f => renderField(s, e, f)).join('') +
+        renderEvidenceBlock(s, e) +
+        '</div>' +
+        '</div>';
+    }
+
+    function renderField(s, e, f) {
+      const val = e[f.k] || '';
+      const common = 'data-section="' + s.key + '" data-entry="' + e.id + '" data-field="' + f.k + '"';
+      if (f.t === 'textarea') {
+        return '<label class="field-label full">' + f.l + '<textarea ' + common + ' rows="2" placeholder="' + escapeHtml(f.ph || '') + '">' + escapeHtml(val) + '</textarea></label>';
+      }
+      return '<label class="field-label">' + f.l + '<input type="text" ' + common + ' value="' + escapeHtml(val) + '" placeholder="' + escapeHtml(f.ph || '') + '"/></label>';
+    }
+
+    function renderEvidenceBlock(s, e) {
+      const common = 'data-section="' + s.key + '" data-entry="' + e.id + '"';
+      const checks = EVIDENCE_TYPES.map(type => {
+        const checked = e.evidenceTypes && e.evidenceTypes.indexOf(type) > -1 ? 'checked' : '';
+        return '<label><input type="checkbox" ' + common + ' data-field="evidenceTypes" data-value="' + escapeHtml(type) + '" ' + checked + '>' + type + '</label>';
+      }).join('');
+      return '' +
+        '<div class="evidence-block">' +
+        '<h5>Supporting Evidence</h5>' +
+        '<div class="evidence-types">' + checks + '</div>' +
+        '<div class="evidence-row">' +
+        '<label>Google Drive link (shared with access to Office of Academics)</label>' +
+        '<input type="text" ' + common + ' data-field="evidenceLink" value="' + escapeHtml(e.evidenceLink || '') + '" placeholder="https://drive.google.com/...">' +
+        '</div>' +
+        '<div class="evidence-row">' +
+        '<label>What is missing (if evidence is not yet available)</label>' +
+        '<textarea ' + common + ' data-field="evidenceMissing" rows="2" placeholder="e.g., Academic Council approval pending, expected by...">' + escapeHtml(e.evidenceMissing || '') + '</textarea>' +
+        '</div>' +
+        '</div>';
+    }
+
+    function addEntry(sectionKey) {
+      state.years[activeYear][sectionKey].push(emptyEntry(sectionKey));
+      dirty = true;
+      renderYearTabs();
+      renderSections();
+      updateStatusBar();
+    }
+
+    function removeEntry(sectionKey, entryId) {
+      if (!confirm('Remove this entry? This cannot be undone until you reload without saving.')) return;
+      const arr = state.years[activeYear][sectionKey];
+      state.years[activeYear][sectionKey] = arr.filter(e => e.id !== entryId);
+      dirty = true;
+      renderYearTabs();
+      renderSections();
+      updateStatusBar();
+    }
+
+    function updateField(sectionKey, entryId, fieldKey, value) {
+      const arr = state.years[activeYear][sectionKey];
+      const entry = arr.find(e => e.id === entryId);
+      if (entry) { entry[fieldKey] = value; dirty = true; updateStatusBar(); }
+    }
+
+    function toggleEvidenceType(sectionKey, entryId, value, checked) {
+      const arr = state.years[activeYear][sectionKey];
+      const entry = arr.find(e => e.id === entryId);
+      if (!entry) return;
+      if (!Array.isArray(entry.evidenceTypes)) entry.evidenceTypes = [];
+      const idx = entry.evidenceTypes.indexOf(value);
+      if (checked && idx === -1) entry.evidenceTypes.push(value);
+      if (!checked && idx > -1) entry.evidenceTypes.splice(idx, 1);
+      dirty = true;
+      updateStatusBar();
+    }
+
+    function showToast(msg, isErr) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show' + (isErr ? ' err' : '');
+      setTimeout(() => t.className = 'toast', 2400);
+    }
+
+    async function saveSubmission() {
+      if (!state) { showToast('Please select School, Department, and Programme Level first.', true); return; }
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/iea/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            school: state.school,
+            department: state.department,
+            level: state.level,
+            years: state.years
+          })
+        });
+        const json = await res.json();
+        if (json.ok) {
+          state.lastUpdated = json.lastUpdated;
+          dirty = false;
+          updateStatusBar();
+          showToast('Saved successfully');
+        } else {
+          showToast('Save failed: ' + (json.error || 'please try again.'), true);
+        }
+      } catch (err) {
+        showToast('Save failed: ' + err.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function downloadBackup() {
+      if (!state) return;
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'IEA_' + slugify(state.school) + '_' + slugify(state.department) + '_' + slugify(state.level) + '_backup.json';
+      a.click();
+    }
+
+    document.getElementById('yearTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.year-tab');
+      if (!btn) return;
+      activeYear = btn.dataset.year;
+      renderYearTabs();
+      renderSections();
+    });
+
+    document.getElementById('sectionsContainer').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'add') addEntry(btn.dataset.section);
+      if (btn.dataset.action === 'remove') removeEntry(btn.dataset.section, btn.dataset.entry);
+    });
+
+    document.getElementById('sectionsContainer').addEventListener('input', (e) => {
+      const t = e.target;
+      if (t.type === 'checkbox' && t.dataset.field === 'evidenceTypes') return;
+      if (t.dataset.field) {
+        updateField(t.dataset.section, t.dataset.entry, t.dataset.field, t.value);
+      }
+    });
+
+    document.getElementById('sectionsContainer').addEventListener('change', (e) => {
+      const t = e.target;
+      if (t.type === 'checkbox' && t.dataset.field === 'evidenceTypes') {
+        toggleEvidenceType(t.dataset.section, t.dataset.entry, t.dataset.value, t.checked);
+      }
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', saveSubmission);
+    document.getElementById('backupBtn').addEventListener('click', downloadBackup);
+
+    window.addEventListener('beforeunload', (e) => {
+      if (dirty) { e.preventDefault(); e.returnValue = ''; }
+    });
+  </script>
+</body>
+
+</html>
