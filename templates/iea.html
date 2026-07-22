@@ -30,6 +30,8 @@
       --a: #C9A227; --b: #2F6F4E; --c: #2C5F8A; --d: #A85C2C; --e: #6B4A8A;
     }
 
+    html { scroll-behavior: smooth; }
+
     body {
       background-color: var(--bg);
       background-image:
@@ -40,6 +42,41 @@
       color: var(--ink);
       min-height: 100vh;
     }
+
+    /* ── Circular reading progress ── */
+    #readProgressWrap {
+      position: fixed;
+      top: 68px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: #e8ecf5;
+      z-index: 300;
+    }
+
+    #readProgressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--gold), #ffc93d);
+      transition: width 0.1s linear;
+    }
+
+    #readProgressLabel {
+      position: fixed;
+      top: 80px;
+      right: 16px;
+      background: var(--navy);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 5px 13px;
+      border-radius: 999px;
+      z-index: 300;
+      box-shadow: 0 4px 12px rgba(10, 37, 88, 0.28);
+      transition: background 0.25s;
+    }
+
+    #readProgressLabel.done { background: #2F6F4E; }
 
     h1, h2, h3, h4 { font-family: 'Playfair Display', serif; }
 
@@ -144,8 +181,18 @@
     .circ-divider { border: none; border-top: 1px solid var(--border); margin: 26px 0; }
     .circ-note { background: #fff8eb; border: 1px solid var(--gold); border-radius: 10px; padding: 14px 16px; font-size: 13px; color: #9e6f00; margin: 20px 0; font-weight: 500; }
     .ack-bar { position: sticky; bottom: 0; background: #fff; border-top: 1px solid var(--border); margin: 0 -42px -38px; padding: 18px 42px; text-align: center; border-radius: 0 0 16px 16px; }
+    .ack-hint {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 700; color: #9e6f00;
+      background: #fff8eb; border: 1px solid var(--gold);
+      border-radius: 999px; padding: 6px 16px; margin-bottom: 12px;
+      transition: all 0.25s;
+    }
+    .ack-hint.done { color: #2F6F4E; background: #edf7f1; border-color: #2F6F4E; }
     .ack-check { display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 13px; color: var(--ink3); margin-bottom: 14px; }
     .ack-check input { accent-color: var(--navy); width: 16px; height: 16px; }
+    .ack-check input:disabled { cursor: not-allowed; opacity: .5; }
+    .ack-check.locked label { opacity: .55; }
     .ack-btn {
       background: var(--navy); color: #fff; border: none; padding: 13px 34px;
       border-radius: 9px; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit;
@@ -173,7 +220,15 @@
     .status-pill.dirty { color: #A85C2C; }
     .status-pill.saved { color: #2F6F4E; }
 
-    .year-tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+    .year-tabs {
+      display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;
+      position: sticky; top: 68px; z-index: 90;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
     .year-tab {
       background: #fff; border: 1.5px solid var(--border); color: var(--ink);
       padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 700;
@@ -203,7 +258,9 @@
     .entry-count { margin-left: auto; font-size: 12px; color: var(--ink3); background: #f8fafc; border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; white-space: nowrap; font-weight: 700; }
     .entries { padding: 14px 20px 4px; }
     .empty-hint { color: var(--ink3); font-size: 13.5px; font-style: italic; margin: 6px 0 16px; }
-    .entry-card { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; background: #fcfdff; }
+    .entry-card { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; background: #fcfdff; animation: cardIn 0.25s ease; transition: box-shadow 0.3s; }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .entry-card.flash { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
     .entry-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .entry-idx { font-size: 11.5px; font-weight: 800; color: var(--accent); letter-spacing: .05em; }
     .remove-btn { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 13px; line-height: 1; padding: 4px 6px; border-radius: 6px; font-family: inherit; font-weight: 600; }
@@ -246,7 +303,7 @@
       border-radius: 8px; font-weight: 800; font-size: 14.5px; cursor: pointer; font-family: inherit;
     }
     .save-btn:hover { filter: brightness(1.05); }
-    .save-btn:disabled { opacity: .6; cursor: wait; }
+    .save-btn:disabled { opacity: .55; cursor: not-allowed; }
     .backup-btn { background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.4); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
     .backup-btn:hover { border-color: var(--gold); color: var(--gold); }
 
@@ -286,6 +343,10 @@
       </div>
     </div>
   </header>
+
+  <!-- Reading progress (visible only while the circular gate is open) -->
+  <div id="readProgressWrap"><div id="readProgressBar"></div></div>
+  <div id="readProgressLabel">0% read</div>
 
   <!-- ═══════════════ CIRCULAR GATE ═══════════════ -->
   <div id="gate">
@@ -349,7 +410,8 @@
       <p style="font-size:13px;color:var(--ink3);margin-top:22px;">Office of Academics, JAIN (Deemed-to-be University)</p>
 
       <div class="ack-bar">
-        <div class="ack-check"><input type="checkbox" id="ackCheck"> <label for="ackCheck">I have read and understood the circular above, including the evidence requirements.</label></div>
+        <div class="ack-hint" id="ackHint">⬇ Scroll through the entire circular to enable acknowledgement</div>
+        <div class="ack-check locked" id="ackCheckWrap"><input type="checkbox" id="ackCheck" disabled> <label for="ackCheck">I have read and understood the circular above, including the evidence requirements.</label></div>
         <button class="ack-btn" id="ackBtn" disabled>Read and Understood — Proceed to Data Entry</button>
       </div>
     </div>
@@ -418,12 +480,43 @@
     let activeYear = YEARS[0];
     let dirty = false;
 
-    /* ── Gate logic ── */
+    /* ── Gate logic: must scroll through the full circular before acknowledging ── */
+    let readComplete = false;
+    const progressBar = document.getElementById('readProgressBar');
+    const progressLabel = document.getElementById('readProgressLabel');
+
+    function updateReadProgress() {
+      if (document.getElementById('gate').style.display === 'none') return;
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - window.innerHeight;
+      const p = max <= 0 ? 1 : Math.min(1, window.scrollY / max);
+      const pct = Math.round(p * 100);
+      progressBar.style.width = pct + '%';
+      if (!readComplete) progressLabel.textContent = pct + '% read';
+      if (p >= 0.98 && !readComplete) {
+        readComplete = true;
+        progressLabel.textContent = '✓ Fully read';
+        progressLabel.classList.add('done');
+        const check = document.getElementById('ackCheck');
+        check.disabled = false;
+        document.getElementById('ackCheckWrap').classList.remove('locked');
+        const hint = document.getElementById('ackHint');
+        hint.textContent = '✓ Circular fully read — tick the box below to proceed';
+        hint.classList.add('done');
+      }
+    }
+    window.addEventListener('scroll', updateReadProgress, { passive: true });
+    window.addEventListener('resize', updateReadProgress);
+    window.addEventListener('load', updateReadProgress);
+    updateReadProgress();
+
     document.getElementById('ackCheck').addEventListener('change', (e) => {
       document.getElementById('ackBtn').disabled = !e.target.checked;
     });
     document.getElementById('ackBtn').addEventListener('click', () => {
       document.getElementById('gate').style.display = 'none';
+      document.getElementById('readProgressWrap').style.display = 'none';
+      progressLabel.style.display = 'none';
       document.getElementById('appShell').style.display = 'block';
       window.scrollTo(0, 0);
     });
@@ -541,6 +634,16 @@
       const pill = document.getElementById('statusPill');
       const info = document.getElementById('saveInfo');
       const count = totalEntries(state);
+      // Submit only unlocks once something has actually been filled in
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = (count === 0);
+      saveBtn.title = count === 0 ? 'Add at least one entry before submitting' : '';
+      if (count === 0) {
+        pill.textContent = 'No entries yet for ' + unitLabel(state) + '. Add entries under the applicable sections to enable submission.';
+        pill.className = 'status-pill';
+        info.textContent = 'Add at least one entry to submit';
+        return;
+      }
       if (dirty) {
         pill.textContent = 'Unsaved changes — ' + count + ' entries recorded so far for ' + unitLabel(state) + '.';
         pill.className = 'status-pill dirty';
@@ -667,11 +770,47 @@
       const t = document.getElementById('toast');
       t.textContent = msg;
       t.className = 'toast show' + (isErr ? ' err' : '');
-      setTimeout(() => t.className = 'toast', 2400);
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.className = 'toast', isErr ? 4200 : 2400);
+    }
+
+    function findIncompleteEntry() {
+      // Every entry must at least have its primary field (first field of the section) filled.
+      for (const y of YEARS) {
+        for (const s of SECTIONS) {
+          const arr = state.years[y][s.key];
+          for (let i = 0; i < arr.length; i++) {
+            const e = arr[i];
+            if (!String(e[s.fields[0].k] || '').trim()) {
+              return { year: y, section: s, idx: i, entry: e };
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function highlightEntry(bad) {
+      activeYear = bad.year;
+      renderYearTabs();
+      renderSections();
+      const el = document.querySelector('.entry-card[data-entry="' + bad.entry.id + '"]');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 2500);
+      }
     }
 
     async function saveSubmission() {
       if (!state) { showToast('Please select School, Department, and Programme Level first.', true); return; }
+      if (totalEntries(state) === 0) { showToast('Add at least one entry before submitting.', true); return; }
+      const bad = findIncompleteEntry();
+      if (bad) {
+        showToast('Entry #' + (bad.idx + 1) + ' in Section ' + bad.section.key + ' (' + bad.year + ') needs "' + bad.section.fields[0].l + '" filled before you can submit.', true);
+        highlightEntry(bad);
+        return;
+      }
       const btn = document.getElementById('saveBtn');
       btn.disabled = true;
       try {
