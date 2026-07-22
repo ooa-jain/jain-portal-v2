@@ -279,9 +279,17 @@ IEA_SCHOOLS = {
 
 IEA_YEARS = ['AY 2022-23', 'AY 2023-24', 'AY 2024-25', 'AY 2025-26', 'AY 2026-27']
 
-IEA_EVIDENCE_TYPES = ['BoS Minutes', 'Academic Council Approval', 'Curriculum & Syllabus',
-                      'Programme Brochure', 'Industry MoUs', 'Professional Body Recognition',
-                      'Assessment Rubrics', 'Student Project Reports', 'Relevant Web Links']
+IEA_EVIDENCE_TYPES = [
+    'Academic Council Approval',
+    'Curriculum & Syllabus',
+    'Programme Brochure',
+    'Industry MoUs',
+    'Professional Body Recognition',
+    'Assessment Rubrics',
+    'Student Project Reports',
+    'Relevant Web Links',
+    'Google Drive link (shared with access to Office of Academics)'
+]
 
 IEA_SECTIONS = [
     {"key": "A", "color": "#C9A227", "title": "New Programmes Introduced",
@@ -294,10 +302,14 @@ IEA_SECTIONS = [
          {"k": "uniqueFeatures", "l": "Unique programme features", "t": "textarea"},
          {"k": "collaborations", "l": "Industry / Academic collaborations", "t": "textarea"},
      ]},
-    {"key": "B", "color": "#2F6F4E", "title": "Innovations in Existing Programmes",
-     "sub": "Significant innovations introduced in existing programmes",
+    {"key": "B", "color": "#2F6F4E", "title": "Innovations in Existing Programmes & Courses",
+     "sub": "Significant innovations, course-level enhancements, OBE mapping, and in-time execution",
      "fields": [
-         {"k": "programme", "l": "Programme Name", "t": "text"},
+         {"k": "programme", "l": "Programme Name", "t": "text", "ph": "e.g., B.Tech CSE / M.Sc Data Science"},
+         {"k": "courseCode", "l": "Course Code", "t": "text", "ph": "e.g., 22CSE301 / MAT102"},
+         {"k": "courseName", "l": "Course Name", "t": "text", "ph": "e.g., Advanced AI & Machine Learning"},
+         {"k": "obeDetails", "l": "OBE Integration & CO-PO Alignment", "t": "textarea", "ph": "Details on Outcome-Based Education & CO-PO attainment alignment..."},
+         {"k": "inTimeDetails", "l": "In-Time Execution & Delivery Timeline", "t": "textarea", "ph": "Workflow, session timeline, and in-time course delivery details..."},
          {"k": "curriculumRevisions", "l": "Curriculum revisions", "t": "textarea"},
          {"k": "newElectives", "l": "New electives / minors / majors / specialisations", "t": "textarea"},
          {"k": "interdisciplinary", "l": "Interdisciplinary pathways", "t": "textarea"},
@@ -335,6 +347,13 @@ IEA_SECTIONS = [
          {"k": "capstone", "l": "Capstone / Innovation projects", "t": "textarea"},
          {"k": "fieldImmersion", "l": "Field immersion / Clinical training", "t": "textarea"},
          {"k": "assessmentReforms", "l": "Assessment reforms", "t": "textarea"},
+     ]},
+    {"key": "F", "color": "#E11D48", "title": "Portal Feedback & Experience",
+     "sub": "Share your feedback and experience on the JAIN Sarathi Portal",
+     "fields": [
+         {"k": "doYouLikePortal", "l": "Do you like the portal / application?", "t": "text", "ph": "e.g., Yes, excellent experience & smooth workflow!"},
+         {"k": "portalRating", "l": "Overall Satisfaction Level (1 to 10 Star Scale)", "t": "rating10"},
+         {"k": "feedbackComments", "l": "Detailed Feedback & Feature Suggestions", "t": "textarea", "ph": "Share your thoughts, feedback, or requested feature enhancements..."},
      ]},
 ]
 
@@ -876,6 +895,77 @@ def iea_save():
     iea_col.update_one({'school': school, 'department': dept, 'level': level},
                        {'$set': doc}, upsert=True)
     return jsonify({'ok': True, 'lastUpdated': doc['lastUpdated']})
+
+@app.route('/api/iea/submissions')
+def iea_submissions():
+    if 'user_email' not in session and not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    
+    subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
+    results = []
+    for s in subs:
+        sid = str(s['_id'])
+        merged_years = _iea_merge_years(s.get('years'))
+        total_entries = 0
+        year_counts = {}
+        for y in IEA_YEARS:
+            count = sum(len(merged_years.get(y, {}).get(sec['key'], [])) for sec in IEA_SECTIONS)
+            year_counts[y] = count
+            total_entries += count
+        
+        results.append({
+            'id': sid,
+            'school': s.get('school', ''),
+            'department': s.get('department', ''),
+            'level': s.get('level', ''),
+            'lastUpdated': s.get('lastUpdated', ''),
+            'submitterEmail': s.get('submitterEmail', ''),
+            'submitterName': s.get('submitterName', ''),
+            'totalEntries': total_entries,
+            'yearCounts': year_counts
+        })
+    return jsonify({'ok': True, 'submissions': results})
+
+@app.route('/api/iea/upload', methods=['POST'])
+def iea_upload():
+    if 'user_email' not in session and not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    if 'file' not in request.files:
+        return jsonify({'ok': False, 'error': 'No file uploaded'})
+    file = request.files['file']
+    if not file or file.filename == '':
+        return jsonify({'ok': False, 'error': 'Empty filename'})
+    
+    upload_dir = os.path.join('static', 'uploads', 'iea')
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    ext = os.path.splitext(file.filename)[1].lower()
+    allowed = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.png', '.jpg', '.jpeg', '.zip', '.rar', '.txt', '.csv']
+    if ext not in allowed:
+        return jsonify({'ok': False, 'error': f'File extension {ext} is not supported. Please upload PDF, Word, Excel, image, or ZIP files.'})
+    
+    raw_name = secure_filename(file.filename)
+    if not raw_name:
+        raw_name = f"evidence_{secrets.token_hex(4)}{ext}"
+    else:
+        raw_name = f"{secrets.token_hex(4)}_{raw_name}"
+    
+    filepath = os.path.join(upload_dir, raw_name)
+    file.save(filepath)
+    file_url = f"/static/uploads/iea/{raw_name}"
+    return jsonify({'ok': True, 'url': file_url, 'filename': file.filename})
+
+@app.route('/api/iea/delete/<sid>', methods=['POST'])
+def iea_user_delete(sid):
+    if 'user_email' not in session and not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    try:
+        res = iea_col.delete_one({'_id': ObjectId(sid)})
+        if res.deleted_count > 0:
+            return jsonify({'ok': True})
+        return jsonify({'ok': False, 'error': 'Submission not found'})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)})
 
 @app.route('/admin/iea')
 def admin_iea():

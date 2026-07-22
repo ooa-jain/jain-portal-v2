@@ -138,6 +138,129 @@
       text-align: center;
       cursor: pointer;
       text-decoration: none;
+      transition: transform .25s ease, box-shadow .25s ease;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    /* ── React Bits SplitText Animation ── */
+    .split-parent {
+      display: inline-block;
+      overflow: hidden;
+      vertical-align: top;
+    }
+    .split-word {
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .split-char {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(32px) scale(0.96);
+      animation: splitCharIn 0.7s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+      will-change: transform, opacity;
+    }
+    @keyframes splitCharIn {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* ── Homepage Stats & Info Section ── */
+    .hero-stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 16px 0 32px;
+    }
+    .stat-badge-card {
+      background: #ffffff;
+      border: 1.5px solid #dde3f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+      transition: all .2s ease;
+    }
+    .stat-badge-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--navy);
+      box-shadow: 0 8px 24px rgba(10,37,88,0.08);
+    }
+    .stat-badge-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--accent-col, var(--navy)) 12%, #ffffff);
+      color: var(--accent-col, var(--navy));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-badge-num {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1.15;
+    }
+    .stat-badge-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink3);
+      margin-top: 2px;
+    }
+
+    .home-features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 24px;
+    }
+    .feature-card {
+      background: #ffffff;
+      border: 1.5px solid #dde3f0;
+      border-radius: 14px;
+      padding: 22px 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+      transition: all .2s ease;
+    }
+    .feature-card:hover {
+      border-color: var(--navy);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 28px rgba(10,37,88,0.08);
+    }
+    .feature-card-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: #f1f5f9;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+    .feature-card h4 {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .feature-card p {
+      font-size: 12.5px;
+      color: var(--ink2);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+      .hero-stats-row { grid-template-columns: repeat(2, 1fr); }
+      .home-features-grid { grid-template-columns: 1fr; }
+    }
       color: inherit;
       border: 2px solid transparent;
       transition: 0.2s;
@@ -680,13 +803,15 @@
           onerror="this.style.display='none'">
         <div style="width: 1px; height: 30px; background: #e0e5f2; margin: 0 4px;"></div>
         <div class="logo-text">
-          <div class="l1">JAIN University</div>
-          <div class="l2">Office of Academics</div>
+          <div class="l1"><span style="color:#0a2558; font-weight:800;">JAIN</span> <span style="color:#16a34a; font-weight:800;">Sarathi</span></div>
+          <div class="l2">JAIN (Deemed-to-be University)</div>
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 14px; margin-left: auto;">
-        <button class="notif-bell mobile-bell" onclick="toggleNotifPanel(event)" aria-label="Notifications">🔔<span
-            class="notif-badge" style="display:none">0</span></button>
+        <button class="notif-bell mobile-bell" onclick="toggleNotifPanel(event)" aria-label="Notifications" title="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-badge" style="display:none">0</span>
+        </button>
         <button class="hamburger-menu" id="hamburgerMenu" onclick="toggleMobileMenu()" aria-label="Toggle Navigation">
           <span></span>
           <span></span>
@@ -694,8 +819,6 @@
         </button>
       </div>
       <div class="hdr-right" id="hdrRight" style="display: flex; align-items: center; gap: 12px;">
-        <button class="notif-bell desktop-bell" onclick="toggleNotifPanel(event)" aria-label="Notifications">🔔<span
-            class="notif-badge" style="display:none">0</span></button>
         <a href="/" class="btn-profile"
           style="background: transparent; border: none; color: var(--navy); box-shadow: none;">Home</a>
         <a href="/analysis" class="btn-profile"
@@ -709,6 +832,10 @@
           style="background: transparent; border: none; color: var(--navy); box-shadow: none;">Workflow</button>
         <button class="btn-profile" onclick="startTour()"
           style="background: transparent; border: none; color: var(--navy); box-shadow: none;">Take Tour</button>
+        <button class="notif-bell desktop-bell" onclick="toggleNotifPanel(event)" aria-label="Notifications" title="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-badge" style="display:none">0</span>
+        </button>
         <button id="profileBtn" class="btn-profile"
           style="border-color: var(--navy); background: var(--navy); color: #fff;" onclick="openProfile()"
           data-intro="Update your department profile here." data-step="3">
@@ -716,7 +843,7 @@
         </button>
         <a id="pwaMobileMenuInstallBtn" href="#" class="btn-profile"
           style="display: none; color: #0284c7; border-color: #bae6fd; background: #e0f2fe; font-weight: bold;"
-          onclick="triggerPwaInstall(); return false;">📱 Download App</a>
+          onclick="triggerPwaInstall(); return false;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Download App</a>
         <a href="/api/logout" class="btn-profile"
           style="color: var(--danger); border-color: #fca5a5; background: #fef2f2;">Logout</a>
       </div>
@@ -724,45 +851,18 @@
   </header>
 
   <div class="page-wrap">
-    <!-- Native OS Notification Banner -->
-    <div id="notifPermissionBanner"
-      style="display: none; background: linear-gradient(135deg, #e0f2fe, #bae6fd); border: 1.5px solid #7dd3fc; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; flex-direction: column; gap: 14px; box-shadow: var(--sh); align-items: stretch; text-align: left;">
-      <div style="display: flex; align-items: flex-start; gap: 12px;">
-        <div style="font-size: 24px; line-height: 1;">🔔</div>
-        <div>
-          <div style="font-weight: 700; color: #0369a1; font-size: 14px; line-height: 1.2;">Enable Mobile OS Push
-            Notifications</div>
-          <div style="font-size: 11px; color: #0284c7; margin-top: 4px; line-height: 1.4;">Stay updated on deadline
-            extensions and announcements instantly on your phone's lock screen!</div>
-        </div>
-      </div>
-      <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button class="btn"
-          style="background: transparent; color: #0369a1; border: 1px solid #7dd3fc; padding: 6px 14px; font-size: 11px;"
-          onclick="dismissNotifBanner()">Later</button>
-        <button class="btn"
-          style="background: #0284c7; color: #fff; border: none; font-weight: 700; padding: 6px 14px; font-size: 11px;"
-          onclick="requestNotifPermission()">Enable Now</button>
-      </div>
-    </div>
-
     <div class="page-heading"
-      style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 28px;">
+      style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
       <div>
-        <h2>Welcome to Office of Academics Portal, Hi {{ user.name }}!</h2>
-        <p style="color:var(--ink3); margin-top:8px;">Please select the module you wish to access</p>
+        <h2 class="split-text-anim">Welcome to <span style="color:#0a2558; font-weight:800;">JAIN</span> <span style="color:#16a34a; font-weight:800;">Sarathi</span> Portal, Hi {{ user.name }}!</h2>
+        <p style="color:var(--ink3); margin-top:8px;">Comprehensive Portal for Office of Academics Submissions &amp; Academic Governance</p>
       </div>
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <button class="btn"
           style="background: transparent; border: 1.5px solid var(--navy); color: var(--navy); padding: 8px 16px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.3s;"
           onclick="openWorkflowModal()">
-          📋 View Portal Workflow
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> View Portal Workflow
         </button>
-        <div id="pushStatusBadge"
-          style="cursor: pointer; font-size: 11px; font-weight: 700; padding: 8px 16px; border-radius: 20px; display: flex; align-items: center; gap: 8px; box-shadow: var(--sh); transition: all 0.3s ease;"
-          onclick="togglePushNotificationPermission()">
-          <span>Checking notification status...</span>
-        </div>
       </div>
     </div>
 
@@ -770,13 +870,15 @@
       {% if settings.readiness_enabled %}
       <a href="/readiness" class="dash-card" data-intro="Click here to prepare and submit the readiness report."
         data-step="1">
-        <div class="card-icon">📋</div>
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;color:var(--navy);"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        </div>
         <div class="card-title">Semester Readiness</div>
         <div class="card-desc">Prepare and submit the readiness report before the start of the semester.</div>
         <button class="btn">Go to Readiness</button>
         {% if settings.readiness_deadline %}
         <div class="notice" style="margin-top:20px;">
-          ⚠ Last day to submission is {{ settings.readiness_deadline }}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Last day to submission is {{ settings.readiness_deadline }}
         </div>
         {% endif %}
       </a>
@@ -785,13 +887,15 @@
       {% if settings.closure_enabled %}
       <a href="/closure" class="dash-card"
         data-intro="Click here to compile and submit the closure report at the end of the semester." data-step="2">
-        <div class="card-icon">✅</div>
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;color:#16a34a;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
         <div class="card-title">Semester Closure</div>
         <div class="card-desc">Compile and submit the closure report at the end of the semester.</div>
         <button class="btn">Go to Closure</button>
         {% if settings.closure_deadline %}
         <div class="notice" style="margin-top:20px;">
-          ⚠ Last day to submission is {{ settings.closure_deadline }}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Last day to submission is {{ settings.closure_deadline }}
         </div>
         {% endif %}
       </a>
@@ -799,22 +903,56 @@
 
       {% if settings.iea_enabled %}
       <a href="/iea" class="dash-card"
-        data-intro="Submit your department's information on Programmes and Courses in Innovation and Emerging Areas (Sections A–E)."
+        data-intro="Submit your department's information on Programmes and Courses in Innovation and Emerging Areas (Sections A–F)."
         data-step="4">
         <span class="badge-new">New</span>
-        <div class="card-icon">💡</div>
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;color:var(--navy);"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </div>
         <div class="card-title">Innovation &amp; Emerging Areas</div>
-        <div class="card-desc">Submission of Information on Programmes and Courses in Innovation and Emerging Areas (AY 2022-23 to AY 2026-27), as per the UGC circular — Sections A to E with supporting evidence.</div>
+        <div class="card-desc">Submission of Information on Programmes and Courses in Innovation and Emerging Areas (AY 2022-23 to AY 2026-27), as per the UGC circular — Sections A to F with supporting evidence.</div>
         <button class="btn">Go to IEA Submission</button>
       </a>
       {% endif %}
+    </div>
+
+    <!-- Strategic Governance Features Grid -->
+    <div style="margin-top: 48px; border-top: 1px dashed #dde3f0; padding-top: 36px;">
+      <h3 class="split-text-anim" style="font-family:'Playfair Display',serif; font-size:24px; color:var(--navy); text-align:center; margin-bottom:8px;">Office of Academics Governance Framework</h3>
+      <p style="text-align:center; color:var(--ink3); font-size:13px; margin-bottom:28px;">Streamlined digital reporting for academic preparedness, quality assurance, and regulatory compliance.</p>
+
+      <div class="home-features-grid">
+        <div class="feature-card">
+          <div class="feature-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <h4>Semester Readiness</h4>
+          <p>Pre-semester verification of course handbooks, lab infrastructure, lesson plans, and faculty course allocations across all departments.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h4>Semester Closure Audit</h4>
+          <p>End-of-term audit covering syllabus completion, assessment rubrics, CO-PO attainment analysis, and grade submission sign-offs.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <h4>Innovation &amp; Emerging Areas</h4>
+          <p>UGC circular compliance covering multidisciplinary programmes, OBE alignment, industry-integrated skilling, and evidence repository.</p>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Notification Bell Panel -->
   <div class="notif-panel" id="notifPanel">
     <div class="notif-head">
-      <b>🔔 Notifications</b>
+      <b><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Notifications</b>
       <button class="notif-clear" onclick="clearAllNotifs()">Clear all</button>
     </div>
     <div class="notif-list" id="notifList"></div>
@@ -882,6 +1020,68 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/intro.min.js"></script>
   <script>
+    function initSplitText() {
+      const targets = document.querySelectorAll('.split-text-anim');
+      targets.forEach(el => {
+        if (el.dataset.splitInit) return;
+        el.dataset.splitInit = 'true';
+
+        const processNode = (node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent;
+            if (!text || !text.trim()) return document.createTextNode(text);
+            const frag = document.createDocumentFragment();
+            const words = text.split(' ');
+            let charIndex = 0;
+            words.forEach((wordText, wIdx) => {
+              if (wordText) {
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'split-word';
+                const chars = wordText.split('');
+                chars.forEach((c) => {
+                  const charSpan = document.createElement('span');
+                  charSpan.className = 'split-char';
+                  charSpan.textContent = c;
+                  charSpan.style.animationDelay = (charIndex * 30) + 'ms';
+                  wordSpan.appendChild(charSpan);
+                  charIndex++;
+                });
+                frag.appendChild(wordSpan);
+              }
+              if (wIdx < words.length - 1) {
+                const space = document.createElement('span');
+                space.className = 'split-char';
+                space.innerHTML = '&nbsp;';
+                space.style.animationDelay = (charIndex * 30) + 'ms';
+                frag.appendChild(space);
+                charIndex++;
+              }
+            });
+            return frag;
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const clone = node.cloneNode(false);
+            Array.from(node.childNodes).forEach(child => {
+              const res = processNode(child);
+              if (res) clone.appendChild(res);
+            });
+            return clone;
+          }
+          return null;
+        };
+
+        const newFrag = document.createDocumentFragment();
+        Array.from(el.childNodes).forEach(child => {
+          const res = processNode(child);
+          if (res) newFrag.appendChild(res);
+        });
+        el.innerHTML = '';
+        el.classList.add('split-parent');
+        el.appendChild(newFrag);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', initSplitText);
+
     function toggleMobileMenu() {
       const burger = document.getElementById('hamburgerMenu');
       const drawer = document.getElementById('hdrRight');
