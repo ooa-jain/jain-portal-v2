@@ -35,6 +35,7 @@ client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 submissions_col = db['submissions']
 faculty_submissions_col = db['faculty_submissions']  # Faculty's individual checklist submissions (for both readiness & closure)
+iea_col = db['iea_submissions']  # Innovation & Emerging Areas programme/course submissions
 users_col = db['users']
 settings_col = db['settings']
 
@@ -209,6 +210,132 @@ FACULTY_CLOSURE_SECTIONS = [
         {"id": "FC22", "text": "TD-PCL Report (batches, students, faculty, project title, progress)"},
         {"id": "FC23", "text": "Internship Report — Groups"},
     ]},
+]
+
+# ══════════════════════════════════════════════════════════════════
+# IEA — PROGRAMMES & COURSES IN INNOVATION AND EMERGING AREAS
+# (UGC circular: data collection AY 2022-23 to AY 2026-27)
+# ══════════════════════════════════════════════════════════════════
+IEA_SCHOOLS = {
+    "School of Sciences": {
+        "Department of Chemistry & Biochemistry": ["UG"],
+        "Department of Computer Science & IT": ["UG"],
+        "Department of Data Analytics & Mathematical Sciences": ["UG"],
+        "Department of Forensic Science": ["UG"],
+        "Department of Microbiology & Botany": ["UG"],
+        "Department of Physics & Electronics": ["UG"],
+        "Department of Psychology & Allied Science": ["UG"],
+    },
+    "School of Commerce": {
+        "Department of Commerce": ["UG", "PG", "Doctoral"],
+    },
+    "School of Computer Science & Information Technology": {
+        "Department of Animation & Virtual Reality": ["UG", "PG"],
+        "Department of Computer Science & Information Technology": ["UG", "PG"],
+    },
+    "School of Engineering & Technology": {
+        "Department of Civil Engineering": ["UG", "PG"],
+        "Department of Computer Science & Engineering": ["UG", "PG"],
+        "Department of Electrical & Electronics Engineering": ["UG", "PG"],
+        "Department of Electronics & Communication Engineering": ["UG", "PG"],
+        "Department of Food Technology": ["UG", "PG"],
+        "Department of Information Science & Engineering": ["UG"],
+        "Department of Mechanical Engineering": ["UG", "PG"],
+    },
+    "School of Humanities & Social Sciences": {
+        "Department of Economics & Social Sciences": ["UG", "PG"],
+        "Department of Journalism & Mass Communication": ["UG", "PG"],
+        "Department of Languages": ["UG", "PG"],
+        "Department of Psychology & Allied Science": ["UG", "PG"],
+    },
+    "School of Design, Media & Creative Arts": {
+        "Department of Art & Design": ["UG", "PG"],
+        "Department of Design": ["UG", "PG"],
+        "Department of Performing Arts & Cultural Studies": ["UG", "PG"],
+    },
+    "School of Law": {
+        "Department of Law": ["Integrated UG", "UG", "PG"],
+    },
+    "School of Allied Healthcare & Sciences": {
+        "Department of Allied Healthcare & Sciences": ["UG", "PG"],
+    },
+    "Center for Management Studies (CMS)": {
+        "Department of Management Studies": ["UG"],
+    },
+    "CMS Business School": {
+        "Department of Management": ["PG"],
+    },
+    "School of Aerospace Engineering": {
+        "Department of Aerospace Engineering": ["UG", "PG"],
+    },
+    "School for Aviation & Aerospace Management": {
+        "Department of Aviation & Aerospace Management": ["UG", "PG", "Executive Programme", "Executive Postgraduate"],
+    },
+    "School of Sports Science & Research": {
+        "Department of Physical Education & Sports": ["UG"],
+        "Department of Sports Science": ["PG"],
+    },
+}
+
+IEA_YEARS = ['AY 2022-23', 'AY 2023-24', 'AY 2024-25', 'AY 2025-26', 'AY 2026-27']
+
+IEA_EVIDENCE_TYPES = ['BoS Minutes', 'Academic Council Approval', 'Curriculum & Syllabus',
+                      'Programme Brochure', 'Industry MoUs', 'Professional Body Recognition',
+                      'Assessment Rubrics', 'Student Project Reports', 'Relevant Web Links']
+
+IEA_SECTIONS = [
+    {"key": "A", "color": "#C9A227", "title": "New Programmes Introduced",
+     "sub": "For each new programme introduced in this academic year",
+     "fields": [
+         {"k": "name", "l": "New programme introduced", "t": "text"},
+         {"k": "area", "l": "Innovation / Emerging area addressed", "t": "text",
+          "ph": "e.g., AI, Data Science, Cyber Security, FinTech, Sustainability, Industry 4.0/5.0..."},
+         {"k": "newCourses", "l": "New courses introduced", "t": "textarea"},
+         {"k": "uniqueFeatures", "l": "Unique programme features", "t": "textarea"},
+         {"k": "collaborations", "l": "Industry / Academic collaborations", "t": "textarea"},
+     ]},
+    {"key": "B", "color": "#2F6F4E", "title": "Innovations in Existing Programmes",
+     "sub": "Significant innovations introduced in existing programmes",
+     "fields": [
+         {"k": "programme", "l": "Programme Name", "t": "text"},
+         {"k": "curriculumRevisions", "l": "Curriculum revisions", "t": "textarea"},
+         {"k": "newElectives", "l": "New electives / minors / majors / specialisations", "t": "textarea"},
+         {"k": "interdisciplinary", "l": "Interdisciplinary pathways", "t": "textarea"},
+         {"k": "experiential", "l": "Experiential learning", "t": "textarea"},
+         {"k": "research", "l": "Research integration", "t": "textarea"},
+     ]},
+    {"key": "C", "color": "#2C5F8A", "title": "Recognition by Global Professional Bodies",
+     "sub": "Accreditations, benchmarking, and their impact",
+     "fields": [
+         {"k": "programme", "l": "Programme Name", "t": "text"},
+         {"k": "accreditations", "l": "Accreditations", "t": "textarea"},
+         {"k": "recognitions", "l": "Recognitions", "t": "textarea"},
+         {"k": "certifications", "l": "Certifications", "t": "textarea"},
+         {"k": "curriculumMapping", "l": "Curriculum mapping", "t": "textarea"},
+         {"k": "benchmarking", "l": "International benchmarking", "t": "textarea"},
+         {"k": "impact", "l": "Impact on student outcomes", "t": "textarea"},
+     ]},
+    {"key": "D", "color": "#A85C2C", "title": "Industry-Integrated Skilling",
+     "sub": "Industry-linked courses, certifications, and work-integrated learning",
+     "fields": [
+         {"k": "programme", "l": "Programme Name", "t": "text"},
+         {"k": "industryIntegrated", "l": "Industry-integrated courses", "t": "textarea"},
+         {"k": "embeddedCerts", "l": "Embedded certifications", "t": "textarea"},
+         {"k": "internships", "l": "Internships / Apprenticeships", "t": "textarea"},
+         {"k": "skillModules", "l": "Skill-based modules", "t": "textarea"},
+         {"k": "jointDelivery", "l": "Joint delivery with industry", "t": "textarea"},
+         {"k": "industryAssessment", "l": "Industry assessment", "t": "textarea"},
+     ]},
+    {"key": "E", "color": "#6B4A8A", "title": "Competency-Based Learning",
+     "sub": "OBE, competency design, capstones, and assessment reform",
+     "fields": [
+         {"k": "programme", "l": "Programme Name", "t": "text"},
+         {"k": "obe", "l": "OBE implementation", "t": "textarea"},
+         {"k": "competencyCurriculum", "l": "Competency-based curriculum", "t": "textarea"},
+         {"k": "capstone", "l": "Capstone / Innovation projects", "t": "textarea"},
+         {"k": "fieldImmersion", "l": "Field immersion / Clinical training", "t": "textarea"},
+         {"k": "assessmentReforms", "l": "Assessment reforms", "t": "textarea"},
+     ]},
 ]
 
 # ── Mail Helper ──────────────────────────────────────────
@@ -514,6 +641,7 @@ def get_global_settings():
     settings.setdefault('readiness_deadline', '')
     settings.setdefault('closure_enabled', True)
     settings.setdefault('closure_deadline', '')
+    settings.setdefault('iea_enabled', True)
     settings.setdefault('enabled_years', ['2024-25', '2025-26', '2026-27', '2027-28'])
     settings.setdefault('enabled_semesters', ['Even', 'Odd'])
     return settings
@@ -538,10 +666,7 @@ def index():
         'lock_enabled': user_doc.get('lock_enabled', False) if user_doc else False,
         'first_time_login': user_doc.get('first_time_login', True) if user_doc else False
     }
-    settings = settings_col.find_one({'_id': 'global'}) or {
-        'readiness_enabled': True, 'readiness_deadline': '',
-        'closure_enabled': True, 'closure_deadline': ''
-    }
+    settings = get_global_settings()
     return render_template('dashboard.html', user=user, settings=settings, departments=DEPARTMENTS)
 
 @app.route('/analysis')
@@ -668,6 +793,178 @@ def closure_form(sub_id=None):
                            view_mode='form',
                            edit_id=sub_id,
                            settings=settings)
+
+# ═════════════════════════════════════════════════════════════
+# IEA — Innovation & Emerging Areas (Programmes & Courses)
+# ═════════════════════════════════════════════════════════════
+
+def _iea_empty_years():
+    return {y: {s['key']: [] for s in IEA_SECTIONS} for y in IEA_YEARS}
+
+def _iea_merge_years(parsed_years):
+    """Normalise a submitted/stored years object against the master shape."""
+    base = _iea_empty_years()
+    if isinstance(parsed_years, dict):
+        for y in IEA_YEARS:
+            ydata = parsed_years.get(y)
+            if not isinstance(ydata, dict):
+                continue
+            for s in IEA_SECTIONS:
+                entries = ydata.get(s['key'])
+                if isinstance(entries, list):
+                    clean = []
+                    for e in entries:
+                        if not isinstance(e, dict):
+                            continue
+                        entry = {'evidenceTypes': [], 'evidenceLink': '', 'evidenceMissing': ''}
+                        entry.update(e)
+                        clean.append(entry)
+                    base[y][s['key']] = clean
+    return base
+
+@app.route('/iea')
+def iea():
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+    settings = get_global_settings()
+    if not settings.get('iea_enabled', True) and not session.get('admin'):
+        return redirect(url_for('index'))
+    user = {'email': session['user_email'], 'name': session['user_name']}
+    return render_template('iea.html',
+                           user=user,
+                           iea_schools=IEA_SCHOOLS,
+                           iea_years=IEA_YEARS,
+                           iea_sections=IEA_SECTIONS,
+                           iea_evidence_types=IEA_EVIDENCE_TYPES)
+
+@app.route('/api/iea/load')
+def iea_load():
+    if 'user_email' not in session and not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    school = request.args.get('school', '').strip()
+    dept = request.args.get('dept', '').strip()
+    level = request.args.get('level', '').strip()
+    if not school or not dept or not level:
+        return jsonify({'ok': False, 'error': 'Missing school/department/level'})
+    doc = iea_col.find_one({'school': school, 'department': dept, 'level': level})
+    if not doc:
+        return jsonify({'ok': True, 'submission': None})
+    doc['_id'] = str(doc['_id'])
+    return jsonify({'ok': True, 'submission': doc})
+
+@app.route('/api/iea/save', methods=['POST'])
+def iea_save():
+    if 'user_email' not in session and not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    data = request.json or {}
+    school = (data.get('school') or '').strip()
+    dept = (data.get('department') or '').strip()
+    level = (data.get('level') or '').strip()
+    if school not in IEA_SCHOOLS or dept not in IEA_SCHOOLS.get(school, {}) \
+            or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
+        return jsonify({'ok': False, 'error': 'Invalid School / Department / Programme Level'})
+
+    doc = {
+        'school': school,
+        'department': dept,
+        'level': level,
+        'years': _iea_merge_years(data.get('years')),
+        'lastUpdated': datetime.utcnow().isoformat(),
+        'submitterEmail': session.get('user_email', ''),
+        'submitterName': session.get('user_name', ''),
+    }
+    iea_col.update_one({'school': school, 'department': dept, 'level': level},
+                       {'$set': doc}, upsert=True)
+    return jsonify({'ok': True, 'lastUpdated': doc['lastUpdated']})
+
+@app.route('/admin/iea')
+def admin_iea():
+    if not session.get('admin'):
+        return redirect(url_for('admin_login'))
+    subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
+    for s in subs:
+        s['_id'] = str(s['_id'])
+        s['years'] = _iea_merge_years(s.get('years'))
+    return render_template('iea_admin.html',
+                           submissions=subs,
+                           iea_years=IEA_YEARS,
+                           iea_sections=IEA_SECTIONS)
+
+@app.route('/admin/iea-delete/<sid>', methods=['POST'])
+def admin_iea_delete(sid):
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'})
+    iea_col.delete_one({'_id': ObjectId(sid)})
+    return jsonify({'ok': True})
+
+@app.route('/admin/iea-export')
+def admin_iea_export():
+    if not session.get('admin'):
+        return redirect(url_for('admin_login'))
+    year = request.args.get('year')  # optional: restrict to one academic year
+    if year and year not in IEA_YEARS:
+        return "Invalid year", 400
+    docs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
+    wb = build_iea_workbook(docs, year)
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    suffix = year.replace(' ', '_') if year else 'AllYears'
+    return send_file(buf, as_attachment=True,
+                     download_name=f"IEA_Report_{suffix}.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+def build_iea_workbook(docs, year=None):
+    """Excel report for IEA submissions — one sheet per section (A-E)."""
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    hdr_fill, hdr_font, gold_fill, gold_font, thin, center = _styles()
+    years = [year] if year else IEA_YEARS
+
+    for sec in IEA_SECTIONS:
+        title = f"{sec['key']} - {sec['title']}"[:31]
+        ws = wb.create_sheet(title)
+        heads = ['School', 'Department', 'Programme Level', 'Academic Year'] + \
+                [f['l'] for f in sec['fields']] + \
+                ['Evidence Types', 'Evidence Drive Link', 'Evidence Missing / Remarks']
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(heads))
+        t = ws.cell(row=1, column=1,
+                    value=f"JAIN University — IEA Section {sec['key']}: {sec['title']}" +
+                          (f" ({year})" if year else " (All Years)"))
+        t.font = Font(color="FFFFFF", bold=True, size=12, name="Calibri")
+        t.fill = hdr_fill
+        t.alignment = center
+        ws.row_dimensions[1].height = 26
+        for c, h in enumerate(heads, 1):
+            cell = ws.cell(row=2, column=c, value=h)
+            cell.font = hdr_font
+            cell.fill = hdr_fill
+            cell.alignment = center
+            cell.border = thin
+        ws.row_dimensions[2].height = 32
+
+        r = 3
+        for d in docs:
+            merged = _iea_merge_years(d.get('years'))
+            for y in years:
+                for e in merged[y][sec['key']]:
+                    vals = [d.get('school', ''), d.get('department', ''), d.get('level', ''), y] + \
+                           [e.get(f['k'], '') for f in sec['fields']] + \
+                           ['; '.join(e.get('evidenceTypes', []) or []),
+                            e.get('evidenceLink', ''), e.get('evidenceMissing', '')]
+                    for c, v in enumerate(vals, 1):
+                        cell = ws.cell(row=r, column=c, value=v)
+                        cell.border = thin
+                        cell.font = Font(name="Calibri", size=10)
+                        cell.alignment = Alignment(wrap_text=True, vertical='top')
+                    r += 1
+        if r == 3:
+            ws.cell(row=3, column=1, value='No entries submitted for this section.').font = \
+                Font(name="Calibri", size=10, italic=True)
+        widths = [26, 32, 14, 12] + [30] * len(sec['fields']) + [30, 34, 30]
+        for i, w in enumerate(widths, 1):
+            ws.column_dimensions[get_column_letter(i)].width = w
+    return wb
 
 @app.route('/login')
 def login():
@@ -1379,6 +1676,7 @@ def save_settings():
             'readiness_deadline': data.get('readiness_deadline', ''),
             'closure_enabled': data.get('closure_enabled', True),
             'closure_deadline': data.get('closure_deadline', ''),
+            'iea_enabled': data.get('iea_enabled', True),
             'enabled_years': data.get('enabled_years', ['2024-25', '2025-26', '2026-27', '2027-28']),
             'enabled_semesters': data.get('enabled_semesters', ['Even', 'Odd'])
         }},
