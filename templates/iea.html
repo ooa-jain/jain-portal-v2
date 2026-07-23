@@ -548,6 +548,43 @@
       .submit-section { padding: 24px 16px }
       .section-boxes-grid { grid-template-columns: repeat(2, 1fr); }
     }
+
+    /* ── Terms & Conditions modal ── */
+    .terms-overlay { position: fixed; inset: 0; background: rgba(10,20,45,.55); backdrop-filter: blur(3px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .terms-overlay.show { display: flex; animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    .terms-modal { background: #fff; width: 100%; max-width: 780px; max-height: 90vh; border-radius: 18px; box-shadow: 0 30px 80px rgba(10,20,45,.35); display: flex; flex-direction: column; overflow: hidden; animation: slideUp .3s ease; }
+    .terms-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 22px 26px; background: linear-gradient(135deg, #0a2558 0%, #123a7a 100%); color: #fff; }
+    .terms-eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #9ec3ff; margin-bottom: 4px; }
+    .terms-head h2 { font-family: 'Playfair Display', serif; font-size: 21px; margin: 0; color: #fff; }
+    .terms-close { background: rgba(255,255,255,.14); border: none; color: #fff; width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .15s; }
+    .terms-close:hover { background: rgba(255,255,255,.28); }
+    .terms-body { padding: 24px 28px; overflow-y: auto; flex: 1; color: var(--ink); line-height: 1.65; font-size: 13.5px; scroll-behavior: smooth; }
+    .terms-def { background: linear-gradient(135deg, #f0f4ff 0%, #eef6f0 100%); border: 1px solid #d6e0f5; border-left: 4px solid #0a2558; border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; }
+    .terms-def h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14.5px; font-weight: 800; color: #0a2558; margin: 0 0 8px; }
+    .terms-def p { margin: 0; font-size: 13px; line-height: 1.7; }
+    .terms-intro { margin: 0 0 20px; color: var(--ink2, #33415c); }
+    .terms-h { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 800; color: #0a2558; margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #eef1f7; }
+    .terms-sec { margin-bottom: 6px; }
+    .terms-sec h5 { font-size: 13.8px; font-weight: 800; color: #16a34a; margin: 12px 0 6px; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .terms-body ul { margin: 0 0 8px; padding-left: 20px; }
+    .terms-body ul li { margin: 3px 0; }
+    .terms-cols { columns: 2; column-gap: 28px; }
+    @media (max-width: 560px) { .terms-cols { columns: 1; } }
+    .terms-callout { background: #fff8ec; border: 1px solid #f5d99a; border-left: 4px solid #E11D48; border-radius: 12px; padding: 14px 16px; margin: 18px 0; font-size: 13px; line-height: 1.6; }
+    .terms-end { text-align: center; color: #94a3b8; font-size: 12.5px; font-weight: 600; letter-spacing: .03em; padding: 18px 0 4px; }
+    .terms-foot { border-top: 1px solid #e6eaf2; padding: 16px 26px; background: #fafbff; }
+    .terms-agree { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--ink3); margin-bottom: 14px; cursor: default; }
+    .terms-agree input { width: 18px; height: 18px; accent-color: #0a2558; }
+    .terms-agree.ready { color: #0a2558; cursor: pointer; }
+    .terms-agree.ready input { cursor: pointer; }
+    .terms-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    @media (max-width: 560px) {
+      .terms-head { padding: 18px 18px; }
+      .terms-body { padding: 20px 18px; }
+      .terms-foot { padding: 14px 18px; }
+      .terms-actions .btn { flex: 1; justify-content: center; }
+    }
   </style>
 </head>
 
@@ -584,15 +621,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Start New Submission
       </a>
-    </div>
-
-    <!-- Definition banner (shown to everyone before starting a submission) -->
-    <div class="iea-definition" style="background: linear-gradient(135deg,#f0f4ff 0%,#eef6f0 100%); border:1px solid #c8d4f0; border-left:4px solid #0a2558; border-radius:14px; padding:18px 22px; margin-bottom:24px; box-shadow: var(--sh);">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a2558" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <span style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:14.5px; color:#0a2558;">Innovation and Emerging Areas — Definition</span>
-      </div>
-      <p style="font-size:13.5px; line-height:1.7; color:var(--ink); margin:0;">{{ iea_definition }}</p>
     </div>
 
     <!-- Filter Bar -->
@@ -694,6 +722,79 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- ═════════ TERMS & CONDITIONS MODAL (shown on Start New Submission) ═════════ -->
+  <div class="terms-overlay" id="termsOverlay" onclick="if(event.target===this)closeTerms()">
+    <div class="terms-modal" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
+      <div class="terms-head">
+        <div>
+          <div class="terms-eyebrow">Office of Academics · JAIN (Deemed-to-be University)</div>
+          <h2 id="termsTitle">Terms &amp; Conditions — IEA Submission</h2>
+        </div>
+        <button class="terms-close" onclick="closeTerms()" aria-label="Close" title="Close">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="terms-body" id="termsBody" onscroll="onTermsScroll()">
+        <!-- Definition (top) -->
+        <div class="terms-def">
+          <h3>Innovation and Emerging Areas — Definition</h3>
+          <p><strong>Definition:</strong> Programmes and Courses in Innovation and Emerging Areas are academic offerings that address new, evolving, or rapidly advancing domains of knowledge, skills, technologies, professions, and societal needs. Such offerings are characterized by their relevance to contemporary and future developments, interdisciplinary and multidisciplinary approaches, integration of research and innovation, responsiveness to industry and societal requirements, and alignment with global trends and national priorities. They may encompass emerging fields, transformative technologies, novel applications of existing disciplines, and innovative pedagogical approaches that prepare learners for future opportunities, challenges, and lifelong learning.</p>
+        </div>
+
+        <p class="terms-intro">The Office of Academics is preparing a comprehensive University-level report on <em>“Programmes and Courses in Innovation and Emerging Areas”</em> in accordance with the latest UGC requirements. All Schools are requested to submit the required information for the academic years <strong>AY 2022–23 to AY 2026–27</strong> in the prescribed format below.</p>
+
+        <h4 class="terms-h">Information to be Submitted</h4>
+
+        <div class="terms-sec"><h5>A. New Programmes Introduced in Innovation and Emerging Areas</h5>
+          <ul><li>New programmes introduced</li><li>Innovation/Emerging area addressed</li><li>New courses introduced</li><li>Unique programme features</li><li>Industry/Academic collaborations</li></ul></div>
+
+        <div class="terms-sec"><h5>B. Innovations in Existing Programmes</h5>
+          <ul><li>Curriculum revisions</li><li>New electives/minors/majors/specialisations</li><li>Interdisciplinary pathways</li><li>Experiential learning</li><li>Research integration</li></ul></div>
+
+        <div class="terms-sec"><h5>C. Recognition by Global Professional Bodies</h5>
+          <ul><li>Accreditations</li><li>Recognitions</li><li>Certifications</li><li>Curriculum mapping</li><li>International benchmarking</li><li>Impact on student outcomes</li></ul></div>
+
+        <div class="terms-sec"><h5>D. Industry-Integrated Skilling</h5>
+          <ul><li>Industry-integrated courses</li><li>Embedded certifications</li><li>Internships/Apprenticeships</li><li>Skill-based modules</li><li>Joint delivery with industry</li><li>Industry assessment</li></ul></div>
+
+        <div class="terms-sec"><h5>E. Competency-Based Learning</h5>
+          <ul><li>OBE implementation</li><li>Competency-based curriculum</li><li>Capstone/Innovation projects</li><li>Field immersion/Clinical training</li><li>Assessment reforms</li></ul></div>
+
+        <h4 class="terms-h">Supporting Evidence</h4>
+        <div class="terms-sec"><ul class="terms-cols"><li>BoS Minutes</li><li>Academic Council Approval</li><li>Curriculum &amp; Syllabus</li><li>Programme Brochure</li><li>Industry MoUs</li><li>Professional Body Recognition</li><li>Assessment Rubrics</li><li>Student Project Reports</li><li>Relevant Web Links</li></ul></div>
+
+        <div class="terms-callout">
+          <strong>Submission requirement:</strong> supporting evidence must be provided as a shared <strong>Google Drive link</strong> (with access granted to the Office of Academics) against each entry you submit in the tool. Where evidence is not yet available, note clearly what is missing so it can be tracked to closure.
+        </div>
+
+        <h4 class="terms-h">General Instructions</h4>
+        <div class="terms-sec"><ul>
+          <li>Submit information only in the prescribed format (the tool below).</li>
+          <li>Ensure all information is complete, verified and evidence-based.</li>
+          <li>Provide supporting documents wherever applicable.</li>
+          <li>All submissions must be approved by the <strong>Dean/Head</strong> before submission.</li>
+          <li>For any clarification, Schools may contact the Office of Academics.</li>
+        </ul></div>
+
+        <div class="terms-end" id="termsEnd">— End of Terms &amp; Conditions —</div>
+      </div>
+
+      <div class="terms-foot">
+        <label class="terms-agree" id="termsAgreeLabel">
+          <input type="checkbox" id="termsAgree" disabled onchange="onAgreeChange()">
+          <span id="termsAgreeText">Please scroll down and read all the terms to continue.</span>
+        </label>
+        <div class="terms-actions">
+          <button class="btn btn-ghost" onclick="closeTerms()" style="text-decoration:none;">Cancel</button>
+          <button class="btn btn-primary" id="termsProceed" disabled onclick="acceptTerms()" style="text-decoration:none; opacity:.5; cursor:not-allowed;">
+            I Agree &amp; Enter Portal
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const DEPT_DATA = {{ iea_schools|tojson }};
     const YEARS = {{ iea_years|tojson }};
@@ -736,7 +837,62 @@
       window.scrollTo(0, 0);
     }
 
+    /* ── Terms & Conditions gate (shown before every new submission) ── */
     function startNewSubmission() {
+      const ov = document.getElementById('termsOverlay');
+      const body = document.getElementById('termsBody');
+      const agree = document.getElementById('termsAgree');
+      const label = document.getElementById('termsAgreeLabel');
+      const agreeText = document.getElementById('termsAgreeText');
+      const proceed = document.getElementById('termsProceed');
+      // reset gate each time it opens
+      agree.checked = false; agree.disabled = true;
+      label.classList.remove('ready');
+      agreeText.textContent = 'Please scroll down and read all the terms to continue.';
+      proceed.disabled = true; proceed.style.opacity = '.5'; proceed.style.cursor = 'not-allowed';
+      ov.classList.add('show');
+      document.body.style.overflow = 'hidden';
+      body.scrollTop = 0;
+      // if the content is short enough that there's nothing to scroll, unlock immediately
+      setTimeout(() => { if (body.scrollHeight - body.clientHeight <= 8) unlockTerms(); }, 60);
+    }
+
+    function unlockTerms() {
+      const agree = document.getElementById('termsAgree');
+      const agreeText = document.getElementById('termsAgreeText');
+      if (!agree.disabled) return;
+      agree.disabled = false;
+      agreeText.textContent = 'I have read and understood the terms & conditions above.';
+      document.getElementById('termsAgreeLabel').classList.add('ready');
+    }
+
+    function onTermsScroll() {
+      const body = document.getElementById('termsBody');
+      if (body.scrollTop + body.clientHeight >= body.scrollHeight - 24) unlockTerms();
+    }
+
+    function onAgreeChange() {
+      const agree = document.getElementById('termsAgree');
+      const proceed = document.getElementById('termsProceed');
+      const on = agree.checked;
+      proceed.disabled = !on;
+      proceed.style.opacity = on ? '1' : '.5';
+      proceed.style.cursor = on ? 'pointer' : 'not-allowed';
+    }
+
+    function closeTerms() {
+      document.getElementById('termsOverlay').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    function acceptTerms() {
+      if (!document.getElementById('termsAgree').checked) return;
+      closeTerms();
+      enterNewSubmission();
+    }
+
+    // Actual new-submission form (entered only after accepting the terms)
+    function enterNewSubmission() {
       document.getElementById('dashView').style.display = 'none';
       document.getElementById('formView').style.display = 'block';
       document.getElementById('formView').classList.add('animate-rise');
@@ -1276,6 +1432,10 @@
         } else showToast('Could not submit: ' + (json.error || 'Error'), true);
       } catch (err) { showToast('Error: ' + err.message, true); }
     }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && document.getElementById('termsOverlay').classList.contains('show')) closeTerms();
+    });
 
     // Boot
     renderFbStars();
