@@ -28,6 +28,33 @@ def serve_manifest():
 def serve_sw():
     return send_from_directory('static', 'sw.js')
 
+# ── Google Search Console site verification ──
+@app.route('/google72248b527c4b75b0.html')
+def google_site_verification():
+    return app.response_class(
+        'google-site-verification: google72248b527c4b75b0.html',
+        mimetype='text/html')
+
+@app.route('/robots.txt')
+def robots_txt():
+    body = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Sitemap: https://jain-sarathi.juooa.cloud/sitemap.xml\n"
+    )
+    return app.response_class(body, mimetype='text/plain')
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '  <url><loc>https://jain-sarathi.juooa.cloud/login</loc>'
+        '<changefreq>weekly</changefreq><priority>1.0</priority></url>\n'
+        '</urlset>\n'
+    )
+    return app.response_class(body, mimetype='application/xml')
+
 # MongoDB connection — sourced from .env (MONGO_URI + DB_NAME)
 MONGO_URI = os.environ.get('MONGO_URI') or os.environ.get('MONGODB_URI')
 DB_NAME = os.environ.get('DB_NAME', 'semreadiness')
