@@ -20,6 +20,17 @@ app.secret_key = os.environ.get('SECRET_KEY', 'jain_ooa_semreadiness_2025_secret
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
+# ── Firebase (Google sign-in) — public web config, sourced from .env with
+#    the project's values as fallback so it works out of the box. ──
+FIREBASE_CONFIG = {
+    'apiKey': os.environ.get('FIREBASE_API_KEY', 'AIzaSyDNEpEpAfwT_pyDRjZB--n5nZUWZwLq0go'),
+    'authDomain': os.environ.get('FIREBASE_AUTH_DOMAIN', 'jain-university-d4f8b.firebaseapp.com'),
+    'projectId': os.environ.get('FIREBASE_PROJECT_ID', 'jain-university-d4f8b'),
+    'storageBucket': os.environ.get('FIREBASE_STORAGE_BUCKET', 'jain-university-d4f8b.firebasestorage.app'),
+    'messagingSenderId': os.environ.get('FIREBASE_MESSAGING_SENDER_ID', '386264535656'),
+    'appId': os.environ.get('FIREBASE_APP_ID', '1:386264535656:web:32aa745d1776a0185a21dd'),
+}
+
 @app.route('/manifest.json')
 def serve_manifest():
     return send_from_directory('static', 'manifest.json')
@@ -1136,7 +1147,51 @@ def build_iea_workbook(docs, year=None):
 def login():
     if 'user_email' in session:
         return redirect(url_for('index'))
-    return render_template('login.html')
+    return render_template('login.html', firebase_config=FIREBASE_CONFIG)
+
+@app.route('/api/google-login', methods=['POST'])
+def google_login():
+    """Verify a Firebase Google ID token and log the user in (auto-creating
+    their account on first sign-in). No service-account file needed — the
+    token is verified against Firebase's public certs via google-auth."""
+    id_token_str = (request.json or {}).get('idToken', '')
+    if not id_token_str:
+        return jsonify({'ok': False, 'error': 'Missing sign-in token'})
+    try:
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+    except ImportError:
+        return jsonify({'ok': False, 'error': 'Google sign-in is not configured on the server (google-auth missing).'})
+    try:
+        info = google_id_token.verify_firebase_token(
+            id_token_str, google_requests.Request(),
+            audience=FIREBASE_CONFIG['projectId'])
+    except Exception:
+        info = None
+    if not info:
+        return jsonify({'ok': False, 'error': 'Could not verify Google sign-in. Please try again.'})
+
+    email = (info.get('email') or '').strip().lower()
+    if not email:
+        return jsonify({'ok': False, 'error': 'No email found on the Google account.'})
+    if info.get('email_verified') is False:
+        return jsonify({'ok': False, 'error': 'Your Google email is not verified.'})
+
+    name = (info.get('name') or '').strip() or email.split('@')[0]
+    user = users_col.find_one({'email': email})
+    if not user:
+        users_col.insert_one({
+            'name': name,
+            'email': email,
+            'created_at': datetime.utcnow().isoformat(),
+            'first_time_login': True,
+            'auth_provider': 'google',
+        })
+        session['user_name'] = name
+    else:
+        session['user_name'] = user.get('name', name)
+    session['user_email'] = email
+    return jsonify({'ok': True})
 
 # ═════════════════════════════════════════════════════════════
 # FACULTY SHARE LINK ROUTES — handles BOTH readiness AND closure
