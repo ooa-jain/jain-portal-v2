@@ -798,25 +798,38 @@
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       if (btn) { btn.disabled = true; }
+      let stage = 'popup';
       try {
         const result = await signInWithPopup(auth, provider);
         const idToken = await result.user.getIdToken();
+        stage = 'server';
         const res = await fetch('/api/google-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ idToken })
         });
-        const data = await res.json();
-        if (data.ok) { window.location.href = '/'; }
-        else { showToast('⚠ ' + (data.error || 'Google sign-in failed')); if (btn) btn.disabled = false; }
+        // The route may not be live yet (404) → response won't be JSON.
+        let data = null;
+        try { data = await res.json(); } catch (_) { data = null; }
+        if (data && data.ok) { window.location.href = '/'; return; }
+        if (btn) btn.disabled = false;
+        if (!res.ok && !data) {
+          showToast('⚠ Server error ' + res.status + ' on /api/google-login. Restart the app on the server (route not live). ');
+        } else {
+          showToast('⚠ ' + ((data && data.error) || 'Google sign-in failed on the server.'));
+        }
       } catch (err) {
         if (btn) btn.disabled = false;
-        if (err && err.code === 'auth/popup-closed-by-user') return;
-        if (err && err.code === 'auth/unauthorized-domain') {
-          showToast('⚠ This domain is not authorized in Firebase. Add it under Authentication → Settings → Authorized domains.');
-        } else {
-          showToast('⚠ Google sign-in failed. Please try again.');
-        }
+        const code = (err && err.code) || '';
+        if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
+        let msg;
+        if (code === 'auth/unauthorized-domain') msg = 'This domain is not authorized. Add "jain-sarathi.juooa.cloud" in Firebase → Authentication → Settings → Authorized domains.';
+        else if (code === 'auth/popup-blocked') msg = 'Popup was blocked — allow popups for this site, then try again.';
+        else if (code === 'auth/operation-not-allowed') msg = 'Google sign-in is not enabled in Firebase → Authentication → Sign-in method.';
+        else if (code === 'auth/network-request-failed') msg = 'Network error reaching Firebase. Check your connection.';
+        else if (code) msg = 'Google sign-in failed (' + code + ').';
+        else msg = 'Google sign-in failed at ' + stage + ' step: ' + ((err && err.message) || 'unknown error');
+        showToast('⚠ ' + msg);
         console.error('Google sign-in error', err);
       }
     };
