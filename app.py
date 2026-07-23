@@ -49,7 +49,7 @@ def sitemap_xml():
     body = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        '  <url><loc>https://jain-sarathi.juooa.cloud/login</loc>'
+        '  <url><loc>https://jain-sarathi.juooa.cloud/</loc>'
         '<changefreq>weekly</changefreq><priority>1.0</priority></url>\n'
         '</urlset>\n'
     )
