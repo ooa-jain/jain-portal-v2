@@ -1,7 +1,7 @@
 {
   "name": "JAIN Sarathi — OoA Portal",
   "short_name": "JAIN Sarathi",
-  "description": "JAIN Sarathi — Office of Academics portal of JAIN (Deemed-to-be University).",
+  "description": "JAIN University's integrated academic portal that connects people, processes, and information to enable efficient academic governance, collaboration, compliance, and continuous quality enhancement.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -55,6 +55,10 @@ def serve_manifest():
 def serve_sw():
     return send_from_directory('static', 'sw.js')
 
+@app.route('/favicon.ico')
+def serve_favicon():
+    return send_from_directory('static/images', 'jgi-icon-192.png', mimetype='image/png')
+
 # ── Google Search Console site verification ──
 @app.route('/google72248b527c4b75b0.html')
 def google_site_verification():

@@ -5,20 +5,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JAIN Sarathi Portal — Office of Academics, JAIN (Deemed-to-be University)</title>
-  <meta name="description" content="JAIN Sarathi — the official Office of Academics (OoA) faculty portal of JAIN (Deemed-to-be University) for Semester Readiness, Closure, and Innovation & Emerging Areas (IEA) submissions.">
+  <meta name="description" content="JAIN University's integrated academic portal that connects people, processes, and information to enable efficient academic governance, collaboration, compliance, and continuous quality enhancement.">
   <meta name="keywords" content="JAIN Sarathi, Jain Sarathi Portal, JAIN University, Office of Academics, OoA Portal, IEA, Innovation and Emerging Areas, faculty portal">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://jain-sarathi.juooa.cloud/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="JAIN Sarathi Portal">
   <meta property="og:title" content="JAIN Sarathi Portal — Office of Academics, JAIN University">
-  <meta property="og:description" content="Official Office of Academics faculty portal of JAIN (Deemed-to-be University).">
+  <meta property="og:description" content="JAIN University's integrated academic portal that connects people, processes, and information to enable efficient academic governance, collaboration, compliance, and continuous quality enhancement.">
   <meta property="og:url" content="https://jain-sarathi.juooa.cloud/">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a2558">
-  <link rel="icon" type="image/svg+xml" href="/static/images/jgi-logo.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/images/jgi-icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/images/jgi-icon-512.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32.png">
-  <link rel="apple-touch-icon" href="/static/images/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/static/images/jgi-logo.svg">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/images/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -361,9 +364,18 @@
     }
 
     @media (max-width: 768px) {
+      .auth-wrap {
+        padding: 24px 16px 40px !important;
+        gap: 30px !important;
+      }
       .auth-wrap>div {
         flex-direction: column-reverse !important;
         gap: 20px !important;
+      }
+      .brand-panel, .auth-box {
+        min-width: 0 !important;
+        width: 100% !important;
+        padding: 24px 18px !important;
       }
     }
 
@@ -387,7 +399,9 @@
     }
     @media (max-width: 560px) {
       .corner-logo { top: 12px; right: 12px; }
-      .corner-logo img { height: 46px; width: 46px; }
+      .corner-logo img { height: 42px; width: 42px; }
+      .auth-wrap { padding: 16px 12px 32px !important; }
+      .brand-panel, .auth-box { padding: 20px 14px !important; }
     }
 
     .or-divider {
