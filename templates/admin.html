@@ -1596,45 +1596,100 @@
       </div>
     </div> <!-- Close analyticsView -->
 
-    <!-- 👤 HOD Accounts View -->
+    <!-- 👤 HOD & Admin Accounts View -->
     <div id="usersView" style="display: none;">
       <div class="table-card" style="padding: 22px; margin-bottom: 32px;">
-        <div class="table-header">
+        <div class="table-header" style="flex-wrap: wrap; gap: 12px;">
           <div>
-            <h2>Registered HOD Accounts</h2>
-            <p>Admin control to impersonate and manage HOD portal workspaces</p>
+            <h2>Registered Accounts & Access Control</h2>
+            <p>Manage faculty, HODs, and admin users (Google OAuth & Password accounts)</p>
           </div>
-          <div
-            style="font-size: 13px; font-weight: 700; color: var(--navy); background: #eef2ff; padding: 6px 14px; border-radius: 99px;">
-            👤 {{ users|length }} HODs Registered
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="font-size: 13px; font-weight: 700; color: var(--navy); background: #eef2ff; padding: 6px 14px; border-radius: 99px;">
+              👤 {{ users|length }} Total Accounts
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('addUserModal').style.display='flex'" style="background: var(--navy); color: #fff; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; border: none;">
+              ➕ Add User / Admin
+            </button>
           </div>
         </div>
 
         <div style="overflow-x: auto; margin-top: 16px;">
-          <table class="sub-table">
+          <table class="sub-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
             <thead>
-              <tr>
-                <th>HOD Name</th>
-                <th>Registered Email</th>
-                <th>Estimated Department</th>
-                <th>Registration Date</th>
-                <th>Action</th>
+              <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                <th style="padding: 12px 8px; color: var(--ink3);">User</th>
+                <th style="padding: 12px 8px; color: var(--ink3);">Email Address</th>
+                <th style="padding: 12px 8px; color: var(--ink3);">Auth Type</th>
+                <th style="padding: 12px 8px; color: var(--ink3);">Role</th>
+                <th style="padding: 12px 8px; color: var(--ink3);">Department</th>
+                <th style="padding: 12px 8px; color: var(--ink3);">Joined</th>
+                <th style="padding: 12px 8px; text-align: right; color: var(--ink3);">Actions</th>
               </tr>
             </thead>
             <tbody>
               {% for u in users %}
-              <tr>
-                <td style="font-weight: 700; color: var(--navy);">{{ u.name or '—' }}</td>
-                <td style="font-weight: 600; color: var(--ink2);">{{ u.email or '—' }}</td>
-                <td><span
-                    style="font-size: 12.5px; font-weight: 600; background: #f0f4ff; color: var(--navy); padding: 4px 8px; border-radius: 6px;">{{
-                    u.latest_dept or '—' }}</span></td>
-                <td style="font-size: 12px; color: var(--ink3);">{{ u.created_at[:10] if u.created_at else '—' }}</td>
-                <td>
-                  <a href="/admin/impersonate/{{ u.email }}" class="btn btn-gold btn-sm"
-                    style="display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-weight: bold; background: linear-gradient(135deg, #f2a900, #ffc72c); color: var(--navy); border: none; box-shadow: 0 4px 10px rgba(242,169,0,0.15); padding: 6px 12px; border-radius: 6px; transition: 0.2s;">
-                    🔑 Impersonate / Enter Portal
-                  </a>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px 8px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    {% if u.picture %}
+                    <img src="{{ u.picture }}" alt="{{ u.name }}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border);">
+                    {% else %}
+                    <div style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #0a2558, #143572); color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center;">
+                      {{ (u.name or u.email)[:2]|upper }}
+                    </div>
+                    {% endif %}
+                    <div>
+                      <div style="font-weight: 700; color: var(--navy); font-size: 13px;">{{ u.name or 'User' }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding: 12px 8px; font-weight: 600; color: var(--ink2);">{{ u.email or '—' }}</td>
+                <td style="padding: 12px 8px;">
+                  {% if u.auth_provider == 'google' %}
+                  <span style="padding: 3px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 700; background: #eafeea; color: #15803d; border: 1px solid #bbf7d0;">
+                    <svg width="10" height="10" viewBox="0 0 48 48" style="vertical-align: -1px; margin-right: 2px;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google
+                  </span>
+                  {% else %}
+                  <span style="padding: 3px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">
+                    🔑 Password
+                  </span>
+                  {% endif %}
+                </td>
+                <td style="padding: 12px 8px;">
+                  {% if u.is_admin %}
+                  <span style="padding: 3px 10px; border-radius: 99px; font-size: 10.5px; font-weight: 800; background: #fff8eb; color: #9e6f00; border: 1px solid #fde68a;">
+                    👑 Admin
+                  </span>
+                  {% else %}
+                  <span style="padding: 3px 10px; border-radius: 99px; font-size: 10.5px; font-weight: 700; background: #f0f4ff; color: var(--navy); border: 1px solid #c7d2fe;">
+                    👤 Faculty / HOD
+                  </span>
+                  {% endif %}
+                </td>
+                <td style="padding: 12px 8px;">
+                  <span style="font-size: 12px; font-weight: 600; background: #fafbff; color: var(--navy); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border);">
+                    {{ u.latest_dept or u.department or '—' }}
+                  </span>
+                </td>
+                <td style="padding: 12px 8px; font-size: 11.5px; color: var(--ink3);">
+                  {{ u.created_at[:10] if u.created_at else '—' }}
+                </td>
+                <td style="padding: 12px 8px; text-align: right;">
+                  <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                    <a href="/admin/impersonate/{{ u.email }}" class="btn btn-gold btn-sm" title="Impersonate user workspace"
+                      style="display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-weight: 700; background: #fff8eb; color: #b45309; border: 1px solid #fde68a; padding: 4px 8px; border-radius: 6px; font-size: 11px;">
+                      🔑 Enter Portal
+                    </a>
+                    <button class="btn btn-outline btn-sm" onclick="toggleUserAdminRole('{{ u.email }}', {{ 'false' if u.is_admin else 'true' }}, this)"
+                      style="font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff;" title="Toggle Admin Access">
+                      {% if u.is_admin %}Remove Admin{% else %}Make Admin{% endif %}
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteUserAccount('{{ u._id }}', '{{ u.email }}', this)"
+                      style="font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; background: #fef2f2; color: var(--danger); border: 1px solid #fca5a5;" title="Delete User">
+                      🗑️
+                    </button>
+                  </div>
                 </td>
               </tr>
               {% endfor %}
@@ -2661,9 +2716,128 @@
     }
 
 
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeFacModal(); } });
+    function toggleUserAdminRole(email, makeAdmin, btn) {
+      if (!confirm(`Are you sure you want to ${makeAdmin ? 'grant Admin access to' : 'revoke Admin access from'} ${email}?`)) return;
+      if (btn) btn.disabled = true;
+      fetch('/admin/toggle-admin-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, make_admin: makeAdmin })
+      }).then(r => r.json()).then(res => {
+        if (res.ok) {
+          alert(`Successfully ${makeAdmin ? 'granted Admin access to' : 'revoked Admin access from'} ${email}`);
+          window.location.reload();
+        } else {
+          alert('Error: ' + (res.error || 'Failed to update role'));
+          if (btn) btn.disabled = false;
+        }
+      }).catch(err => {
+        alert('Network error');
+        if (btn) btn.disabled = false;
+      });
+    }
+
+    function deleteUserAccount(userId, email, btn) {
+      if (!confirm(`Are you sure you want to permanently delete the account for ${email}?`)) return;
+      if (btn) btn.disabled = true;
+      fetch(`/admin/delete-user/${userId}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(res => {
+          if (res.ok) {
+            alert(`User account ${email} deleted successfully.`);
+            window.location.reload();
+          } else {
+            alert('Failed to delete user: ' + (res.error || 'Unknown error'));
+            if (btn) btn.disabled = false;
+          }
+        }).catch(err => {
+          alert('Network error');
+          if (btn) btn.disabled = false;
+        });
+    }
+
+    function submitAddUser(btn) {
+      const name = document.getElementById('new_u_name').value.trim();
+      const email = document.getElementById('new_u_email').value.trim();
+      const role = document.getElementById('new_u_role').value;
+      const dept = document.getElementById('new_u_dept').value;
+      const password = document.getElementById('new_u_password').value;
+
+      if (!name || !email) {
+        alert('Name and Email ID are required.');
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+      fetch('/admin/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          role: role,
+          department: dept,
+          password: password
+        })
+      }).then(r => r.json()).then(res => {
+        if (res.ok) {
+          alert(`Account for ${name} (${role === 'admin' ? 'Admin' : 'Faculty/HOD'}) created/updated successfully!`);
+          window.location.reload();
+        } else {
+          alert('Error: ' + (res.error || 'Failed to create user'));
+          if (btn) btn.disabled = false;
+        }
+      }).catch(err => {
+        alert('Network error');
+        if (btn) btn.disabled = false;
+      });
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeFacModal(); document.getElementById('addUserModal').style.display='none'; } });
   </script>
   <script src="/static/loading.js"></script>
+
+  <!-- Add User / Create Admin Modal -->
+  <div id="addUserModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,37,88,0.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+    <div style="background:#fff; border-radius:16px; width:90%; max-width:480px; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,0.3); font-family:'Plus Jakarta Sans', sans-serif;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <h3 style="color:#0a2558; font-size:18px; font-weight:700;">Add User / Create Admin Account</h3>
+        <button onclick="document.getElementById('addUserModal').style.display='none'" style="background:none; border:none; font-size:24px; cursor:pointer; color:#6b7280; line-height:1;">&times;</button>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:12px; font-weight:700; color:var(--navy); margin-bottom:4px; text-transform:uppercase;">Full Name *</label>
+        <input type="text" id="new_u_name" placeholder="Dr. Jane Doe" style="width:100%; padding:10px; border:1.5px solid #dde3f0; border-radius:8px; font-size:13.5px; outline:none;">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:12px; font-weight:700; color:var(--navy); margin-bottom:4px; text-transform:uppercase;">Email ID *</label>
+        <input type="email" id="new_u_email" placeholder="jane@jainuniversity.ac.in" style="width:100%; padding:10px; border:1.5px solid #dde3f0; border-radius:8px; font-size:13.5px; outline:none;">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:12px; font-weight:700; color:var(--navy); margin-bottom:4px; text-transform:uppercase;">Account Role *</label>
+        <select id="new_u_role" style="width:100%; padding:10px; border:1.5px solid #dde3f0; border-radius:8px; font-size:13.5px; outline:none; background:#fafbff;">
+          <option value="user">👤 Faculty / HOD User</option>
+          <option value="admin">👑 Admin Account</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:12px; font-weight:700; color:var(--navy); margin-bottom:4px; text-transform:uppercase;">Department</label>
+        <select id="new_u_dept" style="width:100%; padding:10px; border:1.5px solid #dde3f0; border-radius:8px; font-size:13.5px; outline:none; background:#fafbff;">
+          <option value="">-- Select Department --</option>
+          {% for dept in departments %}
+          <option value="{{ dept }}">{{ dept }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:12px; font-weight:700; color:var(--navy); margin-bottom:4px; text-transform:uppercase;">Initial Password (Optional for Google Users)</label>
+        <input type="password" id="new_u_password" placeholder="Leave empty for Google Sign-In" style="width:100%; padding:10px; border:1.5px solid #dde3f0; border-radius:8px; font-size:13.5px; outline:none;">
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button onclick="document.getElementById('addUserModal').style.display='none'" style="background:#fff; color:var(--ink3); border:1px solid #ccc; padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px;">Cancel</button>
+        <button onclick="submitAddUser(this)" style="background:#0a2558; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px;">Create Account</button>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>

@@ -847,9 +847,14 @@
           <span class="notif-badge" style="display:none">0</span>
         </button>
         <button id="profileBtn" class="btn-profile"
-          style="border-color: var(--navy); background: var(--navy); color: #fff;" onclick="openProfile()"
+          style="border-color: var(--navy); background: var(--navy); color: #fff; gap: 8px;" onclick="openProfile()"
           data-intro="Update your department profile here." data-step="3">
-          Profile
+          {% if user.picture %}
+          <img src="{{ user.picture }}" alt="{{ user.name }}" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover;">
+          {% else %}
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #f2a900; color: #0a2558; font-weight: 800; font-size: 10px;">{{ (user.name or 'User')[:2]|upper }}</span>
+          {% endif %}
+          <span>Profile</span>
         </button>
         <a id="pwaMobileMenuInstallBtn" href="#" class="btn-profile"
           style="display: none; color: #0284c7; border-color: #bae6fd; background: #e0f2fe; font-weight: bold;"
@@ -875,6 +880,72 @@
         </button>
       </div>
     </div>
+
+    <!-- Department 3-Module Submission Tracker -->
+    {% if user.department and dept_status %}
+    <div style="background: #fff; border-radius: var(--r); padding: 20px 24px; border: 1.5px solid #dde3f0; box-shadow: var(--sh2); margin-bottom: 28px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+        <div>
+          <h3 style="font-size: 16px; font-weight: 800; color: var(--navy);">Department Submissions Overview</h3>
+          <p style="font-size: 12.5px; color: var(--ink3);">Live submission status for <strong>{{ user.department }}</strong> across all 3 portal modules</p>
+        </div>
+        <span style="font-size: 11px; font-weight: 800; background: #eef2ff; color: var(--navy); padding: 4px 10px; border-radius: 99px; text-transform: uppercase;">3 Modules Active</span>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+        <!-- Module 1: Readiness -->
+        <div style="background: #fafbff; border: 1.5px solid {% if dept_status.readiness.submitted %}#bbf7d0{% else %}#fef08a{% endif %}; border-radius: 10px; padding: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 13px; font-weight: 700; color: var(--navy);">📘 Semester Readiness</span>
+            {% if dept_status.readiness.submitted %}
+            <span style="background: #dcfce7; color: #15803d; font-weight: 800; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">✓ SUBMITTED</span>
+            {% else %}
+            <span style="background: #fef9c3; color: #a16207; font-weight: 700; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">⏳ PENDING</span>
+            {% endif %}
+          </div>
+          {% if dept_status.readiness.submitted %}
+          <div style="font-size: 11.5px; color: var(--ink3);">Submitted: {{ dept_status.readiness.date }}</div>
+          {% else %}
+          <div style="font-size: 11.5px; color: var(--ink3);">Not submitted yet for current term</div>
+          {% endif %}
+        </div>
+
+        <!-- Module 2: Closure -->
+        <div style="background: #fafbff; border: 1.5px solid {% if dept_status.closure.submitted %}#bbf7d0{% else %}#fef08a{% endif %}; border-radius: 10px; padding: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 13px; font-weight: 700; color: var(--navy);">📙 Semester Closure</span>
+            {% if dept_status.closure.submitted %}
+            <span style="background: #dcfce7; color: #15803d; font-weight: 800; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">✓ SUBMITTED</span>
+            {% else %}
+            <span style="background: #fef9c3; color: #a16207; font-weight: 700; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">⏳ PENDING</span>
+            {% endif %}
+          </div>
+          {% if dept_status.closure.submitted %}
+          <div style="font-size: 11.5px; color: var(--ink3);">Submitted: {{ dept_status.closure.date }}</div>
+          {% else %}
+          <div style="font-size: 11.5px; color: var(--ink3);">Not submitted yet for current term</div>
+          {% endif %}
+        </div>
+
+        <!-- Module 3: IEA -->
+        <div style="background: #fafbff; border: 1.5px solid {% if dept_status.iea.submitted %}#bbf7d0{% else %}#fef08a{% endif %}; border-radius: 10px; padding: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 13px; font-weight: 700; color: var(--navy);">📗 Innovation & Emerging (IEA)</span>
+            {% if dept_status.iea.submitted %}
+            <span style="background: #dcfce7; color: #15803d; font-weight: 800; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">✓ SUBMITTED</span>
+            {% else %}
+            <span style="background: #fef9c3; color: #a16207; font-weight: 700; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">⏳ PENDING</span>
+            {% endif %}
+          </div>
+          {% if dept_status.iea.submitted %}
+          <div style="font-size: 11.5px; color: var(--ink3);">Submitted: {{ dept_status.iea.date }}</div>
+          {% else %}
+          <div style="font-size: 11.5px; color: var(--ink3);">Draft / Pending Submission</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     <div class="cards-grid">
       {% if settings.readiness_enabled %}
@@ -970,7 +1041,22 @@
 
   <div class="modal-overlay" id="profileModal">
     <div class="modal">
-      <h3>Your Profile</h3>
+      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+        {% if user.picture %}
+        <img src="{{ user.picture }}" alt="{{ user.name }}" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--navy);">
+        {% else %}
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #0a2558, #143572); color: #fff; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center;">
+          {{ (user.name or 'User')[:2]|upper }}
+        </div>
+        {% endif %}
+        <div>
+          <h3 style="color: var(--navy); font-size: 18px; margin-bottom: 2px;">{{ user.name }}</h3>
+          <span style="font-size: 11px; font-weight: 700; background: #eef2ff; color: var(--navy); padding: 2px 8px; border-radius: 99px;">
+            {% if user.auth_provider == 'google' %}Google Account{% else %}Password Account{% endif %}
+          </span>
+        </div>
+      </div>
+
       <div class="field">
         <label>Name</label>
         <input type="text" value="{{ user.name }}" readonly>
@@ -989,41 +1075,34 @@
         </select>
       </div>
 
-      <!-- PWA Install inside Profile -->
-      <div id="pwaProfileSection"
-        style="display: none; margin-top: 20px; padding: 14px; background: #e0f2fe; border: 1.5px solid #bae6fd; border-radius: 10px; align-items: center; justify-content: space-between; gap: 10px; text-align: left; box-shadow: var(--sh);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="font-size: 24px;">📱</div>
-          <div>
-            <div style="font-weight: 700; color: #0369a1; font-size: 13px;">Mobile App Available</div>
-            <div style="font-size: 11px; color: #0284c7;">Install on your home screen</div>
-          </div>
-        </div>
-        <button id="pwaInstallBtn" class="btn"
-          style="background: #0284c7; color: #fff; padding: 6px 12px; font-size: 11px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; white-space: nowrap;">Download
-          App</button>
-      </div>
-
-      <!-- iOS Instruction inside Profile -->
-      <div id="pwaIosProfileSection"
-        style="display: none; margin-top: 20px; padding: 14px; background: #fef3c7; border: 1.5px solid #fde68a; border-radius: 10px; text-align: left; box-shadow: var(--sh);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="font-size: 24px;">🍎</div>
-          <div>
-            <div style="font-weight: 700; color: #92400e; font-size: 13px;">Install on iPhone</div>
-            <div style="font-size: 11px; color: #b45309; line-height: 1.4; margin-top: 2px;">Tap <span
-                style="font-weight: 700;">Share</span> in Safari, then <span style="font-weight: 700;">"Add to Home
-                Screen"</span>.</div>
-          </div>
-        </div>
-      </div>
-
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
         <button class="btn" style="background:#fff; color:var(--ink3); border:1px solid #ddd;"
           onclick="closeProfile()">Cancel</button>
         <button class="btn btn-primary" onclick="saveProfile(this)">Save Profile</button>
-
       </div>
+    </div>
+  </div>
+
+  <!-- Mandatory Department Onboarding Modal for First Time Users -->
+  <div id="deptOnboardingModal" style="display:{% if not user.department or user.first_time_login %}flex{% else %}none{% endif %}; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,37,88,0.7); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(6px);">
+    <div style="background:#fff; border-radius:18px; width:90%; max-width:480px; padding:32px; box-shadow:0 20px 60px rgba(0,0,0,0.35); text-align:center; font-family:'Plus Jakarta Sans', sans-serif;">
+      <div style="width:54px; height:54px; border-radius:50%; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px;">🏫</div>
+      <h3 style="color:#0a2558; font-size:20px; font-weight:800; margin-bottom:8px;">Welcome to JAIN Sarathi</h3>
+      <p style="font-size:13.5px; color:#475569; line-height:1.5; margin-bottom:24px;">Please select your academic department to personalize your workspace and track departmental submissions.</p>
+      
+      <div style="text-align:left; margin-bottom:24px;">
+        <label style="display:block; font-size:12px; font-weight:800; color:#0a2558; margin-bottom:6px; text-transform:uppercase;">Select Department *</label>
+        <select id="onboardingDept" style="width:100%; padding:12px; border:2px solid #cbd5e1; border-radius:10px; font-size:14px; font-weight:600; outline:none; background:#fafbff; color:#1e293b;">
+          <option value="">-- Choose Department --</option>
+          {% for dept in departments %}
+          <option value="{{ dept }}">{{ dept }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button onclick="saveDepartmentOnboarding(this)" style="width:100%; background:#0a2558; color:#fff; border:none; padding:13px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; transition:0.2s; box-shadow:0 4px 14px rgba(10,37,88,0.25);">
+        Save Department &amp; Continue &rarr;
+      </button>
     </div>
   </div>
 
@@ -1119,15 +1198,34 @@
         body: JSON.stringify({
           department: dept
         })
-      }).then(r => r.json()).then(res => {
+      }).then(r => r.json()).then(data => {
         LoadingButton.off(btn);
-        if (res.ok) {
-          closeProfile();
-          window.location.reload();
-        } else alert(res.error);
+        if (data.ok) { closeProfile(); location.reload(); }
+        else alert('Error: ' + data.error);
       }).catch(err => {
         LoadingButton.off(btn);
         alert('Network error');
+      });
+    }
+
+    function saveDepartmentOnboarding(btn) {
+      const dept = document.getElementById('onboardingDept').value;
+      if (!dept) { alert('Please select your department'); return; }
+      if (btn) btn.disabled = true;
+      fetch('/api/update-profile', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ department: dept })
+      }).then(r => r.json()).then(data => {
+        if (data.ok) {
+          document.getElementById('deptOnboardingModal').style.display = 'none';
+          location.reload();
+        } else {
+          alert('Error: ' + (data.error || 'Failed to save department'));
+          if (btn) btn.disabled = false;
+        }
+      }).catch(err => {
+        alert('Network error');
+        if (btn) btn.disabled = false;
       });
     }
 

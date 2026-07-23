@@ -778,16 +778,55 @@ def index():
     if 'user_email' not in session:
         return redirect(url_for('login'))
     user_doc = users_col.find_one({'email': session['user_email']})
+    dept = user_doc.get('department', '') if user_doc else ''
+    user_email = session['user_email']
+
+    # Query 3-module status for user's department
+    readiness_sub = submissions_col.find_one({
+        'form_type': 'readiness',
+        '$or': [{'identity.dept': dept}, {'identity.submitterEmail': user_email}]
+    }, sort=[('timestamp', -1)])
+
+    closure_sub = submissions_col.find_one({
+        'form_type': 'closure',
+        '$or': [{'identity.dept': dept}, {'identity.submitterEmail': user_email}]
+    }, sort=[('timestamp', -1)])
+
+    iea_sub = iea_col.find_one({
+        '$or': [{'department': dept}, {'submitterEmail': user_email}]
+    }, sort=[('updatedAt', -1)])
+
+    dept_status = {
+        'readiness': {
+            'submitted': bool(readiness_sub),
+            'date': readiness_sub.get('timestamp', '')[:10] if readiness_sub else '',
+            'id': str(readiness_sub['_id']) if readiness_sub else ''
+        },
+        'closure': {
+            'submitted': bool(closure_sub),
+            'date': closure_sub.get('timestamp', '')[:10] if closure_sub else '',
+            'id': str(closure_sub['_id']) if closure_sub else ''
+        },
+        'iea': {
+            'submitted': bool(iea_sub and iea_sub.get('status') == 'submitted'),
+            'date': iea_sub.get('updatedAt', '')[:10] if iea_sub else '',
+            'id': str(iea_sub['_id']) if iea_sub else ''
+        }
+    }
+
     user = {
-        'email': session['user_email'],
-        'name': session['user_name'],
-        'department': user_doc.get('department', '') if user_doc else '',
+        'email': user_email,
+        'name': session.get('user_name', user_doc.get('name', 'User') if user_doc else 'User'),
+        'department': dept,
+        'picture': user_doc.get('picture', '') if user_doc else '',
+        'auth_provider': user_doc.get('auth_provider', 'password') if user_doc else 'password',
+        'is_admin': is_admin_email(user_email),
         'timeout_pref': user_doc.get('timeout_pref', 15) if user_doc else 15,
         'lock_enabled': user_doc.get('lock_enabled', False) if user_doc else False,
         'first_time_login': user_doc.get('first_time_login', True) if user_doc else False
     }
     settings = get_global_settings()
-    return render_template('dashboard.html', user=user, settings=settings, departments=DEPARTMENTS)
+    return render_template('dashboard.html', user=user, dept_status=dept_status, settings=settings, departments=DEPARTMENTS)
 
 @app.route('/analysis')
 def hod_analysis_page():
@@ -2015,6 +2054,7 @@ def admin_dashboard():
     users = list(users_col.find().sort('created_at', -1))
     for u in users:
         u['_id'] = str(u['_id'])
+        u['is_admin'] = is_admin_email(u.get('email'))
         latest_sub = submissions_col.find_one({'identity.submitterEmail': u['email']}, sort=[('timestamp', -1)])
         u['latest_dept'] = u.get('department') or (latest_sub['identity']['dept'] if latest_sub and 'identity' in latest_sub else 'N/A')
 
@@ -2128,6 +2168,69 @@ def toggle_admin_access():
     )
 
     return jsonify({'ok': True, 'email': target_email, 'is_admin': make_admin})
+
+@app.route('/admin/create-user', methods=['POST'])
+def admin_create_user():
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'})
+    data = request.json or {}
+    name = data.get('name', '').strip()
+    email = data.get('email', '').strip().lower()
+    department = data.get('department', '').strip()
+    role = data.get('role', 'user').strip().lower()
+    password = data.get('password', '')
+
+    if not email or not name:
+        return jsonify({'ok': False, 'error': 'Name and Email ID are required'})
+
+    is_admin = (role == 'admin')
+    update_data = {
+        'name': name,
+        'email': email,
+        'department': department,
+        'is_admin': is_admin,
+        'role': role,
+        'first_time_login': False if department else True
+    }
+
+    if password:
+        update_data['password'] = generate_password_hash(password)
+
+    existing = users_col.find_one({'email': email})
+    if not existing:
+        update_data['created_at'] = datetime.utcnow().isoformat()
+        update_data['auth_provider'] = 'admin_created'
+        users_col.insert_one(update_data)
+    else:
+        users_col.update_one({'email': email}, {'$set': update_data})
+
+    if is_admin:
+        global_settings = settings_col.find_one({'_id': 'global'}) or {}
+        admin_list = set(e.lower() for e in global_settings.get('admin_emails', []))
+        admin_list.add(email)
+        settings_col.update_one({'_id': 'global'}, {'$set': {'admin_emails': list(admin_list)}}, upsert=True)
+
+    return jsonify({'ok': True})
+
+@app.route('/admin/delete-user/<user_id>', methods=['POST'])
+def admin_delete_user(user_id):
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'})
+    try:
+        user = users_col.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            user = users_col.find_one({'email': user_id})
+        if user:
+            users_col.delete_one({'_id': user['_id']})
+            # Remove from admin_emails list if present
+            global_settings = settings_col.find_one({'_id': 'global'}) or {}
+            admin_list = set(e.lower() for e in global_settings.get('admin_emails', []))
+            admin_list.discard(user.get('email', '').lower())
+            settings_col.update_one({'_id': 'global'}, {'$set': {'admin_emails': list(admin_list)}}, upsert=True)
+            return jsonify({'ok': True})
+        return jsonify({'ok': False, 'error': 'User not found'})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)})
 
 @app.route('/api/get-notifications', methods=['GET'])
 def get_notifications():
