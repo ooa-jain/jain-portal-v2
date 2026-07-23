@@ -4,13 +4,29 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from bson import ObjectId
 from dotenv import load_dotenv
-import json, os, io, openpyxl, random, secrets
+import json, os, io, openpyxl, random, secrets, base64
 from datetime import datetime
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+
+def _parse_jwt_payload(token_str):
+    try:
+        parts = token_str.split('.')
+        if len(parts) >= 2:
+            payload_b64 = parts[1]
+            rem = len(payload_b64) % 4
+            if rem > 0:
+                payload_b64 += '=' * (4 - rem)
+            decoded_bytes = base64.urlsafe_b64decode(payload_b64)
+            data = json.loads(decoded_bytes.decode('utf-8'))
+            if isinstance(data, dict) and data.get('email'):
+                return data
+    except Exception as e:
+        print("JWT payload decode error:", e)
+    return None
 
 # Load environment variables from .env file
 load_dotenv()
@@ -1269,13 +1285,10 @@ def google_login():
             print("Firebase token verification attempt 2:", e2)
             info = None
 
-    # Strategy 3: PyJWT decode payload fallback
+    # Strategy 3: Pure Python Base64 URL-safe JWT payload decode fallback
     if not info:
         try:
-            import jwt
-            decoded = jwt.decode(id_token_str, options={"verify_signature": False})
-            if decoded and decoded.get('email'):
-                info = decoded
+            info = _parse_jwt_payload(id_token_str)
         except Exception as e3:
             print("JWT decode fallback:", e3)
             info = None
