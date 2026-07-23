@@ -28,6 +28,33 @@ def serve_manifest():
 def serve_sw():
     return send_from_directory('static', 'sw.js')
 
+# ── Google Search Console site verification ──
+@app.route('/google72248b527c4b75b0.html')
+def google_site_verification():
+    return app.response_class(
+        'google-site-verification: google72248b527c4b75b0.html',
+        mimetype='text/html')
+
+@app.route('/robots.txt')
+def robots_txt():
+    body = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Sitemap: https://jain-sarathi.juooa.cloud/sitemap.xml\n"
+    )
+    return app.response_class(body, mimetype='text/plain')
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '  <url><loc>https://jain-sarathi.juooa.cloud/</loc>'
+        '<changefreq>weekly</changefreq><priority>1.0</priority></url>\n'
+        '</urlset>\n'
+    )
+    return app.response_class(body, mimetype='application/xml')
+
 # MongoDB connection — sourced from .env (MONGO_URI + DB_NAME)
 MONGO_URI = os.environ.get('MONGO_URI') or os.environ.get('MONGODB_URI')
 DB_NAME = os.environ.get('DB_NAME', 'semreadiness')
@@ -311,6 +338,7 @@ IEA_SECTIONS = [
          {"k": "obeDetails", "l": "OBE Integration & CO-PO Alignment", "t": "textarea", "ph": "Details on Outcome-Based Education & CO-PO attainment alignment..."},
          {"k": "inTimeDetails", "l": "In-Time Execution & Delivery Timeline", "t": "textarea", "ph": "Workflow, session timeline, and in-time course delivery details..."},
          {"k": "curriculumRevisions", "l": "Curriculum revisions", "t": "textarea"},
+         {"k": "courseRevisions", "l": "Revision of Courses", "t": "textarea", "ph": "Courses revised this year — updated syllabi, modernised content, revised outcomes, credit/structure changes..."},
          {"k": "newElectives", "l": "New electives / minors / majors / specialisations", "t": "textarea"},
          {"k": "interdisciplinary", "l": "Interdisciplinary pathways", "t": "textarea"},
          {"k": "experiential", "l": "Experiential learning", "t": "textarea"},
@@ -348,14 +376,27 @@ IEA_SECTIONS = [
          {"k": "fieldImmersion", "l": "Field immersion / Clinical training", "t": "textarea"},
          {"k": "assessmentReforms", "l": "Assessment reforms", "t": "textarea"},
      ]},
-    {"key": "F", "color": "#E11D48", "title": "Portal Feedback & Experience",
-     "sub": "Share your feedback and experience on the JAIN Sarathi Portal",
+    {"key": "F", "color": "#E11D48", "title": "Any Other Dimensions",
+     "sub": "Any other dimensions the School may deem fit to highlight in support of Innovation and Emerging Areas",
      "fields": [
-         {"k": "doYouLikePortal", "l": "Do you like the portal / application?", "t": "text", "ph": "e.g., Yes, excellent experience & smooth workflow!"},
-         {"k": "portalRating", "l": "Overall Satisfaction Level (1 to 10 Star Scale)", "t": "rating10"},
-         {"k": "feedbackComments", "l": "Detailed Feedback & Feature Suggestions", "t": "textarea", "ph": "Share your thoughts, feedback, or requested feature enhancements..."},
+         {"k": "dimensionTitle", "l": "Dimension / Highlight", "t": "text", "ph": "e.g., Patents & IPR, Student startups, Faculty innovation, MoUs, Awards & Recognitions..."},
+         {"k": "dimensionDetails", "l": "Details & Contribution to Innovation and Emerging Areas", "t": "textarea", "ph": "Describe this dimension and how it supports Innovation and Emerging Areas..."},
      ]},
 ]
+
+# Definition shown to every user before starting an IEA submission.
+IEA_DEFINITION = (
+    "Definition: Programmes and Courses in Innovation and Emerging Areas are academic "
+    "offerings that address new, evolving, or rapidly advancing domains of knowledge, "
+    "skills, technologies, professions, and societal needs. Such offerings are "
+    "characterized by their relevance to contemporary and future developments, "
+    "interdisciplinary and multidisciplinary approaches, integration of research and "
+    "innovation, responsiveness to industry and societal requirements, and alignment "
+    "with global trends and national priorities. They may encompass emerging fields, "
+    "transformative technologies, novel applications of existing disciplines, and "
+    "innovative pedagogical approaches that prepare learners for future opportunities, "
+    "challenges, and lifelong learning."
+)
 
 # ── Mail Helper ──────────────────────────────────────────
 
@@ -854,7 +895,32 @@ def iea():
                            iea_schools=IEA_SCHOOLS,
                            iea_years=IEA_YEARS,
                            iea_sections=IEA_SECTIONS,
-                           iea_evidence_types=IEA_EVIDENCE_TYPES)
+                           iea_evidence_types=IEA_EVIDENCE_TYPES,
+                           iea_definition=IEA_DEFINITION)
+
+@app.route('/api/iea/feedback', methods=['POST'])
+def iea_feedback():
+    if 'user_email' not in session and not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    data = request.json or {}
+    like = (data.get('like') or '').strip()
+    try:
+        rating = int(data.get('rating') or 0)
+    except (TypeError, ValueError):
+        rating = 0
+    rating = max(0, min(10, rating))
+    comments = (data.get('comments') or '').strip()
+    if not like and not rating and not comments:
+        return jsonify({'ok': False, 'error': 'Please share some feedback before submitting.'})
+    db['iea_feedback'].insert_one({
+        'like': like,
+        'rating': rating,
+        'comments': comments,
+        'submitterEmail': session.get('user_email', ''),
+        'submitterName': session.get('user_name', ''),
+        'createdAt': datetime.utcnow().isoformat(),
+    })
+    return jsonify({'ok': True})
 
 @app.route('/api/iea/load')
 def iea_load():
@@ -975,8 +1041,12 @@ def admin_iea():
     for s in subs:
         s['_id'] = str(s['_id'])
         s['years'] = _iea_merge_years(s.get('years'))
+    feedback = list(db['iea_feedback'].find().sort('createdAt', -1))
+    for f in feedback:
+        f['_id'] = str(f['_id'])
     return render_template('iea_admin.html',
                            submissions=subs,
+                           feedback=feedback,
                            iea_years=IEA_YEARS,
                            iea_sections=IEA_SECTIONS)
 
@@ -1005,7 +1075,7 @@ def admin_iea_export():
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 def build_iea_workbook(docs, year=None):
-    """Excel report for IEA submissions — one sheet per section (A-E)."""
+    """Excel report for IEA submissions — one sheet per section (A-F)."""
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     hdr_fill, hdr_font, gold_fill, gold_font, thin, center = _styles()

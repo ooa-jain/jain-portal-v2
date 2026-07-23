@@ -586,6 +586,15 @@
       </a>
     </div>
 
+    <!-- Definition banner (shown to everyone before starting a submission) -->
+    <div class="iea-definition" style="background: linear-gradient(135deg,#f0f4ff 0%,#eef6f0 100%); border:1px solid #c8d4f0; border-left:4px solid #0a2558; border-radius:14px; padding:18px 22px; margin-bottom:24px; box-shadow: var(--sh);">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a2558" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:14.5px; color:#0a2558;">Innovation and Emerging Areas — Definition</span>
+      </div>
+      <p style="font-size:13.5px; line-height:1.7; color:var(--ink); margin:0;">{{ iea_definition }}</p>
+    </div>
+
     <!-- Filter Bar -->
     <div class="filter-section">
       <div class="filter-group">
@@ -607,6 +616,35 @@
       <div class="skeleton skeleton-card"></div>
       <div class="skeleton skeleton-card"></div>
       <div class="skeleton skeleton-card" style="opacity:.6"></div>
+    </div>
+
+    <!-- ═════════ PORTAL FEEDBACK (home page, for all users) ═════════ -->
+    <div class="feedback-card" style="background:#fff; border:1px solid #dde3f0; border-top:4px solid #E11D48; border-radius:14px; padding:24px; margin-top:32px; box-shadow: var(--sh);">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <h3 style="font-family:'Playfair Display',serif; font-size:19px; color:var(--navy); margin:0;">Portal Feedback &amp; Experience</h3>
+      </div>
+      <p style="color:var(--ink3); font-size:13px; margin:0 0 18px;">Share your feedback and experience on the JAIN Sarathi Portal. This is separate from your IEA submissions.</p>
+
+      <div class="field" style="margin-bottom:14px;">
+        <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Do you like the portal / application?</label>
+        <input type="text" id="fbLike" placeholder="e.g., Yes, excellent experience & smooth workflow!" style="width:100%; padding:10px 12px; border:1px solid #dde3f0; border-radius:8px; font-size:13.5px;">
+      </div>
+
+      <div class="field" style="margin-bottom:14px;">
+        <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Overall Satisfaction Level (1 to 10 Star Scale)</label>
+        <div id="fbStars" style="display:flex; gap:4px; flex-wrap:wrap;"></div>
+      </div>
+
+      <div class="field" style="margin-bottom:18px;">
+        <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Detailed Feedback &amp; Feature Suggestions</label>
+        <textarea id="fbComments" rows="4" placeholder="Share your thoughts, feedback, or requested feature enhancements..." style="width:100%; padding:10px 12px; border:1px solid #dde3f0; border-radius:8px; font-size:13.5px; resize:vertical;"></textarea>
+      </div>
+
+      <button class="btn btn-primary" onclick="submitFeedback()" style="text-decoration:none;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Submit Feedback
+      </button>
     </div>
   </div>
 
@@ -865,7 +903,7 @@
     function updateStatusPill() {
       const pill = document.getElementById('statusPill');
       const count = totalEntries(state);
-      if (count === 0) { pill.innerHTML = ICON.fileText + ' No entries yet. Add entries in sections A–E below.'; pill.style.color = 'var(--ink3)'; }
+      if (count === 0) { pill.innerHTML = ICON.fileText + ' No entries yet. Add entries in sections A–F below.'; pill.style.color = 'var(--ink3)'; }
       else { const when = state.lastUpdated ? new Date(state.lastUpdated + (state.lastUpdated.endsWith('Z') ? '' : 'Z')).toLocaleString() : 'never'; pill.innerHTML = ICON.check + ' ' + count + ' entries · Last saved: ' + when; pill.style.color = '#2F6F4E'; }
     }
 
@@ -1202,7 +1240,45 @@
     document.getElementById('sectionsContainer').addEventListener('input', e => { const t = e.target; if (t.type === 'checkbox' && t.dataset.field === 'evidenceTypes') return; if (t.dataset.field) updateField(t.dataset.section, t.dataset.entry, t.dataset.field, t.value); });
     document.getElementById('sectionsContainer').addEventListener('change', e => { const t = e.target; if (t.type === 'checkbox' && t.dataset.field === 'evidenceTypes') toggleEvidenceType(t.dataset.section, t.dataset.entry, t.dataset.value, t.checked); });
 
+    /* ── Portal feedback (home page) ── */
+    let fbRating = 0;
+    function renderFbStars() {
+      const wrap = document.getElementById('fbStars');
+      if (!wrap) return;
+      let html = '';
+      for (let i = 1; i <= 10; i++) {
+        const on = i <= fbRating;
+        html += '<button type="button" onclick="setFbRating(' + i + ')" title="' + i + ' / 10" ' +
+          'style="background:none; border:none; cursor:pointer; padding:2px; line-height:0;">' +
+          '<svg width="26" height="26" viewBox="0 0 24 24" fill="' + (on ? '#f5b301' : 'none') + '" stroke="' + (on ? '#f5b301' : '#c8d0e0') + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+          '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>';
+      }
+      wrap.innerHTML = html + '<span style="margin-left:8px; font-size:13px; font-weight:700; color:var(--navy); align-self:center;">' + (fbRating ? fbRating + ' / 10' : '') + '</span>';
+    }
+    function setFbRating(n) { fbRating = n; renderFbStars(); }
+
+    async function submitFeedback() {
+      const like = document.getElementById('fbLike').value.trim();
+      const comments = document.getElementById('fbComments').value.trim();
+      if (!like && !fbRating && !comments) { showToast('Please share some feedback before submitting.', true); return; }
+      try {
+        const res = await fetch('/api/iea/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ like, rating: fbRating, comments })
+        });
+        const json = await res.json();
+        if (json.ok) {
+          showToast('Thank you! Your feedback has been submitted.');
+          document.getElementById('fbLike').value = '';
+          document.getElementById('fbComments').value = '';
+          fbRating = 0; renderFbStars();
+        } else showToast('Could not submit: ' + (json.error || 'Error'), true);
+      } catch (err) { showToast('Error: ' + err.message, true); }
+    }
+
     // Boot
+    renderFbStars();
     loadDashboard();
   </script>
 </body>
