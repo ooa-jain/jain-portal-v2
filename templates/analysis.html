@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Department Analysis | OoA Portal</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --navy: #0a2540;
+      --navy2: #0f172a;
+      --navy3: #334155;
+      --gold: #ffc000;
+      --gold-dark: #d97706;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --ink: #0f172a;
+      --ink2: #334155;
+      --ink3: #64748b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --primary: #2563eb;
+      --sh: 0 4px 20px rgba(10, 37, 64, 0.05);
+      --sh-lg: 0 10px 30px rgba(10, 37, 64, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .site-header {
+      background: #ffffff;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 24px rgba(0, 0, 0, .08);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 68px;
+      width: 100%;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-text .l1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.1;
+    }
+
+    .logo-text .l2 {
+      font-size: 11px;
+      color: var(--navy);
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .hdr-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-profile {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--navy);
+      background: #fff;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .btn-profile:hover {
+      border-color: var(--navy);
+      background: rgba(10, 37, 64, 0.02);
+    }
+
+    .page-wrap {
+      max-width: 1200px;
+      margin: 32px auto;
+      padding: 0 24px;
+      width: 100%;
+      flex: 1;
+    }
+
+    .page-heading {
+      margin-bottom: 28px;
+    }
+
+    .page-heading h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      color: var(--navy);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .page-heading p {
+      color: var(--ink3);
+      font-size: 15px;
+    }
+
+    /* Summary Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1.5px solid var(--border);
+      box-shadow: var(--sh);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--sh-lg);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--navy);
+    }
+
+    .stat-card.stat-readiness::before {
+      background: var(--success);
+    }
+
+    .stat-card.stat-closure::before {
+      background: var(--primary);
+    }
+
+    .stat-card.stat-programs::before {
+      background: var(--gold);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink3);
+      margin-bottom: 8px;
+    }
+
+    .stat-val {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-desc {
+      font-size: 12.5px;
+      color: var(--ink3);
+    }
+
+    /* Filters Panel */
+    .filter-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1.5px solid var(--border);
+      padding: 24px;
+      box-shadow: var(--sh);
+      margin-bottom: 24px;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      align-items: end;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--navy3);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .filter-field select, .filter-field input {
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--ink);
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s ease;
+      width: 100%;
+    }
+
+    .filter-field select:focus, .filter-field input:focus {
+      border-color: var(--navy);
+    }
+
+    .btn-export {
+      background: var(--navy);
+      color: #ffffff !important;
+      border-color: var(--navy);
+      font-weight: 700;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-export:hover {
+      background: var(--navy2);
+      border-color: var(--navy2);
+    }
+
+    /* Table Design */
+    .table-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1.5px solid var(--border);
+      box-shadow: var(--sh);
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    .analysis-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .analysis-table th {
+      background: #f8fafc;
+      padding: 16px 24px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--navy3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    .analysis-table td {
+      padding: 18px 24px;
+      font-size: 14px;
+      color: var(--ink2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .analysis-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .analysis-table tbody tr:hover {
+      background-color: #f8fafc;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-readiness {
+      background: #e8f7ee;
+      color: #0f5a2a;
+      border: 1px solid #c8e6c9;
+    }
+
+    .badge-closure {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+
+    .empty-state {
+      padding: 48px;
+      text-align: center;
+      color: var(--ink3);
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+    }
+
+    /* Mobile Responsive styles */
+    @media (max-width: 768px) {
+      .header-inner {
+        padding: 0 16px;
+      }
+      .page-wrap {
+        margin: 20px auto;
+        padding: 0 16px;
+      }
+      .page-heading h1 {
+        font-size: 26px;
+      }
+      .analysis-table th, .analysis-table td {
+        padding: 12px 16px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo-area">
+        <img src="/static/images/jain.png" alt="Jain University" style="height: 38px; object-fit: contain;" onerror="this.style.display='none'">
+        <div style="width: 1px; height: 30px; background: #e0e5f2; margin: 0 4px;"></div>
+        <div class="logo-text">
+          <div class="l1"><span style="color:#0a2558; font-weight:800;">JAIN</span> <span style="color:#16a34a; font-weight:800;">Sarathi</span></div>
+          <div class="l2">JAIN (Deemed-to-be University)</div>
+        </div>
+      </div>
+      
+      <div class="hdr-right">
+        <a href="/" class="btn-profile">Home</a>
+        <a href="/analysis" class="btn-profile" style="border-color: var(--navy); background: var(--navy); color: #fff;">Analysis</a>
+        <a href="/api/logout" class="btn-profile" style="color: var(--danger); border-color: #fca5a5; background: #fef2f2;">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-wrap">
+    <div class="page-heading">
+      <h1>Faculty Submissions Analysis</h1>
+      <p>Analyze and track faculty-wise checklists submitted under your department (<strong>{{ user.department }}</strong>)</p>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Submissions</div>
+        <div class="stat-val" id="statTotal">—</div>
+        <div class="stat-desc">Submissions by all faculty members</div>
+      </div>
+      <div class="stat-card stat-readiness">
+        <div class="stat-label">Readiness Forms</div>
+        <div class="stat-val" id="statReadiness">—</div>
+        <div class="stat-desc">Semester start preparation</div>
+      </div>
+      <div class="stat-card stat-closure">
+        <div class="stat-label">Closure Forms</div>
+        <div class="stat-val" id="statClosure">—</div>
+        <div class="stat-desc">Semester end closure reports</div>
+      </div>
+      <div class="stat-card stat-programs">
+        <div class="stat-label">Unique Programs</div>
+        <div class="stat-val" id="statPrograms">—</div>
+        <div class="stat-desc">Academic programs represented</div>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="filter-card">
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label>Search Faculty/Course</label>
+          <input type="text" id="filterSearch" placeholder="Type name, email or code..." oninput="applyFilters()">
+        </div>
+        <div class="filter-field">
+          <label>Form Type</label>
+          <select id="filterType" onchange="applyFilters()">
+            <option value="all">All Submissions</option>
+            <option value="readiness">Semester Readiness</option>
+            <option value="closure">Semester Closure</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Semester</label>
+          <select id="filterSemester" onchange="applyFilters()">
+            <option value="all">All Semesters</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Program</label>
+          <select id="filterProgram" onchange="applyFilters()">
+            <option value="all">All Programs</option>
+          </select>
+        </div>
+        <button class="btn-profile btn-export" onclick="exportToCSV()">
+          📥 Export CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-wrap">
+        <table class="analysis-table">
+          <thead>
+            <tr>
+              <th>Faculty Name</th>
+              <th>Program</th>
+              <th>Course Name &amp; Code</th>
+              <th>Form Type</th>
+              <th>Semester / Academic Year</th>
+              <th>Submission Date</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--ink3);">Loading data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let rawData = [];
+    let filteredData = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchData();
+    });
+
+    function fetchData() {
+      fetch('/api/hod/analysis')
+        .then(res => res.json())
+        .then(res => {
+          if (res.ok) {
+            rawData = res.data || [];
+            populateFilterOptions();
+            applyFilters();
+          } else {
+            document.getElementById('tableBody').innerHTML = `
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--danger); font-weight: 700;">
+                  ❌ Failed to load analysis data
+                </td>
+              </tr>
+            `;
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById('tableBody').innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--danger); font-weight: 700;">
+                ❌ Network error loading data
+              </td>
+            </tr>
+          `;
+        });
+    }
+
+    function populateFilterOptions() {
+      const semesters = new Set();
+      const programs = new Set();
+
+      rawData.forEach(item => {
+        if (item.parent_semester) {
+          semesters.add(`${item.parent_semester} (A.Y. ${item.parent_ac_year})`);
+        }
+        if (item.program) {
+          programs.add(item.program);
+        }
+      });
+
+      const semSelect = document.getElementById('filterSemester');
+      semSelect.innerHTML = '<option value="all">All Semesters</option>';
+      Array.from(semesters).sort().forEach(sem => {
+        const option = document.createElement('option');
+        option.value = sem;
+        option.textContent = sem;
+        semSelect.appendChild(option);
+      });
+
+      const progSelect = document.getElementById('filterProgram');
+      progSelect.innerHTML = '<option value="all">All Programs</option>';
+      Array.from(programs).sort().forEach(prog => {
+        const option = document.createElement('option');
+        option.value = prog;
+        option.textContent = prog;
+        progSelect.appendChild(option);
+      });
+    }
+
+    function applyFilters() {
+      const searchQuery = document.getElementById('filterSearch').value.toLowerCase().trim();
+      const formType = document.getElementById('filterType').value;
+      const selectedSem = document.getElementById('filterSemester').value;
+      const selectedProg = document.getElementById('filterProgram').value;
+
+      filteredData = rawData.filter(item => {
+        // Search filter
+        const matchSearch = !searchQuery || 
+          item.faculty_name.toLowerCase().includes(searchQuery) ||
+          item.faculty_email.toLowerCase().includes(searchQuery) ||
+          item.course_name.toLowerCase().includes(searchQuery) ||
+          item.course_code.toLowerCase().includes(searchQuery);
+
+        // Form Type filter
+        const matchType = formType === 'all' || item.form_type === formType;
+
+        // Semester filter
+        const itemSemString = `${item.parent_semester} (A.Y. ${item.parent_ac_year})`;
+        const matchSem = selectedSem === 'all' || itemSemString === selectedSem;
+
+        // Program filter
+        const matchProg = selectedProg === 'all' || item.program === selectedProg;
+
+        return matchSearch && matchType && matchSem && matchProg;
+      });
+
+      updateSummaryMetrics();
+      renderTable();
+    }
+
+    function updateSummaryMetrics() {
+      document.getElementById('statTotal').textContent = filteredData.length;
+      
+      const readinessCount = filteredData.filter(i => i.form_type === 'readiness').length;
+      document.getElementById('statReadiness').textContent = readinessCount;
+
+      const closureCount = filteredData.filter(i => i.form_type === 'closure').length;
+      document.getElementById('statClosure').textContent = closureCount;
+
+      const uniqueProgs = new Set(filteredData.map(i => i.program).filter(Boolean));
+      document.getElementById('statPrograms').textContent = uniqueProgs.size;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      if (filteredData.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h3>No faculty submissions match the filters</h3>
+                <p style="margin-top: 8px;">Try modifying your search or dropdown selections.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filteredData.map(item => {
+        const typeBadge = item.form_type === 'readiness' 
+          ? '<span class="badge badge-readiness">Readiness</span>'
+          : '<span class="badge badge-closure">Closure</span>';
+        
+        const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleDateString('en-US', {
+          year: 'numeric', month: 'short', day: 'numeric'
+        }) : '—';
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: var(--navy);">${item.faculty_name || '—'}</div>
+              <div style="font-size: 12px; color: var(--ink3);">${item.faculty_email || '—'}</div>
+            </td>
+            <td style="font-weight: 600;">${item.program || '—'}</td>
+            <td>
+              <div style="font-weight: 700; color: var(--ink2);">${item.course_name || '—'}</div>
+              <div style="font-family: monospace; font-size: 12.5px; color: var(--ink3);">${item.course_code || '—'}</div>
+            </td>
+            <td>${typeBadge}</td>
+            <td>
+              <div style="font-weight: 600; color: var(--navy);">${item.parent_semester || '—'}</div>
+              <div style="font-size: 12px; color: var(--ink3);">A.Y. ${item.parent_ac_year || '—'}</div>
+            </td>
+            <td style="color: var(--ink3); font-weight: 500;">${dateStr}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function exportToCSV() {
+      if (filteredData.length === 0) {
+        alert("No data available to export.");
+        return;
+      }
+
+      const headers = ['Faculty Name', 'Faculty Email', 'Program', 'Course Name', 'Course Code', 'Form Type', 'Semester', 'Academic Year', 'Submission Date'];
+      const csvRows = [headers.join(',')];
+
+      filteredData.forEach(item => {
+        const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleDateString('en-US') : '—';
+        const row = [
+          `"${(item.faculty_name || '').replace(/"/g, '""')}"`,
+          `"${(item.faculty_email || '').replace(/"/g, '""')}"`,
+          `"${(item.program || '').replace(/"/g, '""')}"`,
+          `"${(item.course_name || '').replace(/"/g, '""')}"`,
+          `"${(item.course_code || '').replace(/"/g, '""')}"`,
+          `"${(item.form_type || '').replace(/"/g, '""')}"`,
+          `"${(item.parent_semester || '').replace(/"/g, '""')}"`,
+          `"${(item.parent_ac_year || '').replace(/"/g, '""')}"`,
+          `"${dateStr}"`
+        ];
+        csvRows.push(row.join(','));
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Faculty_Submissions_Analysis_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>

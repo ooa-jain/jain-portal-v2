@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JAIN Sarathi Portal — Office of Academics, JAIN (Deemed-to-be University)</title>
+  <meta name="description" content="JAIN Sarathi — the official Office of Academics (OoA) faculty portal of JAIN (Deemed-to-be University) for Semester Readiness, Closure, and Innovation & Emerging Areas (IEA) submissions.">
+  <meta name="keywords" content="JAIN Sarathi, Jain Sarathi Portal, JAIN University, Office of Academics, OoA Portal, IEA, Innovation and Emerging Areas, faculty portal">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://jain-sarathi.juooa.cloud/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="JAIN Sarathi Portal">
+  <meta property="og:title" content="JAIN Sarathi Portal — Office of Academics, JAIN University">
+  <meta property="og:description" content="Official Office of Academics faculty portal of JAIN (Deemed-to-be University).">
+  <meta property="og:url" content="https://jain-sarathi.juooa.cloud/">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a2558">
+  <link rel="icon" type="image/svg+xml" href="/static/images/jgi-logo.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32.png">
+  <link rel="apple-touch-icon" href="/static/images/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JAIN Sarathi">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
+  </script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --navy: #0a2558;
+      --navy2: #143572;
+      --gold: #f2a900;
+      --bg: #ffffff;
+      --ink: #111827;
+      --ink2: #374151;
+      --ink3: #6b7280;
+      --danger: #dc2626;
+      --r: 12px;
+      --sh2: 0 12px 48px rgba(0, 0, 0, 0.08);
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(rgba(10, 37, 88, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(10, 37, 88, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    .auth-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+      gap: 60px;
+    }
+
+    .auth-box {
+      width: 100%;
+      max-width: 440px;
+      background: #fff;
+      border-radius: var(--r);
+      padding: 36px 32px;
+      box-shadow: var(--sh2);
+      border: 1px solid rgba(10, 37, 88, 0.05);
+    }
+
+    .workflow-section {
+      width: 100%;
+      max-width: 1100px;
+      margin-top: 20px;
+    }
+
+    .workflow-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+      border-bottom: 2px solid rgba(10, 37, 88, 0.08);
+      padding-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .workflow-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      color: var(--navy);
+      font-weight: 700;
+    }
+
+    .pdf-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #ff9900, #ff5500);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 99px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 13px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(255, 85, 0, 0.3);
+    }
+
+    .pdf-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 85, 0, 0.4);
+    }
+
+    .workflow-grid {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .workflow-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: var(--navy);
+      font-weight: 800;
+      opacity: 0.6;
+      transition: all 0.3s;
+    }
+
+    @media (max-width: 992px) {
+      .workflow-arrow {
+        transform: rotate(90deg);
+        margin: 10px 0;
+        width: 100%;
+        text-align: center;
+      }
+    }
+
+    .step-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(0, 0, 0, 0.03);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step-card:hover {
+      transform: translateY(-6px);
+    }
+
+    .step-card.step-1:hover {
+      box-shadow: 0 12px 30px rgba(10, 37, 88, 0.12);
+      border-color: rgba(10, 37, 88, 0.2);
+    }
+
+    .step-card.step-2:hover {
+      box-shadow: 0 12px 30px rgba(139, 92, 246, 0.12);
+      border-color: rgba(139, 92, 246, 0.2);
+    }
+
+    .step-card.step-3:hover {
+      box-shadow: 0 12px 30px rgba(236, 72, 153, 0.12);
+      border-color: rgba(236, 72, 153, 0.2);
+    }
+
+    .step-card.step-4:hover {
+      box-shadow: 0 12px 30px rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.2);
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 800;
+      font-size: 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .step-1 .step-badge {
+      background: linear-gradient(135deg, #0a2558, #1e40af);
+      box-shadow: 0 4px 12px rgba(10, 37, 88, 0.2);
+    }
+
+    .step-2 .step-badge {
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+    }
+
+    .step-3 .step-badge {
+      background: linear-gradient(135deg, #ec4899, #db2777);
+      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.2);
+    }
+
+    .step-4 .step-badge {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .step-card h4 {
+      font-size: 16px;
+      color: var(--navy);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .step-card p {
+      font-size: 13.5px;
+      color: var(--ink3);
+      line-height: 1.6;
+    }
+
+    .auth-tabs {
+      display: flex;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #e8ecf5;
+    }
+
+    .auth-tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink3);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+
+    .auth-tab.active {
+      color: var(--navy);
+      border-bottom-color: var(--navy);
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink2);
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #dde3f0;
+      border-radius: 8px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: 0.15s;
+    }
+
+    .field input:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(10, 37, 88, 0.1);
+    }
+
+    .password-wrapper {
+      position: relative;
+    }
+    .password-wrapper input {
+      padding-right: 40px !important;
+    }
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+      color: var(--ink3);
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: 0.2s;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .btn-primary {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--navy2);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--ink);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 9999;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .req {
+      color: var(--danger);
+    }
+
+    @media (max-width: 768px) {
+      .auth-wrap>div {
+        flex-direction: column-reverse !important;
+        gap: 20px !important;
+      }
+    }
+
+    .corner-logo {
+      position: fixed;
+      top: 18px;
+      right: 20px;
+      z-index: 1000;
+      display: block;
+      line-height: 0;
+    }
+    .corner-logo img {
+      height: 58px;
+      width: 58px;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(10, 37, 88, 0.18));
+      transition: transform 0.15s ease;
+    }
+    .corner-logo:hover img {
+      transform: scale(1.06);
+    }
+    @media (max-width: 560px) {
+      .corner-logo { top: 12px; right: 12px; }
+      .corner-logo img { height: 46px; width: 46px; }
+    }
+
+    .or-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 20px 0 16px;
+      color: var(--ink3);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .or-divider::before,
+    .or-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #e2e8f0;
+    }
+    .or-divider span {
+      padding: 0 12px;
+    }
+    .btn-google {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border: 1px solid #dbe1ea;
+      border-radius: var(--r);
+      background: #fff;
+      color: #1f2937;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .btn-google:hover {
+      background: #f8fafc;
+      border-color: #c7ced9;
+      box-shadow: 0 2px 8px rgba(10, 37, 88, 0.06);
+    }
+    .btn-google:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- JGI logo — top-right corner -->
+  <a href="/" class="corner-logo" aria-label="JGI — JAIN Group of Institutions">
+    <img src="/static/images/jgi-logo.svg" alt="JGI logo">
+  </a>
+
+  <!-- PWA Install Banner at the top of the body -->
+  <div id="pwaLoginSection"
+    style="display: none; width: calc(100% - 20px); max-width: 1100px; margin: 10px auto; padding: 14px; background: #e0f2fe; border: 1.5px solid #bae6fd; border-radius: 10px; align-items: center; justify-content: space-between; gap: 10px; text-align: left; box-shadow: var(--sh); box-sizing: border-box;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: #bae6fd; border-radius: 8px; color: #0284c7;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+      <div>
+        <div style="font-weight: 700; color: #0369a1; font-size: 13px;">Mobile App Available</div>
+        <div style="font-size: 11px; color: #0284c7;">Install on your home screen for quick access</div>
+      </div>
+    </div>
+    <button id="pwaLoginInstallBtn" class="btn"
+      style="background: #0284c7; color: #fff; padding: 6px 12px; font-size: 11px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; white-space: nowrap;">Download
+      App</button>
+  </div>
+
+  <!-- iOS Instruction inside Login -->
+  <div id="pwaLoginIosSection"
+    style="display: none; width: calc(100% - 20px); max-width: 1100px; margin: 10px auto; padding: 14px; background: #fef3c7; border: 1.5px solid #fde68a; border-radius: 10px; text-align: left; box-shadow: var(--sh); box-sizing: border-box;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: #fde68a; border-radius: 8px; color: #92400e;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/></svg></div>
+      <div>
+        <div style="font-weight: 700; color: #92400e; font-size: 13px;">Install on iPhone</div>
+        <div style="font-size: 11px; color: #b45309; line-height: 1.4; margin-top: 2px;">Tap <span
+            style="font-weight: 700;">Share</span> in Safari, then <span style="font-weight: 700;">"Add to Home
+            Screen"</span>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-wrap">
+    <div
+      style="display: flex; gap: 40px; align-items: stretch; justify-content: center; max-width: 1100px; width: 100%; flex-wrap: wrap;">
+      <!-- Left Pane: Guidance Card -->
+      <div class="brand-panel"
+        style="flex: 1.2; min-width: 320px; background: #fff; border-radius: var(--r); padding: 36px 32px; box-shadow: var(--sh2); border: 1px solid rgba(10, 37, 88, 0.05); display: flex; flex-direction: column; justify-content: center;">
+        <img src="/static/images/jain.png" alt="Jain University"
+          style="height: 64px; margin-bottom: 24px; align-self: flex-start;" onerror="this.style.display='none'">
+        <h2
+          style="font-size: 26px; color: var(--navy); font-weight: 800; font-family: 'Playfair Display', serif; margin-bottom: 8px;">
+          JAIN (Deemed-to-be University)</h2>
+        <h3
+          style="font-size: 14px; color: var(--gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 20px;">
+          Office of Academics Portal</h3>
+
+        <div class="instruction-box"
+          style="background: #fafbff; border-left: 4px solid var(--gold); border-radius: 6px; padding: 20px; margin-top: 10px; text-align: left;">
+          <h4
+            style="font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Login Instructions</h4>
+          <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px;">
+            <li
+              style="font-size: 13.5px; color: var(--ink2); line-height: 1.5; display: flex; gap: 8px; align-items: flex-start; font-weight: 700; background: rgba(220,38,38,0.06); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--danger);">
+              <span style="color: var(--danger); font-weight: bold;">⚠</span>
+              <span>Only HOD of Jain Deemed-to-be University to use this link and doesn't share the link with any.</span>
+            </li>
+            <li
+              style="font-size: 13.5px; color: var(--ink2); line-height: 1.5; display: flex; gap: 8px; align-items: flex-start;">
+              <span style="color: var(--gold); font-weight: bold;">✔</span>
+              <span><strong>New User Registration</strong>: For the first time user, Click the <strong>"New
+                  User"</strong> tab, enter your Full Name and <code>jainuniversity.ac.in</code> email ID, and click
+                Register.</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Right Pane: Auth Card -->
+      <div class="auth-box"
+        style="flex: 0.9; min-width: 320px; margin-top: 0; display: flex; flex-direction: column; justify-content: center;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <h2 style="font-size: 22px; color: var(--navy); font-weight: 700; margin-bottom: 8px;">Sign In</h2>
+          <p style="color: var(--ink3); font-size: 13px;">Authenticate to access your department portal</p>
+        </div>
+
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="tabLogin" onclick="switchAuth('login')">Login</div>
+          <div class="auth-tab" id="tabRegister" onclick="switchAuth('register')">New User</div>
+        </div>
+
+        <div id="authLogin">
+          <div class="field" style="margin-bottom: 16px;">
+            <label>Your Mail ID <span class="req">*</span></label>
+            <input type="email" id="auth_l_email" placeholder="you@jainuniversity.ac.in">
+          </div>
+          <div class="field" style="margin-bottom: 8px;">
+            <label>Password <span class="req">*</span></label>
+            <div class="password-wrapper">
+              <input type="password" id="auth_l_password" placeholder="••••••••"
+                onkeydown="if(event.key==='Enter') doLogin(this.closest('#authLogin').querySelector('.btn')))">
+              <button type="button" class="toggle-password" onclick="togglePasswordVisibility('auth_l_password', this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+          </div>
+          <div style="text-align: right; margin-bottom: 20px;">
+            <a href="#" onclick="showForgotPassword(); return false;"
+              style="font-size: 12px; color: var(--navy); font-weight: 600; text-decoration: none;">Forgot Password?</a>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; justify-content: center;"
+            onclick="doLogin(this)">Login</button>
+        </div>
+
+        <div id="authRegister" style="display: none;">
+          <div class="field" style="margin-bottom: 16px;">
+            <label>Your Name <span class="req">*</span></label>
+            <input type="text" id="auth_r_name" placeholder="Full Name">
+          </div>
+          <div class="field" style="margin-bottom: 16px;">
+            <label>Your Mail ID <span class="req">*</span></label>
+            <input type="email" id="auth_r_email" placeholder="you@jainuniversity.ac.in">
+          </div>
+          <div class="field" style="margin-bottom: 20px;">
+            <label>Set Password <span class="req">*</span></label>
+            <div class="password-wrapper">
+              <input type="password" id="auth_r_password" placeholder="Min 7 characters"
+                onkeydown="if(event.key==='Enter') doRegister(this.closest('#authRegister').querySelector('.btn')))">
+              <button type="button" class="toggle-password" onclick="togglePasswordVisibility('auth_r_password', this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; justify-content: center;"
+            onclick="doRegister(this)">Register</button>
+        </div>
+
+        <div id="authForgot" style="display: none;">
+          <h3 style="font-size: 16px; color: var(--navy); margin-bottom: 8px;">Reset Password</h3>
+          <p style="font-size: 13px; color: var(--ink3); margin-bottom: 16px;">Enter your email to receive an OTP.</p>
+          <div class="field" style="margin-bottom: 20px;">
+            <label>Your Mail ID <span class="req">*</span></label>
+            <input type="email" id="auth_f_email" placeholder="you@jainuniversity.ac.in">
+          </div>
+          <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 12px;"
+            onclick="sendOtp(this)">Send OTP</button>
+          <div style="text-align: center;">
+            <a href="#" onclick="switchAuth('login'); return false;"
+              style="font-size: 12px; color: var(--ink3); font-weight: 600; text-decoration: none;">Back to Login</a>
+          </div>
+        </div>
+
+        <div id="authReset" style="display: none;">
+          <h3 style="font-size: 16px; color: var(--navy); margin-bottom: 8px;">Enter OTP</h3>
+          <p style="font-size: 13px; color: var(--ink3); margin-bottom: 16px;">Enter the OTP sent to your email.</p>
+          <div class="field" style="margin-bottom: 16px;">
+            <label>OTP <span class="req">*</span></label>
+            <input type="text" id="auth_reset_otp" placeholder="4-digit OTP" maxlength="4"
+              style="text-align:center; letter-spacing:4px; font-size:16px;">
+          </div>
+          <div class="field" style="margin-bottom: 20px;">
+            <label>New Password <span class="req">*</span></label>
+            <div class="password-wrapper">
+              <input type="password" id="auth_reset_password" placeholder="Min 7 characters">
+              <button type="button" class="toggle-password" onclick="togglePasswordVisibility('auth_reset_password', this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 12px;"
+            onclick="resetPassword(this)">Reset Password</button>
+          <div style="text-align: center;">
+            <a href="#" onclick="switchAuth('login'); return false;"
+              style="font-size: 12px; color: var(--ink3); font-weight: 600; text-decoration: none;">Cancel</a>
+          </div>
+        </div>
+
+        <div class="or-divider" id="googleAuthArea">
+          <span>or</span>
+        </div>
+        <button type="button" class="btn-google" id="googleBtn" onclick="googleSignIn()">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          <span>Sign in with Google</span>
+        </button>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function switchAuth(tab) {
+      document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+      document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+      document.getElementById('authLogin').style.display = tab === 'login' ? 'block' : 'none';
+      document.getElementById('authRegister').style.display = tab === 'register' ? 'block' : 'none';
+      document.getElementById('authForgot').style.display = 'none';
+      document.getElementById('authReset').style.display = 'none';
+      document.querySelector('.auth-tabs').style.display = (tab === 'login' || tab === 'register') ? 'flex' : 'none';
+    }
+
+    function showForgotPassword() {
+      document.getElementById('authLogin').style.display = 'none';
+      document.getElementById('authRegister').style.display = 'none';
+      document.querySelector('.auth-tabs').style.display = 'none';
+      document.getElementById('authForgot').style.display = 'block';
+      document.getElementById('authReset').style.display = 'none';
+    }
+
+    async function doLogin(btn) {
+      if (!btn) btn = document.querySelector('#authLogin .btn');
+      const email = document.getElementById('auth_l_email').value.trim();
+      const password = document.getElementById('auth_l_password').value;
+      if (!email || !password) { showToast('Email and Password required'); return; }
+      const res = await LoadingButton.fetch(btn, '/api/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (res.ok) window.location.href = res.redirect_url || '/';
+      else showToast('⚠ ' + res.error);
+    }
+
+    async function doRegister(btn) {
+      if (!btn) btn = document.querySelector('#authRegister .btn');
+      const name = document.getElementById('auth_r_name').value.trim();
+      const email = document.getElementById('auth_r_email').value.trim();
+      const password = document.getElementById('auth_r_password').value;
+      if (!name || !email || !password) { showToast('Name, Email, and Password required'); return; }
+      if (password.length < 7) { showToast('Password must be at least 7 characters'); return; }
+      const res = await LoadingButton.fetch(btn, '/api/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+      if (res.ok) window.location.href = res.redirect_url || '/';
+      else showToast('⚠ ' + res.error);
+    }
+
+    async function sendOtp(btn) {
+      if (!btn) btn = document.querySelector('#authForgot .btn');
+      const email = document.getElementById('auth_f_email').value.trim();
+      if (!email) { showToast('Email required'); return; }
+      const res = await LoadingButton.fetch(btn, '/api/forgot-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      if (res.ok) {
+        document.getElementById('authForgot').style.display = 'none';
+        document.getElementById('authReset').style.display = 'block';
+        showToast('OTP sent to your email');
+      } else {
+        showToast('⚠ ' + res.error);
+      }
+    }
+
+    async function resetPassword(btn) {
+      if (!btn) btn = document.querySelector('#authReset .btn');
+      const otp = document.getElementById('auth_reset_otp').value.trim();
+      const password = document.getElementById('auth_reset_password').value;
+      if (!otp || !password) { showToast('OTP and New Password required'); return; }
+      if (password.length < 7) { showToast('Password must be at least 7 characters'); return; }
+      const res = await LoadingButton.fetch(btn, '/api/reset-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otp, password })
+      });
+      if (res.ok) {
+        showToast('Password reset successfully!');
+        switchAuth('login');
+      } else {
+        showToast('⚠ ' + res.error);
+      }
+    }
+
+
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // PWA Custom Install Prompt Script
+    let deferredPrompt;
+    const pwaLoginSection = document.getElementById('pwaLoginSection');
+    const pwaLoginInstallBtn = document.getElementById('pwaLoginInstallBtn');
+    const pwaLoginIosSection = document.getElementById('pwaLoginIosSection');
+
+    const isIos = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      return /iphone|ipad|ipod/.test(userAgent);
+    };
+
+    const isMobile = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    };
+
+    const isStandalone = () => {
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    };
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (!isStandalone() && isMobile() && pwaLoginSection) {
+        pwaLoginSection.style.display = 'flex';
+      }
+    });
+
+    if (pwaLoginInstallBtn) {
+      pwaLoginInstallBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            fetch('/api/track-install', { method: 'POST' }).catch(() => { });
+          }
+          deferredPrompt = null;
+          pwaLoginSection.style.display = 'none';
+        }
+      });
+    }
+
+    window.addEventListener('appinstalled', (evt) => {
+      fetch('/api/track-install', { method: 'POST' }).catch(() => { });
+      if (pwaLoginSection) pwaLoginSection.style.display = 'none';
+    });
+
+    window.addEventListener('load', () => {
+      if (isIos() && !isStandalone() && isMobile() && pwaLoginIosSection) {
+        pwaLoginIosSection.style.display = 'block';
+      }
+      if (isStandalone()) {
+        fetch('/api/track-launch', { method: 'POST' }).catch(() => { });
+      }
+    });
+  </script>
+  <script src="/static/loading.js"></script>
+
+  <!-- ── Firebase Google Sign-In ── -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {{ firebase_config | tojson }};
+    let auth = null;
+    try {
+      const app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+    } catch (e) {
+      console.error('Firebase init failed', e);
+    }
+
+    window.googleSignIn = async function () {
+      const btn = document.getElementById('googleBtn');
+      if (!auth) { showToast('⚠ Google sign-in is unavailable right now.'); return; }
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      if (btn) { btn.disabled = true; }
+      let stage = 'popup';
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const idToken = await result.user.getIdToken();
+        stage = 'server';
+        const res = await fetch('/api/google-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken })
+        });
+        // The route may not be live yet (404) → response won't be JSON.
+        let data = null;
+        try { data = await res.json(); } catch (_) { data = null; }
+        if (data && data.ok) { window.location.href = data.redirect_url || '/'; return; }
+        if (btn) btn.disabled = false;
+        if (!res.ok && !data) {
+          showToast('⚠ Server error ' + res.status + ' on /api/google-login. Restart the app on the server (route not live). ');
+        } else {
+          showToast('⚠ ' + ((data && data.error) || 'Google sign-in failed on the server.'));
+        }
+      } catch (err) {
+        if (btn) btn.disabled = false;
+        const code = (err && err.code) || '';
+        if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
+        let msg;
+        if (code === 'auth/unauthorized-domain') {
+          const modal = document.getElementById('domainAuthModal');
+          if (modal) {
+            document.getElementById('currentDomainName').innerText = window.location.hostname;
+            document.getElementById('domainToCopy').innerText = window.location.hostname;
+            modal.style.display = 'flex';
+          } else {
+            showToast('⚠ Add "' + window.location.hostname + '" in Firebase → Authentication → Settings → Authorized domains.');
+          }
+        }
+        else if (code === 'auth/popup-blocked') msg = 'Popup was blocked — allow popups for this site, then try again.';
+        else if (code === 'auth/operation-not-allowed') msg = 'Google sign-in is not enabled in Firebase → Authentication → Sign-in method.';
+        else if (code === 'auth/network-request-failed') msg = 'Network error reaching Firebase. Check your connection.';
+        else if (code) msg = 'Google sign-in failed (' + code + ').';
+        else msg = 'Google sign-in failed at ' + stage + ' step: ' + ((err && err.message) || 'unknown error');
+        if (msg) showToast('⚠ ' + msg);
+        console.error('Google sign-in error', err);
+      }
+    };
+  </script>
+
+  <!-- Modal for Unauthorized Domain Instructions -->
+  <div id="domainAuthModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,37,88,0.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+    <div style="background:#fff; border-radius:16px; width:90%; max-width:520px; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,0.3); font-family:'Plus Jakarta Sans', sans-serif;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <h3 style="color:#0a2558; font-size:18px; font-weight:700;">Authorize Domain for Google Sign-In</h3>
+        <button onclick="document.getElementById('domainAuthModal').style.display='none'" style="background:none; border:none; font-size:24px; cursor:pointer; color:#6b7280; line-height:1;">&times;</button>
+      </div>
+      <p style="font-size:13.5px; color:#374151; line-height:1.5; margin-bottom:16px;">
+        Firebase requires your domain <strong id="currentDomainName">jain-sarathi.juooa.cloud</strong> to be added to Authorized Domains in Firebase Console for Google Sign-In.
+      </p>
+      <div style="background:#f0f4fb; border-left:4px solid #0a2558; padding:14px 16px; border-radius:8px; margin-bottom:20px; font-size:13px; color:#1e293b;">
+        <strong style="color:#0a2558;">How to fix in 30 seconds:</strong>
+        <ol style="margin-left:18px; margin-top:8px; line-height:1.6;">
+          <li>Go to <a href="https://console.firebase.google.com/" target="_blank" style="color:#0a2558; font-weight:700; text-decoration:underline;">Firebase Console</a> &rarr; project <strong>jain-university-d4f8b</strong></li>
+          <li>Click <strong>Authentication</strong> &rarr; <strong>Settings</strong> &rarr; <strong>Authorized domains</strong></li>
+          <li>Click <strong>Add domain</strong> and paste: <code style="background:#e2e8f0; padding:2px 8px; border-radius:4px; font-weight:700; color:#0a2558;" id="domainToCopy">jain-sarathi.juooa.cloud</code></li>
+        </ol>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button onclick="navigator.clipboard.writeText(window.location.hostname); showToast('Domain copied to clipboard!');" style="background:#f2a900; color:#0a2558; border:none; padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px;">Copy Domain</button>
+        <button onclick="document.getElementById('domainAuthModal').style.display='none'" style="background:#0a2558; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px;">Close</button>
+      </div>
+    </div>
+  </div>
+</body>
+
+
+</html>

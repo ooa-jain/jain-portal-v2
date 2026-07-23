@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IEA Submissions — Office of Academics | Jain University</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a2558">
+  <link rel="icon" type="image/svg+xml" href="/static/images/jgi-logo.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32.png">
+  <link rel="apple-touch-icon" href="/static/images/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JAIN Sarathi">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap"
+    rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0 }
+
+    :root {
+      --navy: #0a2558; --navy2: #143572; --navy3: #1a428a;
+      --gold: #f2a900; --gold2: #e09b00;
+      --bg: #ffffff; --bg2: #ffffff; --bg3: #f0f3fb;
+      --ink: #111827; --ink2: #374151; --ink3: #6b7280;
+      --danger: #dc2626; --success: #16a34a;
+      --r: 12px; --r2: 8px; --r3: 6px;
+      --sh: 0 4px 20px rgba(0,0,0,0.05); --sh2: 0 12px 48px rgba(0,0,0,0.08);
+      --a: #C9A227; --b: #2F6F4E; --c: #2C5F8A; --d: #A85C2C; --e: #6B4A8A; --f: #E11D48;
+    }
+
+    html { font-size: 15px; scroll-behavior: smooth }
+
+    body {
+      background-color: var(--bg);
+      background-image: linear-gradient(rgba(10,37,88,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(10,37,88,.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink); min-height: 100vh
+    }
+
+    /* ── Animations ── */
+    @keyframes rise { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: translateY(0) } }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: translateY(0) } }
+    @keyframes pop { 0% { transform: scale(.4) } 65% { transform: scale(1.12) } 100% { transform: scale(1) } }
+    @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .5 } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
+    @keyframes shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
+    .animate-rise { animation: rise .4s ease }
+    .animate-fade { animation: fadeIn .3s ease }
+
+    /* ── Header ── */
+    .site-header { background: #fff; position: sticky; top: 0; z-index: 200; box-shadow: 0 2px 24px rgba(0,0,0,.08) }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; max-width: 980px; margin: 0 auto; padding: 0 28px; height: 68px }
+    .logo-area { display: flex; align-items: center; gap: 14px }
+    .logo-img { height: 44px; width: auto; object-fit: contain }
+    .logo-divider { width: 1px; height: 36px; background: rgba(10,37,88,.15) }
+    .logo-text .l1 { font-size: 16px; font-weight: 700; color: var(--navy); line-height: 1.1 }
+    .logo-text .l2 { font-size: 11px; color: var(--navy3); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; margin-top: 2px }
+    .btn-profile { background: #fff; color: var(--ink2); padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; border: 1px solid #dde3f0; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; transition: all .15s; white-space: nowrap }
+    .btn-profile:hover { background: #f8fafc; color: var(--navy); border-color: var(--navy) }
+    .btn-profile svg { width: 14px; height: 14px }
+
+    /* ── Page heading ── */
+    .page-heading { margin-bottom: 28px }
+    .page-heading h2 { font-family: 'Playfair Display', serif; font-size: 30px; color: var(--navy); line-height: 1.2 }
+    .page-heading p { color: var(--ink3); font-size: 13.5px; margin-top: 8px; line-height: 1.65 }
+    .semester-tag { background: var(--gold); color: var(--navy); font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 99px; letter-spacing: .06em; display: inline-block }
+    .campus-tag { color: var(--ink3); font-size: 11px; margin-left: 8px }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: var(--r2); font-size: 14px; font-weight: 700; cursor: pointer; border: 2px solid; transition: all .2s; font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: .01em; text-decoration: none }
+    .btn svg { width: 16px; height: 16px; flex-shrink: 0 }
+    .btn-ghost { border-color: #c8d2e8; background: transparent; color: var(--ink2) }
+    .btn-ghost:hover { background: var(--bg3); border-color: var(--navy) }
+    .btn-primary { border-color: var(--navy); background: var(--navy); color: #fff }
+    .btn-primary:hover { background: var(--navy2); border-color: var(--navy2); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(10,37,88,.3) }
+    .btn-gold { border-color: var(--gold2); background: var(--gold); color: var(--navy) }
+    .btn-gold:hover { background: var(--gold2); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(244,168,25,.35) }
+    .btn-success { border-color: #156a3c; background: #1a8a4f; color: #fff }
+    .btn-success:hover { background: #156a3c; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(26,138,79,.35) }
+
+    /* ── Filter section ── */
+    .filter-section { background: #f8fafc; border: 1px solid #dde3f0; border-radius: var(--r); padding: 18px 20px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 14px }
+    .filter-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+    .filter-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--navy); min-width: 120px }
+    .tab-btn { background: #fff; border: 1.5px solid #dde3f0; border-radius: 99px; padding: 6px 16px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink2); cursor: pointer; transition: all .2s ease }
+    .tab-btn:hover { border-color: var(--navy3); color: var(--navy); background: #f3f6fc }
+    .tab-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; box-shadow: 0 4px 12px rgba(10,37,88,.15) }
+
+    /* ── Dashboard ── */
+    .dash-wrap { max-width: 980px; margin: 0 auto; padding: 36px 28px 100px }
+    .dash-card { background: #fff; border: 1px solid #dde3f0; border-radius: var(--r); padding: 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; transition: all .25s; gap: 12px; flex-wrap: wrap }
+    .dash-card:hover { border-color: var(--navy3); box-shadow: var(--sh); transform: translateY(-2px) }
+    .dc-left { display: flex; flex-direction: column; gap: 4px; flex: 1 1 280px }
+    .dc-title { font-size: 15.5px; font-weight: 700; color: var(--navy) }
+    .dc-sub { font-size: 13px; color: var(--ink3) }
+    .dc-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; background: #e0f4ff; color: var(--navy); margin-top: 4px }
+    .dc-tag svg { width: 13px; height: 13px }
+    .dc-right { display: flex; gap: 8px; flex-wrap: wrap }
+    .dc-right .btn { padding: 8px 16px; font-size: 12.5px }
+
+    .status-badge { padding: 3px 10px; border-radius: 4px; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 5px; width: fit-content; margin-bottom: 4px }
+    .status-badge svg { width: 13px; height: 13px }
+    .status-submitted { background: #e8f7ee; color: #0f5a2a; border: 1px solid #c8e6c9 }
+    .status-draft { background: #fff3e0; color: #b45309; border: 1px solid #ffe0b2 }
+
+    /* ── Cards ── */
+    .card { background: var(--bg2); border: 1px solid #dde3f0; border-radius: var(--r); padding: 26px; margin-bottom: 22px; box-shadow: var(--sh); animation: rise .4s ease }
+    .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 2px solid var(--bg3) }
+    .card-header .ch-icon { width: 32px; height: 32px; background: var(--navy); color: #fff; border-radius: var(--r3); display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
+    .card-header .ch-icon svg { width: 16px; height: 16px }
+    .card-header .ch-title { font-size: 13px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: .07em }
+    .card-header .ch-sub { font-size: 11.5px; color: var(--ink3); margin-top: 1px }
+
+    .field-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 16px }
+    .field { display: flex; flex-direction: column; gap: 5px }
+    .field label { font-size: 11.5px; font-weight: 700; color: var(--navy); letter-spacing: .04em; text-transform: uppercase }
+    .field label .req { color: var(--danger); margin-left: 2px }
+    .field select, .field input, .field textarea { padding: 10px 14px; border: 2px solid #dde3f0; border-radius: var(--r2); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; color: var(--ink); background: #fafbff; transition: .15s; outline: none; width: 100% }
+    .field select:focus, .field input:focus, .field textarea:focus { border-color: var(--navy3); background: #fff; box-shadow: 0 0 0 4px rgba(26,74,154,.08) }
+    .field select:disabled { background: #f3f4f6; color: var(--ink3); cursor: not-allowed }
+
+    /* ── Auto-save indicator ── */
+    .autosave-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 99px; position: fixed; bottom: 90px; right: 20px; z-index: 100; transition: all .3s; opacity: 0; transform: translateY(10px) }
+    .autosave-indicator.show { opacity: 1; transform: translateY(0) }
+    .autosave-indicator.saving { background: #FFF3E0; color: #E65100; border: 1px solid #FFE0B2 }
+    .autosave-indicator.saving svg { animation: pulse 1s ease infinite }
+    .autosave-indicator.saved { background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9 }
+    .autosave-indicator.error { background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2 }
+    .autosave-indicator svg { width: 14px; height: 14px }
+
+    /* ── SVG Sizing Fix ── */
+    svg { display: inline-block; vertical-align: middle; }
+    #statusPill svg { width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0; }
+
+    /* ── Year Tabs ── */
+    .year-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; position: sticky; top: 68px; z-index: 90; background: rgba(255,255,255,.95); backdrop-filter: blur(8px); padding: 10px 0; border-bottom: 1px solid #dde3f0 }
+    .year-tab { background: #fff; border: 1.5px solid #dde3f0; color: var(--ink); padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; transition: all .15s }
+    .year-tab:hover { border-color: var(--navy) }
+    .year-tab.active { background: var(--navy); border-color: var(--navy); color: #fff }
+    .tab-count { background: rgba(10,37,88,.08); border-radius: 999px; padding: 1px 8px; font-size: 11.5px }
+    .year-tab.active .tab-count { background: var(--gold); color: var(--navy) }
+
+    /* ── Section Workflow & Interactive Navigation Bar ── */
+    .section-nav-wrapper {
+      margin-bottom: 24px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border: 1.5px solid #dde3f0;
+      border-radius: 16px;
+      padding: 16px 20px;
+      box-shadow: 0 4px 18px rgba(10, 37, 88, 0.04);
+      animation: rise .35s ease;
+    }
+    .section-nav-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #edf2f7;
+    }
+    .snh-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .snh-title {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--navy);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .snh-title svg { width: 16px; height: 16px; color: var(--navy); }
+    .nav-active-tag {
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .snh-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-view-toggle {
+      background: #ffffff;
+      border: 1.5px solid #dde3f0;
+      color: var(--navy);
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .2s ease;
+      font-family: inherit;
+    }
+    .btn-view-toggle:hover {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(10,37,88,0.15);
+    }
+    .btn-view-toggle svg { width: 13px; height: 13px; }
+
+    /* ── Compact Round / Pill Buttons Mode ── */
+    .round-btn-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 4px 0 2px;
+    }
+    .round-sec-btn {
+      min-width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      border: 2px solid #dde3f0;
+      background: #ffffff;
+      color: var(--navy);
+      cursor: pointer;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 4px 10px;
+      transition: all .2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-family: inherit;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .round-sec-btn .btn-sec-letter {
+      font-weight: 800;
+      font-size: 15px;
+      line-height: 1.1;
+    }
+    .round-sec-btn .btn-sec-label {
+      font-weight: 700;
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      opacity: 0.75;
+      margin-top: 1px;
+    }
+    .round-sec-btn:hover {
+      border-color: var(--sec-color, var(--navy));
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--sec-color, var(--navy)) 28%, transparent);
+      background: color-mix(in srgb, var(--sec-color, var(--navy)) 8%, #ffffff);
+    }
+    .round-sec-btn.active {
+      background: var(--sec-color, var(--navy));
+      border-color: var(--sec-color, var(--navy));
+      color: #ffffff;
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--sec-color, var(--navy)) 40%, transparent);
+      transform: scale(1.05);
+    }
+    .round-sec-btn.active .btn-sec-label {
+      opacity: 0.95;
+    }
+    .round-sec-btn .btn-badge-count {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: var(--gold);
+      color: var(--navy);
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 99px;
+      border: 2px solid #ffffff;
+      line-height: 1.2;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+
+    /* ── Star Pill Buttons (1-10 Rating Scale) ── */
+    .star-pill-btn {
+      background: #ffffff;
+      border: 1.5px solid #dde3f0;
+      color: var(--ink);
+      padding: 6px 11px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all .15s ease;
+      font-family: inherit;
+    }
+    .star-pill-btn:hover {
+      border-color: var(--gold);
+      background: #fffdf0;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(242, 169, 0, 0.2);
+    }
+    .star-pill-btn.active {
+      background: #fffbeb;
+      border-color: var(--gold);
+      color: #b45309;
+      box-shadow: 0 3px 10px rgba(242, 169, 0, 0.28);
+      font-weight: 800;
+    }
+
+    .section-boxes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .section-box-btn {
+      background: #ffffff;
+      border: 2px solid #dde3f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-start;
+      transition: all .2s ease;
+      position: relative;
+      user-select: none;
+      text-align: left;
+    }
+    .section-box-btn:hover {
+      border-color: var(--sec-color, var(--navy));
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+      background: #fafbff;
+    }
+    .section-box-btn.active {
+      border-color: var(--sec-color, var(--navy));
+      background: color-mix(in srgb, var(--sec-color, var(--navy)) 8%, #ffffff);
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--sec-color, var(--navy)) 22%, transparent);
+    }
+    .sb-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .sb-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: var(--sec-color, var(--navy));
+      color: #fff;
+      font-weight: 800;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .sb-count {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 99px;
+      background: #f1f5f9;
+      color: var(--ink2);
+    }
+    .section-box-btn.active .sb-count {
+      background: var(--sec-color, var(--navy));
+      color: #ffffff;
+    }
+    .sb-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1.25;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .sb-sub {
+      font-size: 10.5px;
+      color: var(--ink3);
+      line-height: 1.2;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .sb-sub svg { width: 12px; height: 12px; }
+
+    /* ── Section panels ── */
+    .section-panel { background: #fff; border: 1px solid #dde3f0; border-radius: 14px; margin-bottom: 20px; overflow: hidden; box-shadow: var(--sh); animation: slideUp .4s ease backwards }
+    .section-banner { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-bottom: 1px solid #dde3f0; background: color-mix(in srgb, var(--accent) 8%, white) }
+    .section-num { width: 38px; height: 38px; border-radius: 10px; background: var(--accent); color: #fff; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
+    .section-title-wrap h3 { font-size: 16.5px; color: var(--ink); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800 }
+    .section-sub { margin: 3px 0 0; font-size: 12.5px; color: var(--ink3) }
+    .entry-count { margin-left: auto; font-size: 12px; color: var(--ink3); background: #f8fafc; border: 1px solid #dde3f0; padding: 4px 10px; border-radius: 999px; white-space: nowrap; font-weight: 700 }
+
+    .entries { padding: 16px 20px 4px }
+    .empty-hint { color: var(--ink3); font-size: 13.5px; font-style: italic; margin: 6px 0 16px }
+    .entry-card { border: 1px solid #dde3f0; border-left: 4px solid var(--accent); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; background: #fcfdff; animation: cardIn .25s ease; transition: box-shadow .3s }
+    .entry-card.flash { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent) }
+    .entry-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px }
+    .entry-idx { font-size: 11.5px; font-weight: 800; color: var(--accent); letter-spacing: .05em }
+    .remove-btn { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; font-family: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: all .15s }
+    .remove-btn:hover { background: #fef2f2; color: #b91c1c }
+    .remove-btn svg { width: 14px; height: 14px }
+    .entry-fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px }
+    .field-label { font-size: 12px; font-weight: 700; color: var(--ink2); display: flex; flex-direction: column; gap: 6px }
+    .field-label.full { grid-column: 1/-1 }
+    .entry-fields input[type=text], .entry-fields textarea { font-family: inherit; font-size: 13.5px; color: var(--ink); font-weight: 400; padding: 9px 12px; border: 1.5px solid #dde3f0; border-radius: 8px; resize: vertical }
+    .entry-fields input:focus, .entry-fields textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent) }
+    .add-entry-btn { margin: 6px 20px 18px; background: var(--accent); color: #fff; border: none; padding: 9px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: all .15s }
+    .add-entry-btn:hover { filter: brightness(1.08); transform: translateY(-1px) }
+    .add-entry-btn svg { width: 14px; height: 14px }
+
+    /* ── Workflow navigation bar inside each section panel ── */
+    .workflow-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: #f8fafc;
+      border-top: 1px solid #dde3f0;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .workflow-step-badge {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--ink3);
+      background: #fff;
+      border: 1px solid #dde3f0;
+      padding: 4px 10px;
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-workflow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1.5px solid;
+      transition: all .2s ease;
+      font-family: inherit;
+    }
+    .btn-workflow.prev {
+      background: #fff;
+      border-color: #dde3f0;
+      color: var(--ink2);
+    }
+    .btn-workflow.prev:hover {
+      border-color: var(--navy);
+      color: var(--navy);
+      background: #f1f5f9;
+    }
+    .btn-workflow.next {
+      background: var(--accent, var(--navy));
+      border-color: var(--accent, var(--navy));
+      color: #fff;
+    }
+    .btn-workflow.next:hover {
+      filter: brightness(1.1);
+      transform: translateX(2px);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent, var(--navy)) 30%, transparent);
+    }
+    .btn-workflow.submit-btn {
+      background: #1a8a4f;
+      border-color: #156a3c;
+      color: #fff;
+    }
+    .btn-workflow.submit-btn:hover {
+      background: #156a3c;
+      transform: translateY(-1px);
+    }
+
+    /* ── Evidence block ── */
+    .evidence-block { grid-column: 1/-1; background: #fffef8; border: 1.5px dashed var(--gold); border-radius: 12px; padding: 16px 18px; margin-top: 8px }
+    .evidence-block-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px }
+    .evidence-block-head h5 { font-family: inherit; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #9e6f00; font-weight: 800; display: flex; align-items: center; gap: 6px }
+    .evidence-block-head h5 svg { width: 14px; height: 14px }
+    .evidence-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-bottom: 14px }
+    .evidence-chip-label { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--ink2); background: #fff; border: 1px solid #dde3f0; padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: all .15s }
+    .evidence-chip-label:hover { border-color: var(--gold); background: #fffcf5 }
+    .evidence-chip-label.selected { border-color: var(--navy); background: #f0f4fc; font-weight: 700; color: var(--navy) }
+    .evidence-chip-label input { accent-color: var(--navy) }
+
+    .evidence-details-container { margin-top: 14px; display: flex; flex-direction: column; gap: 12px }
+    .evidence-detail-card { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid var(--navy); border-radius: 8px; padding: 12px 14px; animation: cardIn .25s ease }
+    .evidence-detail-title { font-size: 12.5px; font-weight: 800; color: var(--navy); margin-bottom: 8px; display: flex; align-items: center; gap: 6px }
+    .evidence-detail-title svg { width: 14px; height: 14px }
+    .evidence-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+    .file-upload-btn-wrap { display: flex; align-items: center; gap: 8px; margin-top: 4px }
+    .btn-file-upload { background: #f1f5f9; color: var(--navy); border: 1px dashed var(--navy); padding: 7px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 5px }
+    .btn-file-upload:hover { background: #e2e8f0 }
+    .btn-file-upload svg { width: 13px; height: 13px }
+    .uploaded-file-badge { display: inline-flex; align-items: center; gap: 6px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700 }
+    .uploaded-file-badge a { color: #0369a1; text-decoration: underline }
+    .uploaded-file-badge .btn-remove-file { cursor: pointer; color: #b91c1c; font-weight: 800; margin-left: 4px; display: inline-flex }
+    .uploaded-file-badge .btn-remove-file svg { width: 12px; height: 12px }
+
+    /* ── Submit section (after section E) ── */
+    .submit-section { background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%); border: 2px solid #c8d4f0; border-radius: var(--r); padding: 32px; margin-top: 8px; margin-bottom: 80px; text-align: center; animation: slideUp .4s ease backwards }
+    .submit-section h3 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--navy); margin-bottom: 8px }
+    .submit-section p { color: var(--ink3); font-size: 13.5px; margin-bottom: 20px; line-height: 1.6 }
+    .submit-section .submit-stats { display: flex; gap: 16px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap }
+    .submit-section .stat-chip { background: #fff; border: 1px solid #dde3f0; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; color: var(--navy); display: inline-flex; align-items: center; gap: 6px }
+    .submit-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap }
+
+    /* ── Toast ── */
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--navy); color: #fff; padding: 13px 26px; border-radius: var(--r); font-size: 13.5px; opacity: 0; transition: .3s; pointer-events: none; z-index: 999; box-shadow: var(--sh2); white-space: nowrap; border-left: 4px solid var(--gold); display: flex; align-items: center; gap: 8px }
+    .toast svg { width: 16px; height: 16px; flex-shrink: 0 }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0) }
+    .toast.err { border-left-color: var(--danger) }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 12px; border: 1px dashed #c8d2e8; color: var(--ink3); animation: rise .4s ease }
+    .empty-state svg { width: 48px; height: 48px; color: #c8d2e8; margin-bottom: 12px }
+    .empty-state h3 { font-family: 'Playfair Display', serif; color: var(--ink); margin-bottom: 8px; font-size: 18px }
+
+    /* ── Loading skeleton ── */
+    .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px }
+    .skeleton-card { height: 80px; margin-bottom: 16px; border-radius: var(--r) }
+
+    @media (max-width: 900px) {
+      .section-boxes-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .entry-fields { grid-template-columns: 1fr }
+      .evidence-detail-grid { grid-template-columns: 1fr }
+      .dash-wrap { padding: 20px 16px 80px }
+      .submit-section { padding: 24px 16px }
+      .section-boxes-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ── Terms & Conditions modal ── */
+    .terms-overlay { position: fixed; inset: 0; background: rgba(10,20,45,.55); backdrop-filter: blur(3px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .terms-overlay.show { display: flex; animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    .terms-modal { background: #fff; width: 100%; max-width: 780px; max-height: 90vh; border-radius: 18px; box-shadow: 0 30px 80px rgba(10,20,45,.35); display: flex; flex-direction: column; overflow: hidden; animation: slideUp .3s ease; }
+    .terms-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 22px 26px; background: linear-gradient(135deg, #0a2558 0%, #123a7a 100%); color: #fff; }
+    .terms-eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #9ec3ff; margin-bottom: 4px; }
+    .terms-head h2 { font-family: 'Playfair Display', serif; font-size: 21px; margin: 0; color: #fff; }
+    .terms-close { background: rgba(255,255,255,.14); border: none; color: #fff; width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .15s; }
+    .terms-close:hover { background: rgba(255,255,255,.28); }
+    .terms-body { padding: 24px 28px; overflow-y: auto; flex: 1; color: var(--ink); line-height: 1.65; font-size: 13.5px; scroll-behavior: smooth; }
+    .terms-def { background: linear-gradient(135deg, #f0f4ff 0%, #eef6f0 100%); border: 1px solid #d6e0f5; border-left: 4px solid #0a2558; border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; }
+    .terms-def h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14.5px; font-weight: 800; color: #0a2558; margin: 0 0 8px; }
+    .terms-def p { margin: 0; font-size: 13px; line-height: 1.7; }
+    .terms-intro { margin: 0 0 20px; color: var(--ink2, #33415c); }
+    .terms-h { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 800; color: #0a2558; margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #eef1f7; }
+    .terms-sec { margin-bottom: 6px; }
+    .terms-sec h5 { font-size: 13.8px; font-weight: 800; color: #16a34a; margin: 12px 0 6px; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .terms-body ul { margin: 0 0 8px; padding-left: 20px; }
+    .terms-body ul li { margin: 3px 0; }
+    .terms-cols { columns: 2; column-gap: 28px; }
+    @media (max-width: 560px) { .terms-cols { columns: 1; } }
+    .terms-callout { background: #fff8ec; border: 1px solid #f5d99a; border-left: 4px solid #E11D48; border-radius: 12px; padding: 14px 16px; margin: 18px 0; font-size: 13px; line-height: 1.6; }
+    .terms-end { text-align: center; color: #94a3b8; font-size: 12.5px; font-weight: 600; letter-spacing: .03em; padding: 18px 0 4px; }
+    .terms-foot { border-top: 1px solid #e6eaf2; padding: 16px 26px; background: #fafbff; }
+    .terms-agree { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--ink3); margin-bottom: 14px; cursor: default; }
+    .terms-agree input { width: 18px; height: 18px; accent-color: #0a2558; }
+    .terms-agree.ready { color: #0a2558; cursor: pointer; }
+    .terms-agree.ready input { cursor: pointer; }
+    .terms-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    @media (max-width: 560px) {
+      .terms-head { padding: 18px 18px; }
+      .terms-body { padding: 20px 18px; }
+      .terms-foot { padding: 14px 18px; }
+      .terms-actions .btn { flex: 1; justify-content: center; }
+    }
+
+    /* ── Floating feedback button (FAB) ── */
+    .fab-feedback {
+      position: fixed; right: 22px; bottom: 22px; z-index: 1500;
+      display: flex; align-items: center; gap: 0;
+      height: 56px; padding: 0; width: 56px;
+      border: none; border-radius: 30px; cursor: pointer;
+      background: linear-gradient(135deg, #E11D48 0%, #b3123a 100%);
+      color: #fff; box-shadow: 0 8px 22px rgba(225,29,72,.42);
+      overflow: hidden; white-space: nowrap;
+      transition: width .28s cubic-bezier(.4,0,.2,1), box-shadow .2s, transform .15s;
+    }
+    .fab-feedback svg { flex-shrink: 0; margin-left: 17px; margin-right: 13px; }
+    .fab-label { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 14px; opacity: 0; transition: opacity .2s; padding-right: 4px; }
+    .fab-feedback:hover, .fab-feedback:focus-visible { width: 158px; box-shadow: 0 10px 28px rgba(225,29,72,.55); transform: translateY(-2px); }
+    .fab-feedback:hover .fab-label, .fab-feedback:focus-visible .fab-label { opacity: 1; }
+    @media (max-width: 560px) { .fab-feedback { right: 16px; bottom: 16px; } }
+
+    /* ── Feedback modal ── */
+    .fb-overlay { position: fixed; inset: 0; background: rgba(10,20,45,.55); backdrop-filter: blur(3px); z-index: 2100; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .fb-overlay.show { display: flex; animation: fadeIn .2s ease; }
+    .fb-modal { background: #fff; width: 100%; max-width: 520px; max-height: 90vh; border-radius: 18px; box-shadow: 0 30px 80px rgba(10,20,45,.35); display: flex; flex-direction: column; overflow: hidden; animation: slideUp .3s ease; }
+    .fb-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; background: linear-gradient(135deg, #E11D48 0%, #b3123a 100%); color: #fff; }
+    .fb-head h2 { font-family: 'Playfair Display', serif; font-size: 18px; margin: 0; color: #fff; }
+    .fb-body { padding: 22px; overflow-y: auto; }
+    .fb-foot { border-top: 1px solid #e6eaf2; padding: 14px 22px; background: #fafbff; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    @media (max-width: 560px) { .fb-foot .btn { flex: 1; justify-content: center; } }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo-area">
+        <img src="/static/images/jain.png" alt="Jain University" class="logo-img" onerror="this.style.display='none'">
+        <div class="logo-divider"></div>
+        <div class="logo-text">
+          <div class="l1"><span style="color:#0a2558; font-weight:800;">JAIN</span> <span style="color:#16a34a; font-weight:800;">Sarathi</span></div>
+          <div class="l2">JAIN (Deemed-to-be University)</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <a href="/" class="btn-profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</a>
+        <a href="/api/logout" class="btn-profile" style="color: var(--danger); border-color: #fca5a5; background: #fef2f2;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═════════ DASHBOARD VIEW ═════════ -->
+  <div class="dash-wrap" id="dashView">
+    <div class="page-heading" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap:wrap; gap:12px; margin-bottom: 24px;">
+      <div>
+        <div style="margin-bottom: 12px;">
+          <span class="semester-tag">Even Semester 2025–26</span>
+          <span class="campus-tag">Bangalore, Kochi, ODL &amp; Online Campus</span>
+        </div>
+        <h2>Your Submissions, Hi {{ user.name }}!</h2>
+        <p>Manage your past IEA readiness forms, view submissions, or start a new one.</p>
+      </div>
+      <a href="javascript:void(0)" class="btn btn-primary" style="text-decoration: none;" onclick="startNewSubmission()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Start New Submission
+      </a>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-section">
+      <div class="filter-group">
+        <span class="filter-label">Academic Year:</span>
+        <button class="tab-btn active" onclick="filterAY('All', this)">All Years</button>
+        {% for y in iea_years %}
+        <button class="tab-btn" onclick="filterAY('{{ y }}', this)">{{ y }}</button>
+        {% endfor %}
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Status:</span>
+        <button class="tab-btn active" onclick="filterStatus('All', this)">All Submissions</button>
+        <button class="tab-btn" onclick="filterStatus('Submitted', this)">Submitted</button>
+        <button class="tab-btn" onclick="filterStatus('Draft', this)">Drafts</button>
+      </div>
+    </div>
+
+    <div id="dashList">
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card" style="opacity:.6"></div>
+    </div>
+  </div>
+
+  <!-- ═════════ FORM VIEW ═════════ -->
+  <div class="dash-wrap" id="formView" style="display: none;">
+    <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+      <a href="javascript:void(0)" class="btn btn-ghost" onclick="backToDashboard()" style="text-decoration: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to Submissions
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="ch-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div>
+          <div class="ch-title">Select Reporting Unit</div>
+          <div class="ch-sub">Choose your School, Department, and Programme Level</div>
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>School / Centre <span class="req">*</span></label><select id="schoolSelect"><option value="">— Select School —</option></select></div>
+        <div class="field"><label>Department <span class="req">*</span></label><select id="deptSelect" disabled><option value="">Select School first</option></select></div>
+        <div class="field"><label>Programme Level <span class="req">*</span></label><select id="levelSelect" disabled><option value="">Select Department first</option></select></div>
+      </div>
+      <div id="statusPill" style="font-size:12.5px; color:var(--ink3); margin-top:12px; font-weight:600; display:flex; align-items:center; gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Select School, Department, and Programme Level to begin or resume a submission.
+      </div>
+    </div>
+
+    <div id="mainArea" style="display:none;">
+      <div class="year-tabs" id="yearTabs"></div>
+      <div class="section-nav-wrapper" id="sectionNavWrapper"></div>
+      <div id="sectionsContainer"></div>
+      <div id="submitSection"></div>
+    </div>
+  </div>
+
+  <!-- Auto-save indicator -->
+  <div class="autosave-indicator" id="autosaveIndicator">
+    <svg id="autosaveIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    <span id="autosaveText"></span>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- ═════════ FLOATING FEEDBACK BUTTON ═════════ -->
+  <button class="fab-feedback" id="fabFeedback" onclick="openFeedback()" aria-label="Share portal feedback">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="fab-label">Feedback</span>
+  </button>
+
+  <!-- ═════════ FEEDBACK MODAL ═════════ -->
+  <div class="fb-overlay" id="fbOverlay" onclick="if(event.target===this)closeFeedback()">
+    <div class="fb-modal" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
+      <div class="fb-head">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <h2 id="fbTitle">Portal Feedback &amp; Experience</h2>
+        </div>
+        <button class="terms-close" onclick="closeFeedback()" aria-label="Close" title="Close">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="fb-body">
+        <p style="color:var(--ink3); font-size:12.5px; margin:0 0 16px;">Share your feedback and experience on the JAIN Sarathi Portal. This is separate from your IEA submissions.</p>
+
+        <div class="field" style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Do you like the portal / application?</label>
+          <input type="text" id="fbLike" placeholder="e.g., Yes, excellent experience & smooth workflow!" style="width:100%; padding:10px 12px; border:1px solid #dde3f0; border-radius:8px; font-size:13.5px;">
+        </div>
+
+        <div class="field" style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Overall Satisfaction Level (1 to 10 Star Scale)</label>
+          <div id="fbStars" style="display:flex; gap:3px; flex-wrap:wrap; align-items:center;"></div>
+        </div>
+
+        <div class="field" style="margin-bottom:4px;">
+          <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Detailed Feedback &amp; Feature Suggestions</label>
+          <textarea id="fbComments" rows="4" placeholder="Share your thoughts, feedback, or requested feature enhancements..." style="width:100%; padding:10px 12px; border:1px solid #dde3f0; border-radius:8px; font-size:13.5px; resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div class="fb-foot">
+        <button class="btn btn-ghost" onclick="closeFeedback()" style="text-decoration:none;">Cancel</button>
+        <button class="btn btn-primary" onclick="submitFeedback()" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Submit Feedback
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════ TERMS & CONDITIONS MODAL (shown on Start New Submission) ═════════ -->
+  <div class="terms-overlay" id="termsOverlay" onclick="if(event.target===this)closeTerms()">
+    <div class="terms-modal" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
+      <div class="terms-head">
+        <div>
+          <div class="terms-eyebrow">Office of Academics · JAIN (Deemed-to-be University)</div>
+          <h2 id="termsTitle">Terms &amp; Conditions — IEA Submission</h2>
+        </div>
+        <button class="terms-close" onclick="closeTerms()" aria-label="Close" title="Close">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="terms-body" id="termsBody" onscroll="onTermsScroll()">
+        <!-- Definition (top) -->
+        <div class="terms-def">
+          <h3>Innovation and Emerging Areas — Definition</h3>
+          <p><strong>Definition:</strong> Programmes and Courses in Innovation and Emerging Areas are academic offerings that address new, evolving, or rapidly advancing domains of knowledge, skills, technologies, professions, and societal needs. Such offerings are characterized by their relevance to contemporary and future developments, interdisciplinary and multidisciplinary approaches, integration of research and innovation, responsiveness to industry and societal requirements, and alignment with global trends and national priorities. They may encompass emerging fields, transformative technologies, novel applications of existing disciplines, and innovative pedagogical approaches that prepare learners for future opportunities, challenges, and lifelong learning.</p>
+        </div>
+
+        <p class="terms-intro">The Office of Academics is preparing a comprehensive University-level report on <em>“Programmes and Courses in Innovation and Emerging Areas”</em> in accordance with the latest UGC requirements. All Schools are requested to submit the required information for the academic years <strong>AY 2022–23 to AY 2026–27</strong> in the prescribed format below.</p>
+
+        <h4 class="terms-h">Information to be Submitted</h4>
+
+        <div class="terms-sec"><h5>A. New Programmes Introduced in Innovation and Emerging Areas</h5>
+          <ul><li>New programmes introduced</li><li>Innovation/Emerging area addressed</li><li>New courses introduced</li><li>Unique programme features</li><li>Industry/Academic collaborations</li></ul></div>
+
+        <div class="terms-sec"><h5>B. Innovations in Existing Programmes</h5>
+          <ul><li>Curriculum revisions</li><li>New electives/minors/majors/specialisations</li><li>Interdisciplinary pathways</li><li>Experiential learning</li><li>Research integration</li></ul></div>
+
+        <div class="terms-sec"><h5>C. Recognition by Global Professional Bodies</h5>
+          <ul><li>Accreditations</li><li>Recognitions</li><li>Certifications</li><li>Curriculum mapping</li><li>International benchmarking</li><li>Impact on student outcomes</li></ul></div>
+
+        <div class="terms-sec"><h5>D. Industry-Integrated Skilling</h5>
+          <ul><li>Industry-integrated courses</li><li>Embedded certifications</li><li>Internships/Apprenticeships</li><li>Skill-based modules</li><li>Joint delivery with industry</li><li>Industry assessment</li></ul></div>
+
+        <div class="terms-sec"><h5>E. Competency-Based Learning</h5>
+          <ul><li>OBE implementation</li><li>Competency-based curriculum</li><li>Capstone/Innovation projects</li><li>Field immersion/Clinical training</li><li>Assessment reforms</li></ul></div>
+
+        <h4 class="terms-h">Supporting Evidence</h4>
+        <div class="terms-sec"><ul class="terms-cols"><li>BoS Minutes</li><li>Academic Council Approval</li><li>Curriculum &amp; Syllabus</li><li>Programme Brochure</li><li>Industry MoUs</li><li>Professional Body Recognition</li><li>Assessment Rubrics</li><li>Student Project Reports</li><li>Relevant Web Links</li></ul></div>
+
+        <div class="terms-callout">
+          <strong>Submission requirement:</strong> supporting evidence must be provided as a shared <strong>Google Drive link</strong> (with access granted to the Office of Academics) against each entry you submit in the tool. Where evidence is not yet available, note clearly what is missing so it can be tracked to closure.
+        </div>
+
+        <h4 class="terms-h">General Instructions</h4>
+        <div class="terms-sec"><ul>
+          <li>Submit information only in the prescribed format (the tool below).</li>
+          <li>Ensure all information is complete, verified and evidence-based.</li>
+          <li>Provide supporting documents wherever applicable.</li>
+          <li>All submissions must be approved by the <strong>Dean/Head</strong> before submission.</li>
+          <li>For any clarification, Schools may contact the Office of Academics.</li>
+        </ul></div>
+
+        <div class="terms-end" id="termsEnd">— End of Terms &amp; Conditions —</div>
+      </div>
+
+      <div class="terms-foot">
+        <label class="terms-agree" id="termsAgreeLabel">
+          <input type="checkbox" id="termsAgree" disabled onchange="onAgreeChange()">
+          <span id="termsAgreeText">Please scroll down and read all the terms to continue.</span>
+        </label>
+        <div class="terms-actions">
+          <button class="btn btn-ghost" onclick="closeTerms()" style="text-decoration:none;">Cancel</button>
+          <button class="btn btn-primary" id="termsProceed" disabled onclick="acceptTerms()" style="text-decoration:none; opacity:.5; cursor:not-allowed;">
+            I Agree &amp; Enter Portal
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEPT_DATA = {{ iea_schools|tojson }};
+    const YEARS = {{ iea_years|tojson }};
+    const EVIDENCE_TYPES = {{ iea_evidence_types|tojson }};
+    const SECTIONS = {{ iea_sections|tojson }};
+
+    /* ── SVG Icon library ── */
+    const ICON = {
+      check: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+      edit: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+      trash: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+      folder: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+      upload: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>',
+      download: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+      x: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+      plus: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+      send: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+      fileText: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+      layers: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+      shield: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+      link: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+    };
+
+    let state = null;
+    let activeYear = YEARS[0];
+    let selectedSections = ['A'];
+    let dirty = false;
+    let autoSaveTimer = null;
+    let submissionsCache = [];
+    let activeAYFilter = 'All';
+    let activeStatusFilter = 'All';
+
+    /* ── View switching ── */
+    function backToDashboard() {
+      document.getElementById('dashView').style.display = 'block';
+      document.getElementById('formView').style.display = 'none';
+      document.getElementById('autosaveIndicator').className = 'autosave-indicator';
+      state = null; dirty = false;
+      loadDashboard();
+      window.scrollTo(0, 0);
+    }
+
+    /* ── Terms & Conditions gate (shown before every new submission) ── */
+    function startNewSubmission() {
+      const ov = document.getElementById('termsOverlay');
+      const body = document.getElementById('termsBody');
+      const agree = document.getElementById('termsAgree');
+      const label = document.getElementById('termsAgreeLabel');
+      const agreeText = document.getElementById('termsAgreeText');
+      const proceed = document.getElementById('termsProceed');
+      // reset gate each time it opens
+      agree.checked = false; agree.disabled = true;
+      label.classList.remove('ready');
+      agreeText.textContent = 'Please scroll down and read all the terms to continue.';
+      proceed.disabled = true; proceed.style.opacity = '.5'; proceed.style.cursor = 'not-allowed';
+      ov.classList.add('show');
+      document.body.style.overflow = 'hidden';
+      body.scrollTop = 0;
+      // if the content is short enough that there's nothing to scroll, unlock immediately
+      setTimeout(() => { if (body.scrollHeight - body.clientHeight <= 8) unlockTerms(); }, 60);
+    }
+
+    function unlockTerms() {
+      const agree = document.getElementById('termsAgree');
+      const agreeText = document.getElementById('termsAgreeText');
+      if (!agree.disabled) return;
+      agree.disabled = false;
+      agreeText.textContent = 'I have read and understood the terms & conditions above.';
+      document.getElementById('termsAgreeLabel').classList.add('ready');
+    }
+
+    function onTermsScroll() {
+      const body = document.getElementById('termsBody');
+      if (body.scrollTop + body.clientHeight >= body.scrollHeight - 24) unlockTerms();
+    }
+
+    function onAgreeChange() {
+      const agree = document.getElementById('termsAgree');
+      const proceed = document.getElementById('termsProceed');
+      const on = agree.checked;
+      proceed.disabled = !on;
+      proceed.style.opacity = on ? '1' : '.5';
+      proceed.style.cursor = on ? 'pointer' : 'not-allowed';
+    }
+
+    function closeTerms() {
+      document.getElementById('termsOverlay').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    function acceptTerms() {
+      if (!document.getElementById('termsAgree').checked) return;
+      closeTerms();
+      enterNewSubmission();
+    }
+
+    // Actual new-submission form (entered only after accepting the terms)
+    function enterNewSubmission() {
+      document.getElementById('dashView').style.display = 'none';
+      document.getElementById('formView').style.display = 'block';
+      document.getElementById('formView').classList.add('animate-rise');
+      schoolSelect.value = '';
+      deptSelect.innerHTML = '<option value="">Select School first</option>'; deptSelect.disabled = true;
+      levelSelect.innerHTML = '<option value="">Select Department first</option>'; levelSelect.disabled = true;
+      document.getElementById('mainArea').style.display = 'none';
+      document.getElementById('statusPill').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Select School, Department, and Programme Level to begin or resume a submission.';
+      state = null;
+      window.scrollTo(0, 0);
+    }
+
+    async function openSubmission(school, dept, level) {
+      document.getElementById('dashView').style.display = 'none';
+      document.getElementById('formView').style.display = 'block';
+      document.getElementById('formView').classList.add('animate-rise');
+      schoolSelect.value = school;
+      deptSelect.innerHTML = '<option value="">Select Department</option>';
+      if (DEPT_DATA[school]) { deptSelect.disabled = false; Object.keys(DEPT_DATA[school]).sort().forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; deptSelect.appendChild(o); }); deptSelect.value = dept; }
+      levelSelect.innerHTML = '<option value="">Select Programme Level</option>';
+      if (DEPT_DATA[school] && DEPT_DATA[school][dept]) { levelSelect.disabled = false; DEPT_DATA[school][dept].forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; levelSelect.appendChild(o); }); levelSelect.value = level; }
+      await loadUnit(school, dept, level);
+      window.scrollTo(0, 0);
+    }
+
+    /* ── Filter handlers ── */
+    function filterAY(ay, btn) {
+      activeAYFilter = ay;
+      btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderDashboard();
+    }
+
+    function filterStatus(status, btn) {
+      activeStatusFilter = status;
+      btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderDashboard();
+    }
+
+    /* ── Dashboard ── */
+    async function loadDashboard() {
+      const list = document.getElementById('dashList');
+      try {
+        const res = await fetch('/api/iea/submissions');
+        const data = await res.json();
+        if (data.ok) {
+          submissionsCache = data.submissions || [];
+          renderDashboard();
+        } else list.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>Error loading</h3><p>Could not load submissions.</p></div>';
+      } catch (err) { list.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>Connection error</h3><p>' + err.message + '</p></div>'; }
+    }
+
+    function renderDashboard() {
+      const list = document.getElementById('dashList');
+      if (!submissionsCache.length) {
+        list.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>No submissions yet</h3><p>Click "Start New Submission" to create your first IEA entry.</p></div>';
+        return;
+      }
+
+      const filtered = submissionsCache.filter(s => {
+        const isDraft = !s.submitted;
+        let matchAY = activeAYFilter === 'All' || (s.yearCounts && s.yearCounts[activeAYFilter] > 0);
+        let matchStatus = activeStatusFilter === 'All' ||
+          (activeStatusFilter === 'Submitted' && !isDraft) ||
+          (activeStatusFilter === 'Draft' && isDraft);
+        return matchAY && matchStatus;
+      });
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>No matching submissions</h3><p>No submissions match the selected filters.</p></div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map((s) => {
+        const when = s.lastUpdated ? new Date(s.lastUpdated + (s.lastUpdated.endsWith('Z') ? '' : 'Z')).toLocaleString() : 'N/A';
+        const entryLabel = s.totalEntries + ' entr' + (s.totalEntries === 1 ? 'y' : 'ies');
+        const isDraft = !s.submitted;
+        const badge = isDraft
+          ? '<span class="status-badge status-draft">' + ICON.edit + ' Draft</span>'
+          : '<span class="status-badge status-submitted">' + ICON.check + ' Submitted' + (s.version > 1 ? ' · v' + s.version : '') + '</span>';
+        const openLabel = isDraft ? ' Open IEA Form' : ' Edit Submission';
+        return '<div class="dash-card">' +
+          '<div class="dc-left">' + badge +
+          '<div class="dc-title">' + escapeHtml(s.department) + '</div>' +
+          '<div class="dc-sub">Last saved: ' + when + ' · ' + escapeHtml(s.school) + ' · ' + escapeHtml(s.level) + '</div>' +
+          '<div><span class="dc-tag">' + ICON.layers + ' ' + entryLabel + ' across ' + YEARS.length + ' years</span></div></div>' +
+          '<div class="dc-right">' +
+          '<button class="btn btn-gold" onclick="openSubmission(\'' + escapeHtml(s.school) + '\', \'' + escapeHtml(s.department) + '\', \'' + escapeHtml(s.level) + '\')">' + ICON.edit + openLabel + '</button>' +
+          '<button class="btn btn-ghost" onclick="deleteSubmission(\'' + s.id + '\', \'' + escapeHtml(s.department) + '\')" style="color:var(--danger);border-color:#f5b8b8">' + ICON.trash + ' Delete</button>' +
+          '</div></div>';
+      }).join('');
+    }
+
+    async function deleteSubmission(sid, deptName) {
+      if (!confirm('Delete the submission for ' + deptName + '? This cannot be undone.')) return;
+      try {
+        const res = await fetch('/api/iea/delete/' + sid, { method: 'POST' });
+        const json = await res.json();
+        if (json.ok) { showToast('Deleted successfully'); loadDashboard(); }
+        else showToast('Delete failed: ' + (json.error || 'Error'), true);
+      } catch (err) { showToast('Error: ' + err.message, true); }
+    }
+
+    /* ── Cascading dropdowns ── */
+    const schoolSelect = document.getElementById('schoolSelect');
+    const deptSelect = document.getElementById('deptSelect');
+    const levelSelect = document.getElementById('levelSelect');
+
+    Object.keys(DEPT_DATA).sort().forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; schoolSelect.appendChild(o); });
+
+    schoolSelect.addEventListener('change', () => {
+      deptSelect.innerHTML = '<option value="">Select Department</option>';
+      levelSelect.innerHTML = '<option value="">Select Department first</option>'; levelSelect.disabled = true;
+      if (!schoolSelect.value) { deptSelect.disabled = true; deptSelect.innerHTML = '<option value="">Select School first</option>'; return; }
+      deptSelect.disabled = false;
+      Object.keys(DEPT_DATA[schoolSelect.value]).sort().forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; deptSelect.appendChild(o); });
+    });
+    deptSelect.addEventListener('change', () => {
+      levelSelect.innerHTML = '<option value="">Select Programme Level</option>';
+      if (!deptSelect.value) { levelSelect.disabled = true; return; }
+      levelSelect.disabled = false;
+      DEPT_DATA[schoolSelect.value][deptSelect.value].forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; levelSelect.appendChild(o); });
+    });
+    levelSelect.addEventListener('change', () => { if (levelSelect.value) loadUnit(schoolSelect.value, deptSelect.value, levelSelect.value); });
+
+    /* ── State helpers ── */
+    function emptyYears() { const o = {}; YEARS.forEach(y => { o[y] = {}; SECTIONS.forEach(s => { o[y][s.key] = []; }); }); return o; }
+    function slugify(s) { return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
+    function genId() { return 'e' + Math.random().toString(36).slice(2, 9); }
+    function escapeHtml(str) { return String(str == null ? '' : str).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+
+    function emptyEntry(sectionKey) {
+      const s = SECTIONS.find(x => x.key === sectionKey);
+      const obj = { id: genId(), evidenceTypes: [], evidenceLink: '', evidenceMissing: '', evidenceDetails: {} };
+      s.fields.forEach(f => obj[f.k] = '');
+      return obj;
+    }
+    function mergeWithDefaults(parsed, school, dept, level) {
+      const base = { school, department: dept, level, years: emptyYears(), lastUpdated: (parsed && parsed.lastUpdated) || null };
+      if (parsed && parsed.years) {
+        YEARS.forEach(y => { if (parsed.years[y]) { SECTIONS.forEach(s => {
+          if (Array.isArray(parsed.years[y][s.key])) base.years[y][s.key] = parsed.years[y][s.key].map(e => Object.assign({ evidenceTypes: [], evidenceLink: '', evidenceMissing: '', evidenceDetails: {} }, e));
+        }); } });
+      }
+      return base;
+    }
+    function totalEntries(st) { let n = 0; YEARS.forEach(y => SECTIONS.forEach(s => n += st.years[y][s.key].length)); return n; }
+    function unitLabel(st) { return st.school + ' — ' + st.department + ' (' + st.level + ')'; }
+
+    async function loadUnit(school, dept, level) {
+      document.getElementById('statusPill').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg> Loading...';
+      let parsed = null;
+      try {
+        const res = await fetch('/api/iea/load?school=' + encodeURIComponent(school) + '&dept=' + encodeURIComponent(dept) + '&level=' + encodeURIComponent(level));
+        const json = await res.json();
+        if (json.ok && json.submission) parsed = json.submission;
+      } catch (err) {}
+      state = mergeWithDefaults(parsed, school, dept, level);
+      activeYear = YEARS[0]; selectedSections = [SECTIONS[0].key]; dirty = false;
+      document.getElementById('mainArea').style.display = 'block';
+      renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); updateStatusPill();
+    }
+
+    function updateStatusPill() {
+      const pill = document.getElementById('statusPill');
+      const count = totalEntries(state);
+      if (count === 0) { pill.innerHTML = ICON.fileText + ' No entries yet. Add entries in sections A–F below.'; pill.style.color = 'var(--ink3)'; }
+      else { const when = state.lastUpdated ? new Date(state.lastUpdated + (state.lastUpdated.endsWith('Z') ? '' : 'Z')).toLocaleString() : 'never'; pill.innerHTML = ICON.check + ' ' + count + ' entries · Last saved: ' + when; pill.style.color = '#2F6F4E'; }
+    }
+
+    function renderYearTabs() {
+      document.getElementById('yearTabs').innerHTML = YEARS.map(y => {
+        const c = SECTIONS.reduce((sum, s) => sum + state.years[y][s.key].length, 0);
+        return '<button class="year-tab ' + (y === activeYear ? 'active' : '') + '" data-year="' + y + '">' + y + '<span class="tab-count">' + c + '</span></button>';
+      }).join('');
+    }
+
+    /* ── Section Navigation & Workflow ── */
+    function selectSection(secKey) {
+      // Tab-style single section navigation (A, B, C, D, E, F).
+      if (secKey === 'All') secKey = SECTIONS[0].key;
+      selectedSections = [secKey];
+      renderSectionNavBar();
+      renderSections();
+    }
+
+    function goToSection(secKey) {
+      selectedSections = [secKey];
+      renderSectionNavBar();
+      renderSections();
+      const el = document.getElementById('sec-panel-' + secKey);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 1800);
+      }
+    }
+
+    function scrollToSubmit() {
+      const el = document.getElementById('submitSection');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    let navViewMode = 'compact'; // 'compact' (round buttons) or 'expanded' (full cards)
+
+    function toggleNavViewMode() {
+      navViewMode = navViewMode === 'compact' ? 'expanded' : 'compact';
+      renderSectionNavBar();
+    }
+
+    function renderSectionNavBar() {
+      const container = document.getElementById('sectionNavWrapper');
+      if (!container || !state) return;
+      const isAll = false;
+      const allCount = totalEntries(state);
+
+      let activeLabelHtml = '';
+      const activeSecObjs = SECTIONS.filter(s => selectedSections.includes(s.key));
+      if (activeSecObjs.length >= 1) {
+        const s = activeSecObjs[0];
+        const c = state.years[activeYear][s.key].length;
+        activeLabelHtml = '<span class="nav-active-tag" style="background:' + s.color + ';color:#fff;">Section ' + s.key + ': ' + escapeHtml(s.title) + ' (' + c + ' ' + (c === 1 ? 'entry' : 'entries') + ')</span>';
+      }
+
+      let modeBtn = '<button class="btn-view-toggle" onclick="toggleNavViewMode()">' +
+        (navViewMode === 'compact' ? ICON.plus + ' Expand Cards' : ICON.layers + ' Round Buttons') +
+      '</button>';
+
+      let html = '<div class="section-nav-header">' +
+        '<div class="snh-left">' +
+          '<span class="snh-title">' + ICON.layers + ' Section Navigation</span>' +
+          activeLabelHtml +
+        '</div>' +
+        '<div class="snh-right">' +
+          modeBtn +
+        '</div>' +
+      '</div>';
+
+      if (navViewMode === 'compact') {
+        // Render Round Buttons Row (A to F)
+        html += '<div class="round-btn-container">';
+
+        // Sections A to F Round Buttons
+        SECTIONS.forEach(s => {
+          const c = state.years[activeYear][s.key].length;
+          const isAct = !isAll && selectedSections.includes(s.key);
+          html += '<button class="round-sec-btn ' + (isAct ? 'active' : '') + '" onclick="selectSection(\'' + s.key + '\')" style="--sec-color:' + s.color + ';" title="Section ' + s.key + ': ' + escapeHtml(s.title) + '">' +
+            '<span class="btn-sec-letter">' + s.key + '</span>' +
+            '<span class="btn-sec-label">Sec ' + s.key + '</span>' +
+            (c > 0 ? '<span class="btn-badge-count">' + c + '</span>' : '') +
+          '</button>';
+        });
+
+        html += '</div>';
+
+      } else {
+        // Expanded Grid View
+        html += '<div class="section-boxes-grid">';
+
+        SECTIONS.forEach(s => {
+          const c = state.years[activeYear][s.key].length;
+          const isAct = !isAll && selectedSections.includes(s.key);
+          html += '<div class="section-box-btn ' + (isAct ? 'active' : '') + '" onclick="selectSection(\'' + s.key + '\')" style="--sec-color:' + s.color + ';" title="' + escapeHtml(s.title) + '">' +
+            '<div class="sb-header"><span class="sb-badge">' + s.key + '</span><span class="sb-count">' + c + ' ' + (c===1?'entry':'entries') + '</span></div>' +
+            '<div class="sb-title">Section ' + s.key + ': ' + escapeHtml(s.title) + '</div>' +
+            '<div class="sb-sub">' + (c > 0 ? ICON.check + ' ' + c + ' saved' : 'Click to view/edit') + '</div>' +
+          '</div>';
+        });
+
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    function renderSections() {
+      const visible = SECTIONS.filter(s => selectedSections.includes('All') || selectedSections.includes(s.key));
+      document.getElementById('sectionsContainer').innerHTML = visible.map(renderSectionPanel).join('');
+    }
+
+    function renderSectionPanel(s) {
+      const entries = state.years[activeYear][s.key];
+      const secKeys = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const curIdx = secKeys.indexOf(s.key);
+      const prevKey = curIdx > 0 ? secKeys[curIdx - 1] : null;
+      const nextKey = curIdx < secKeys.length - 1 ? secKeys[curIdx + 1] : null;
+
+      let workflowFooter = '<div class="workflow-footer">';
+      workflowFooter += '<span class="workflow-step-badge">Section ' + s.key + ' &middot; Step ' + (curIdx + 1) + ' of ' + secKeys.length + '</span>';
+      workflowFooter += '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
+      if (prevKey) {
+        workflowFooter += '<button class="btn-workflow prev" onclick="goToSection(\'' + prevKey + '\')">&larr; Back to Section ' + prevKey + '</button>';
+      }
+      if (nextKey) {
+        const nextSec = SECTIONS.find(x => x.key === nextKey);
+        workflowFooter += '<button class="btn-workflow next" style="--accent:' + s.color + '" onclick="goToSection(\'' + nextKey + '\')">Next: Section ' + nextKey + ' (' + escapeHtml(nextSec ? nextSec.title.split(' ')[0] : '') + ') &rarr;</button>';
+      } else {
+        workflowFooter += '<button class="btn-workflow submit-btn" onclick="scrollToSubmit()">Review &amp; Submit Submission &darr;</button>';
+      }
+      workflowFooter += '</div></div>';
+
+      return '<div class="section-panel" id="sec-panel-' + s.key + '" style="--accent:' + s.color + '">' +
+        '<div class="section-banner"><div class="section-num">' + s.key + '</div><div class="section-title-wrap"><h3>' + s.title + '</h3><p class="section-sub">' + s.sub + '</p></div><div class="entry-count">' + entries.length + ' ' + (entries.length === 1 ? 'entry' : 'entries') + '</div></div>' +
+        '<div class="entries">' + (entries.length === 0 ? '<p class="empty-hint">No entries yet for ' + activeYear + ' in Section ' + s.key + '.</p>' : entries.map((e, i) => renderEntryCard(s, e, i)).join('')) + '</div>' +
+        '<div style="padding:0 20px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+          '<button class="add-entry-btn" data-action="add" data-section="' + s.key + '" style="margin:0;">' + ICON.plus + ' Add Entry to Section ' + s.key + '</button>' +
+        '</div>' +
+        workflowFooter +
+      '</div>';
+    }
+
+    function renderEntryCard(s, e, idx) {
+      return '<div class="entry-card" data-entry="' + e.id + '"><div class="entry-head"><span class="entry-idx">ENTRY #' + (idx + 1) + '</span><button class="remove-btn" data-action="remove" data-section="' + s.key + '" data-entry="' + e.id + '">' + ICON.x + ' Remove</button></div><div class="entry-fields">' + s.fields.map(f => renderField(s, e, f)).join('') + renderEvidenceBlock(s, e) + '</div></div>';
+    }
+
+    function renderField(s, e, f) {
+      const val = e[f.k] || '', common = 'data-section="' + s.key + '" data-entry="' + e.id + '" data-field="' + f.k + '"';
+      if (f.t === 'textarea') return '<label class="field-label full">' + f.l + '<textarea ' + common + ' rows="2" placeholder="' + escapeHtml(f.ph || '') + '">' + escapeHtml(val) + '</textarea></label>';
+      if (f.t === 'rating10') {
+        const curVal = parseInt(val) || 0;
+        let starsHtml = '<div class="rating-scale-wrap" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;">';
+        for (let i = 1; i <= 10; i++) {
+          const active = i <= curVal;
+          starsHtml += '<button type="button" class="star-pill-btn ' + (active ? 'active' : '') + '" onclick="setRatingValue(\'' + s.key + '\', \'' + e.id + '\', \'' + f.k + '\', ' + i + ')" title="' + i + ' out of 10 Stars">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="' + (active ? '#f2a900' : 'none') + '" stroke="' + (active ? '#f2a900' : '#94a3b8') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ' + i +
+          '</button>';
+        }
+        starsHtml += '<span style="font-size:12.5px;font-weight:800;color:var(--navy);margin-left:8px;">' + (curVal > 0 ? curVal + ' / 10 Stars ⭐' : 'Click to rate (1–10)') + '</span>';
+        starsHtml += '</div>';
+        return '<label class="field-label full">' + f.l + starsHtml + '</label>';
+      }
+      return '<label class="field-label">' + f.l + '<input type="text" ' + common + ' value="' + escapeHtml(val) + '" placeholder="' + escapeHtml(f.ph || '') + '"/></label>';
+    }
+
+    function setRatingValue(secKey, entryId, fieldKey, val) {
+      const entry = state.years[activeYear][secKey].find(x => x.id === entryId);
+      if (entry) {
+        entry[fieldKey] = String(val);
+        saveState();
+        renderSections();
+      }
+    }
+
+    function renderEvidenceBlock(s, e) {
+      if (s.key === 'F') return '';
+      if (!e.evidenceDetails) e.evidenceDetails = {};
+      const chips = EVIDENCE_TYPES.map(type => {
+        const checked = Array.isArray(e.evidenceTypes) && e.evidenceTypes.indexOf(type) > -1;
+        return '<label class="evidence-chip-label ' + (checked ? 'selected' : '') + '"><input type="checkbox" data-section="' + s.key + '" data-entry="' + e.id + '" data-field="evidenceTypes" data-value="' + escapeHtml(type) + '" ' + (checked ? 'checked' : '') + '> <span>' + escapeHtml(type) + '</span></label>';
+      }).join('');
+
+      let details = '';
+      if (Array.isArray(e.evidenceTypes) && e.evidenceTypes.length > 0) {
+        details = '<div class="evidence-details-container">' + e.evidenceTypes.map(type => {
+          const d = e.evidenceDetails[type] || {};
+          return '<div class="evidence-detail-card"><div class="evidence-detail-title">' + ICON.shield + ' ' + escapeHtml(type) + '</div><div class="evidence-detail-grid"><div><label style="font-size:11.5px;font-weight:700;color:var(--ink2);display:flex;align-items:center;gap:4px;">' + ICON.upload + ' Upload File:</label><div class="file-upload-btn-wrap">' +
+            (d.fileUrl ? '<span class="uploaded-file-badge"><a href="' + escapeHtml(d.fileUrl) + '" target="_blank">' + escapeHtml(d.fileName || 'File') + '</a> <span class="btn-remove-file" onclick="removeEvidenceFile(\'' + s.key + '\',\'' + e.id + '\',\'' + escapeHtml(type) + '\')">' + ICON.x + '</span></span>'
+              : '<button type="button" class="btn-file-upload" onclick="triggerFileUpload(\'' + s.key + '\',\'' + e.id + '\',\'' + escapeHtml(type) + '\')">' + ICON.upload + ' Upload</button>') +
+            '</div></div><div><label style="font-size:11.5px;font-weight:700;color:var(--ink2);display:flex;align-items:center;gap:4px;">' + ICON.link + ' Drive / Web URL:</label><input type="text" style="width:100%;font-size:12px;padding:6px 8px;border:1.5px solid #dde3f0;border-radius:6px;margin-top:4px;" placeholder="https://drive.google.com/..." value="' + escapeHtml(d.driveLink || '') + '" onchange="updateEvidenceDetail(\'' + s.key + '\',\'' + e.id + '\',\'' + escapeHtml(type) + '\',\'driveLink\',this.value)"></div></div><div style="margin-top:8px;"><label style="font-size:11.5px;font-weight:700;color:var(--ink2);">Notes (if pending):</label><input type="text" style="width:100%;font-size:12px;padding:6px 8px;border:1.5px solid #dde3f0;border-radius:6px;margin-top:4px;" placeholder="e.g. BoS approval expected Aug 2026" value="' + escapeHtml(d.notes || '') + '" onchange="updateEvidenceDetail(\'' + s.key + '\',\'' + e.id + '\',\'' + escapeHtml(type) + '\',\'notes\',this.value)"></div></div>';
+        }).join('') + '</div>';
+      }
+      return '<div class="evidence-block"><div class="evidence-block-head"><h5>' + ICON.shield + ' Supporting Evidence</h5></div><div class="evidence-chips">' + chips + '</div>' + details + '</div>';
+    }
+
+    /* ── Submit section (after section E) ── */
+    function renderSubmitSection() {
+      const el = document.getElementById('submitSection');
+      const count = totalEntries(state);
+      const sectionCounts = SECTIONS.map(s => {
+        let c = 0; YEARS.forEach(y => c += state.years[y][s.key].length);
+        return '<div class="stat-chip"><span style="width:22px;height:22px;border-radius:6px;background:' + s.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">' + s.key + '</span> ' + c + ' entries</div>';
+      }).join('');
+      el.innerHTML = '<div class="submit-section"><h3>' + ICON.send + ' Ready to Submit?</h3><p>Review your entries across all sections and academic years before submitting.</p><div class="submit-stats">' + sectionCounts + '</div><div class="submit-actions"><button class="btn btn-ghost" onclick="downloadBackup()">' + ICON.download + ' Download Backup</button><button class="btn btn-success" onclick="submitFinal()" ' + (count === 0 ? 'disabled style="opacity:.5;cursor:not-allowed;"' : '') + '>' + ICON.send + ' Submit (' + count + ' entries)</button></div></div>';
+    }
+
+    /* ── Auto-save ── */
+    function scheduleAutoSave() {
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => doAutoSave(), 2000);
+    }
+
+    async function doAutoSave() {
+      if (!state || totalEntries(state) === 0) return;
+      showAutosave('saving');
+      try {
+        const res = await fetch('/api/iea/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: state.school, department: state.department, level: state.level, years: state.years }) });
+        const json = await res.json();
+        if (json.ok) { state.lastUpdated = json.lastUpdated; dirty = false; updateStatusPill(); showAutosave('saved'); }
+        else showAutosave('error');
+      } catch (err) { showAutosave('error'); }
+    }
+
+    function showAutosave(status) {
+      const el = document.getElementById('autosaveIndicator');
+      const text = document.getElementById('autosaveText');
+      el.className = 'autosave-indicator show ' + status;
+      if (status === 'saving') { text.textContent = 'Auto-saving...'; }
+      else if (status === 'saved') { text.textContent = 'Saved'; setTimeout(() => { el.className = 'autosave-indicator'; }, 2500); }
+      else if (status === 'error') { text.textContent = 'Save failed'; setTimeout(() => { el.className = 'autosave-indicator'; }, 4000); }
+    }
+
+    /* ── Final submit ── (nothing is mandatory; any entries can be submitted) */
+    async function submitFinal() {
+      if (!state) { showToast('Select a reporting unit first.', true); return; }
+      if (totalEntries(state) === 0) { showToast('Add at least one entry before submitting.', true); return; }
+      try {
+        const res = await fetch('/api/iea/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: state.school, department: state.department, level: state.level, years: state.years }) });
+        const json = await res.json();
+        if (json.ok) {
+          dirty = false;
+          showToast(json.version > 1 ? ('Submitted — saved as edited Version ' + json.version + '.') : 'Submitted successfully!');
+          backToDashboard();
+        } else showToast('Submit failed: ' + (json.error || 'Error'), true);
+      } catch (err) { showToast('Submit failed: ' + err.message, true); }
+    }
+
+    /* ── Evidence file upload ── */
+    function triggerFileUpload(sk, eid, type) {
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.zip';
+      inp.onchange = async (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const fd = new FormData(); fd.append('file', file); showToast('Uploading...');
+        try {
+          const res = await fetch('/api/iea/upload', { method: 'POST', body: fd });
+          const json = await res.json();
+          if (json.ok) { updateEvidenceDetail(sk, eid, type, 'fileUrl', json.url); updateEvidenceDetail(sk, eid, type, 'fileName', json.filename); showToast('Uploaded!'); renderSections(); }
+          else showToast('Error: ' + (json.error || 'Failed'), true);
+        } catch (err) { showToast('Error: ' + err.message, true); }
+      };
+      inp.click();
+    }
+    function removeEvidenceFile(sk, eid, type) { updateEvidenceDetail(sk, eid, type, 'fileUrl', ''); updateEvidenceDetail(sk, eid, type, 'fileName', ''); renderSections(); }
+    function updateEvidenceDetail(sk, eid, type, key, val) {
+      const entry = state.years[activeYear][sk].find(e => e.id === eid); if (!entry) return;
+      if (!entry.evidenceDetails) entry.evidenceDetails = {};
+      if (!entry.evidenceDetails[type]) entry.evidenceDetails[type] = {};
+      entry.evidenceDetails[type][key] = val;
+      if (type.includes('Google Drive') && key === 'driveLink') entry.evidenceLink = val;
+      dirty = true; scheduleAutoSave();
+    }
+
+    function addEntry(sk) { state.years[activeYear][sk].push(emptyEntry(sk)); dirty = true; renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); scheduleAutoSave(); }
+    function removeEntry(sk, eid) { if (!confirm('Remove this entry?')) return; state.years[activeYear][sk] = state.years[activeYear][sk].filter(e => e.id !== eid); dirty = true; renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); scheduleAutoSave(); }
+    function updateField(sk, eid, fk, val) { const entry = state.years[activeYear][sk].find(e => e.id === eid); if (entry) { entry[fk] = val; dirty = true; scheduleAutoSave(); } }
+    function toggleEvidenceType(sk, eid, val, checked) {
+      const entry = state.years[activeYear][sk].find(e => e.id === eid); if (!entry) return;
+      if (!Array.isArray(entry.evidenceTypes)) entry.evidenceTypes = [];
+      const idx = entry.evidenceTypes.indexOf(val);
+      if (checked && idx === -1) { entry.evidenceTypes.push(val); if (!entry.evidenceDetails) entry.evidenceDetails = {}; if (!entry.evidenceDetails[val]) entry.evidenceDetails[val] = { fileUrl: '', fileName: '', driveLink: '', notes: '' }; }
+      if (!checked && idx > -1) entry.evidenceTypes.splice(idx, 1);
+      dirty = true; renderSections(); scheduleAutoSave();
+    }
+
+    function showToast(msg, isErr) { const t = document.getElementById('toast'); t.innerHTML = (isErr ? ICON.x : ICON.check) + ' ' + msg; t.className = 'toast show' + (isErr ? ' err' : ''); clearTimeout(t._timer); t._timer = setTimeout(() => t.className = 'toast', isErr ? 4200 : 2400); }
+
+    function findIncompleteEntry() {
+      for (const y of YEARS) for (const s of SECTIONS) { const arr = state.years[y][s.key]; for (let i = 0; i < arr.length; i++) if (!String(arr[i][s.fields[0].k] || '').trim()) return { year: y, section: s, idx: i, entry: arr[i] }; }
+      return null;
+    }
+    function highlightEntry(bad) { activeYear = bad.year; renderYearTabs(); renderSectionNavBar(); renderSections(); const el = document.querySelector('.entry-card[data-entry="' + bad.entry.id + '"]'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 2500); } }
+
+    function downloadBackup() {
+      if (!state) return;
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'IEA_' + slugify(state.school) + '_' + slugify(state.department) + '_' + slugify(state.level) + '_backup.json'; a.click();
+    }
+
+    /* ── Event delegation ── */
+    document.getElementById('yearTabs').addEventListener('click', e => { const b = e.target.closest('.year-tab'); if (b) { activeYear = b.dataset.year; renderYearTabs(); renderSectionNavBar(); renderSections(); } });
+    document.getElementById('sectionsContainer').addEventListener('click', e => { const b = e.target.closest('[data-action]'); if (!b) return; if (b.dataset.action === 'add') addEntry(b.dataset.section); if (b.dataset.action === 'remove') removeEntry(b.dataset.section, b.dataset.entry); });
+    document.getElementById('sectionsContainer').addEventListener('input', e => { const t = e.target; if (t.type === 'checkbox' && t.dataset.field === 'evidenceTypes') return; if (t.dataset.field) updateField(t.dataset.section, t.dataset.entry, t.dataset.field, t.value); });
+    document.getElementById('sectionsContainer').addEventListener('change', e => { const t = e.target; if (t.type === 'checkbox' && t.dataset.field === 'evidenceTypes') toggleEvidenceType(t.dataset.section, t.dataset.entry, t.dataset.value, t.checked); });
+
+    /* ── Portal feedback (home page) ── */
+    let fbRating = 0;
+    function renderFbStars() {
+      const wrap = document.getElementById('fbStars');
+      if (!wrap) return;
+      let html = '';
+      for (let i = 1; i <= 10; i++) {
+        const on = i <= fbRating;
+        html += '<button type="button" onclick="setFbRating(' + i + ')" title="' + i + ' / 10" ' +
+          'style="background:none; border:none; cursor:pointer; padding:2px; line-height:0;">' +
+          '<svg width="26" height="26" viewBox="0 0 24 24" fill="' + (on ? '#f5b301' : 'none') + '" stroke="' + (on ? '#f5b301' : '#c8d0e0') + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+          '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>';
+      }
+      wrap.innerHTML = html + '<span style="margin-left:8px; font-size:13px; font-weight:700; color:var(--navy); align-self:center;">' + (fbRating ? fbRating + ' / 10' : '') + '</span>';
+    }
+    function setFbRating(n) { fbRating = n; renderFbStars(); }
+
+    function openFeedback() {
+      renderFbStars();
+      document.getElementById('fbOverlay').classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeFeedback() {
+      document.getElementById('fbOverlay').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    async function submitFeedback() {
+      const like = document.getElementById('fbLike').value.trim();
+      const comments = document.getElementById('fbComments').value.trim();
+      if (!like && !fbRating && !comments) { showToast('Please share some feedback before submitting.', true); return; }
+      try {
+        const res = await fetch('/api/iea/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ like, rating: fbRating, comments })
+        });
+        const json = await res.json();
+        if (json.ok) {
+          showToast('Thank you! Your feedback has been submitted.');
+          document.getElementById('fbLike').value = '';
+          document.getElementById('fbComments').value = '';
+          fbRating = 0; renderFbStars();
+          closeFeedback();
+        } else showToast('Could not submit: ' + (json.error || 'Error'), true);
+      } catch (err) { showToast('Error: ' + err.message, true); }
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      if (document.getElementById('termsOverlay').classList.contains('show')) closeTerms();
+      else if (document.getElementById('fbOverlay').classList.contains('show')) closeFeedback();
+    });
+
+    // Boot
+    renderFbStars();
+    loadDashboard();
+  </script>
+</body>
+</html>
