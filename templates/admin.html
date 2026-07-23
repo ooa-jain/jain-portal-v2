@@ -1182,7 +1182,7 @@
             <p>Enable/disable modules and set submission deadlines</p>
           </div>
         </div>
-        <div style="padding: 18px 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div style="padding: 18px 22px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px;">
           <div style="background: #fafbff; padding: 16px; border: 1px solid var(--border); border-radius: var(--r2);">
             <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--navy);">Semester Readiness</h3>
             <label
@@ -1203,6 +1203,17 @@
             </label>
             <label style="font-size: 11px; font-weight: 700; color: var(--ink3);">Deadline Notice</label>
             <input type="datetime-local" id="set_closure_deadline" value="{{ settings.closure_deadline }}"
+              style="width:100%;padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit;">
+          </div>
+          <div style="background: #fafbff; padding: 16px; border: 1px solid var(--border); border-radius: var(--r2);">
+            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--navy);">Innovation &amp; Emerging Areas</h3>
+            <label
+              style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; font-weight: 600;">
+              <input type="checkbox" id="set_iea_enabled" {% if settings.iea_enabled %}checked{% endif %}>
+              Enable Module
+            </label>
+            <label style="font-size: 11px; font-weight: 700; color: var(--ink3);">Deadline Notice</label>
+            <input type="datetime-local" id="set_iea_deadline" value="{{ settings.iea_deadline }}"
               style="width:100%;padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit;">
           </div>
         </div>
@@ -2499,6 +2510,8 @@
         readiness_deadline: document.getElementById('set_readiness_deadline').value,
         closure_enabled: document.getElementById('set_closure_enabled').checked,
         closure_deadline: document.getElementById('set_closure_deadline').value,
+        iea_enabled: document.getElementById('set_iea_enabled').checked,
+        iea_deadline: document.getElementById('set_iea_deadline').value,
         enabled_years: enabled_years,
         enabled_semesters: enabled_semesters
       };

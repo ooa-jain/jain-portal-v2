@@ -702,6 +702,7 @@ def get_global_settings():
     settings.setdefault('closure_enabled', True)
     settings.setdefault('closure_deadline', '')
     settings.setdefault('iea_enabled', True)
+    settings.setdefault('iea_deadline', '')
     settings.setdefault('enabled_years', ['2024-25', '2025-26', '2026-27', '2027-28'])
     settings.setdefault('enabled_semesters', ['Even', 'Odd'])
     return settings
@@ -966,8 +967,13 @@ def iea_save():
 def iea_submissions():
     if 'user_email' not in session and not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Not logged in'})
-    
-    subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
+
+    # Non-admin users see only their own submissions on the dashboard.
+    # Admins (e.g. impersonating or reviewing) see the full consolidated list.
+    query = {}
+    if not session.get('admin'):
+        query = {'submitterEmail': session.get('user_email', '')}
+    subs = list(iea_col.find(query).sort([('school', 1), ('department', 1), ('level', 1)]))
     results = []
     for s in subs:
         sid = str(s['_id'])
@@ -1837,6 +1843,7 @@ def save_settings():
             'closure_enabled': data.get('closure_enabled', True),
             'closure_deadline': data.get('closure_deadline', ''),
             'iea_enabled': data.get('iea_enabled', True),
+            'iea_deadline': data.get('iea_deadline', ''),
             'enabled_years': data.get('enabled_years', ['2024-25', '2025-26', '2026-27', '2027-28']),
             'enabled_semesters': data.get('enabled_semesters', ['Even', 'Odd'])
         }},

@@ -118,7 +118,7 @@
     .field select:disabled { background: #f3f4f6; color: var(--ink3); cursor: not-allowed }
 
     /* ── Auto-save indicator ── */
-    .autosave-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 99px; position: fixed; bottom: 20px; right: 20px; z-index: 100; transition: all .3s; opacity: 0; transform: translateY(10px) }
+    .autosave-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 99px; position: fixed; bottom: 90px; right: 20px; z-index: 100; transition: all .3s; opacity: 0; transform: translateY(10px) }
     .autosave-indicator.show { opacity: 1; transform: translateY(0) }
     .autosave-indicator.saving { background: #FFF3E0; color: #E65100; border: 1px solid #FFE0B2 }
     .autosave-indicator.saving svg { animation: pulse 1s ease infinite }
@@ -585,6 +585,33 @@
       .terms-foot { padding: 14px 18px; }
       .terms-actions .btn { flex: 1; justify-content: center; }
     }
+
+    /* ── Floating feedback button (FAB) ── */
+    .fab-feedback {
+      position: fixed; right: 22px; bottom: 22px; z-index: 1500;
+      display: flex; align-items: center; gap: 0;
+      height: 56px; padding: 0; width: 56px;
+      border: none; border-radius: 30px; cursor: pointer;
+      background: linear-gradient(135deg, #E11D48 0%, #b3123a 100%);
+      color: #fff; box-shadow: 0 8px 22px rgba(225,29,72,.42);
+      overflow: hidden; white-space: nowrap;
+      transition: width .28s cubic-bezier(.4,0,.2,1), box-shadow .2s, transform .15s;
+    }
+    .fab-feedback svg { flex-shrink: 0; margin-left: 17px; margin-right: 13px; }
+    .fab-label { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 14px; opacity: 0; transition: opacity .2s; padding-right: 4px; }
+    .fab-feedback:hover, .fab-feedback:focus-visible { width: 158px; box-shadow: 0 10px 28px rgba(225,29,72,.55); transform: translateY(-2px); }
+    .fab-feedback:hover .fab-label, .fab-feedback:focus-visible .fab-label { opacity: 1; }
+    @media (max-width: 560px) { .fab-feedback { right: 16px; bottom: 16px; } }
+
+    /* ── Feedback modal ── */
+    .fb-overlay { position: fixed; inset: 0; background: rgba(10,20,45,.55); backdrop-filter: blur(3px); z-index: 2100; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .fb-overlay.show { display: flex; animation: fadeIn .2s ease; }
+    .fb-modal { background: #fff; width: 100%; max-width: 520px; max-height: 90vh; border-radius: 18px; box-shadow: 0 30px 80px rgba(10,20,45,.35); display: flex; flex-direction: column; overflow: hidden; animation: slideUp .3s ease; }
+    .fb-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; background: linear-gradient(135deg, #E11D48 0%, #b3123a 100%); color: #fff; }
+    .fb-head h2 { font-family: 'Playfair Display', serif; font-size: 18px; margin: 0; color: #fff; }
+    .fb-body { padding: 22px; overflow-y: auto; }
+    .fb-foot { border-top: 1px solid #e6eaf2; padding: 14px 22px; background: #fafbff; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    @media (max-width: 560px) { .fb-foot .btn { flex: 1; justify-content: center; } }
   </style>
 </head>
 
@@ -645,35 +672,6 @@
       <div class="skeleton skeleton-card"></div>
       <div class="skeleton skeleton-card" style="opacity:.6"></div>
     </div>
-
-    <!-- ═════════ PORTAL FEEDBACK (home page, for all users) ═════════ -->
-    <div class="feedback-card" style="background:#fff; border:1px solid #dde3f0; border-top:4px solid #E11D48; border-radius:14px; padding:24px; margin-top:32px; box-shadow: var(--sh);">
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <h3 style="font-family:'Playfair Display',serif; font-size:19px; color:var(--navy); margin:0;">Portal Feedback &amp; Experience</h3>
-      </div>
-      <p style="color:var(--ink3); font-size:13px; margin:0 0 18px;">Share your feedback and experience on the JAIN Sarathi Portal. This is separate from your IEA submissions.</p>
-
-      <div class="field" style="margin-bottom:14px;">
-        <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Do you like the portal / application?</label>
-        <input type="text" id="fbLike" placeholder="e.g., Yes, excellent experience & smooth workflow!" style="width:100%; padding:10px 12px; border:1px solid #dde3f0; border-radius:8px; font-size:13.5px;">
-      </div>
-
-      <div class="field" style="margin-bottom:14px;">
-        <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Overall Satisfaction Level (1 to 10 Star Scale)</label>
-        <div id="fbStars" style="display:flex; gap:4px; flex-wrap:wrap;"></div>
-      </div>
-
-      <div class="field" style="margin-bottom:18px;">
-        <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Detailed Feedback &amp; Feature Suggestions</label>
-        <textarea id="fbComments" rows="4" placeholder="Share your thoughts, feedback, or requested feature enhancements..." style="width:100%; padding:10px 12px; border:1px solid #dde3f0; border-radius:8px; font-size:13.5px; resize:vertical;"></textarea>
-      </div>
-
-      <button class="btn btn-primary" onclick="submitFeedback()" style="text-decoration:none;">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        Submit Feedback
-      </button>
-    </div>
   </div>
 
   <!-- ═════════ FORM VIEW ═════════ -->
@@ -721,6 +719,52 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <!-- ═════════ FLOATING FEEDBACK BUTTON ═════════ -->
+  <button class="fab-feedback" id="fabFeedback" onclick="openFeedback()" aria-label="Share portal feedback">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="fab-label">Feedback</span>
+  </button>
+
+  <!-- ═════════ FEEDBACK MODAL ═════════ -->
+  <div class="fb-overlay" id="fbOverlay" onclick="if(event.target===this)closeFeedback()">
+    <div class="fb-modal" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
+      <div class="fb-head">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <h2 id="fbTitle">Portal Feedback &amp; Experience</h2>
+        </div>
+        <button class="terms-close" onclick="closeFeedback()" aria-label="Close" title="Close">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="fb-body">
+        <p style="color:var(--ink3); font-size:12.5px; margin:0 0 16px;">Share your feedback and experience on the JAIN Sarathi Portal. This is separate from your IEA submissions.</p>
+
+        <div class="field" style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Do you like the portal / application?</label>
+          <input type="text" id="fbLike" placeholder="e.g., Yes, excellent experience & smooth workflow!" style="width:100%; padding:10px 12px; border:1px solid #dde3f0; border-radius:8px; font-size:13.5px;">
+        </div>
+
+        <div class="field" style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Overall Satisfaction Level (1 to 10 Star Scale)</label>
+          <div id="fbStars" style="display:flex; gap:3px; flex-wrap:wrap; align-items:center;"></div>
+        </div>
+
+        <div class="field" style="margin-bottom:4px;">
+          <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Detailed Feedback &amp; Feature Suggestions</label>
+          <textarea id="fbComments" rows="4" placeholder="Share your thoughts, feedback, or requested feature enhancements..." style="width:100%; padding:10px 12px; border:1px solid #dde3f0; border-radius:8px; font-size:13.5px; resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div class="fb-foot">
+        <button class="btn btn-ghost" onclick="closeFeedback()" style="text-decoration:none;">Cancel</button>
+        <button class="btn btn-primary" onclick="submitFeedback()" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Submit Feedback
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ═════════ TERMS & CONDITIONS MODAL (shown on Start New Submission) ═════════ -->
   <div class="terms-overlay" id="termsOverlay" onclick="if(event.target===this)closeTerms()">
@@ -1413,6 +1457,16 @@
     }
     function setFbRating(n) { fbRating = n; renderFbStars(); }
 
+    function openFeedback() {
+      renderFbStars();
+      document.getElementById('fbOverlay').classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeFeedback() {
+      document.getElementById('fbOverlay').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
     async function submitFeedback() {
       const like = document.getElementById('fbLike').value.trim();
       const comments = document.getElementById('fbComments').value.trim();
@@ -1429,12 +1483,15 @@
           document.getElementById('fbLike').value = '';
           document.getElementById('fbComments').value = '';
           fbRating = 0; renderFbStars();
+          closeFeedback();
         } else showToast('Could not submit: ' + (json.error || 'Error'), true);
       } catch (err) { showToast('Error: ' + err.message, true); }
     }
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && document.getElementById('termsOverlay').classList.contains('show')) closeTerms();
+      if (e.key !== 'Escape') return;
+      if (document.getElementById('termsOverlay').classList.contains('show')) closeTerms();
+      else if (document.getElementById('fbOverlay').classList.contains('show')) closeFeedback();
     });
 
     // Boot
