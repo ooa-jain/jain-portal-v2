@@ -83,7 +83,7 @@
     .btn-success:hover { background: #156a3c; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(26,138,79,.35) }
 
     /* ── Filter section ── */
-    .filter-section { background: #f8fafc; border: 1px solid #dde3f0; border-radius: var(--r); padding: 18px 20px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 14px; animation: rise .4s ease }
+    .filter-section { background: #f8fafc; border: 1px solid #dde3f0; border-radius: var(--r); padding: 18px 20px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 14px }
     .filter-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
     .filter-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--navy); min-width: 120px }
     .tab-btn { background: #fff; border: 1.5px solid #dde3f0; border-radius: 99px; padding: 6px 16px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink2); cursor: pointer; transition: all .2s ease }
@@ -92,7 +92,7 @@
 
     /* ── Dashboard ── */
     .dash-wrap { max-width: 980px; margin: 0 auto; padding: 36px 28px 100px }
-    .dash-card { background: #fff; border: 1px solid #dde3f0; border-radius: var(--r); padding: 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; transition: all .25s; gap: 12px; flex-wrap: wrap; animation: slideUp .4s ease backwards }
+    .dash-card { background: #fff; border: 1px solid #dde3f0; border-radius: var(--r); padding: 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; transition: all .25s; gap: 12px; flex-wrap: wrap }
     .dash-card:hover { border-color: var(--navy3); box-shadow: var(--sh); transform: translateY(-2px) }
     .dc-left { display: flex; flex-direction: column; gap: 4px; flex: 1 1 280px }
     .dc-title { font-size: 15.5px; font-weight: 700; color: var(--navy) }
@@ -640,7 +640,7 @@
   </header>
 
   <!-- ═════════ DASHBOARD VIEW ═════════ -->
-  <div class="dash-wrap animate-rise" id="dashView">
+  <div class="dash-wrap" id="dashView">
     <div class="page-heading" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap:wrap; gap:12px; margin-bottom: 24px;">
       <div>
         <div style="margin-bottom: 12px;">
@@ -870,7 +870,7 @@
 
     let state = null;
     let activeYear = YEARS[0];
-    let selectedSections = ['All'];
+    let selectedSections = ['A'];
     let dirty = false;
     let autoSaveTimer = null;
     let submissionsCache = [];
@@ -1004,7 +1004,7 @@
       }
 
       const filtered = submissionsCache.filter(s => {
-        const isDraft = s.totalEntries === 0;
+        const isDraft = !s.submitted;
         let matchAY = activeAYFilter === 'All' || (s.yearCounts && s.yearCounts[activeAYFilter] > 0);
         let matchStatus = activeStatusFilter === 'All' ||
           (activeStatusFilter === 'Submitted' && !isDraft) ||
@@ -1017,20 +1017,21 @@
         return;
       }
 
-      list.innerHTML = filtered.map((s, i) => {
+      list.innerHTML = filtered.map((s) => {
         const when = s.lastUpdated ? new Date(s.lastUpdated + (s.lastUpdated.endsWith('Z') ? '' : 'Z')).toLocaleString() : 'N/A';
         const entryLabel = s.totalEntries + ' entr' + (s.totalEntries === 1 ? 'y' : 'ies');
-        const isDraft = s.totalEntries === 0;
+        const isDraft = !s.submitted;
         const badge = isDraft
           ? '<span class="status-badge status-draft">' + ICON.edit + ' Draft</span>'
-          : '<span class="status-badge status-submitted">' + ICON.check + ' Submitted</span>';
-        return '<div class="dash-card" style="animation-delay:' + (i * .06) + 's">' +
+          : '<span class="status-badge status-submitted">' + ICON.check + ' Submitted' + (s.version > 1 ? ' · v' + s.version : '') + '</span>';
+        const openLabel = isDraft ? ' Open IEA Form' : ' Edit Submission';
+        return '<div class="dash-card">' +
           '<div class="dc-left">' + badge +
           '<div class="dc-title">' + escapeHtml(s.department) + '</div>' +
           '<div class="dc-sub">Last saved: ' + when + ' · ' + escapeHtml(s.school) + ' · ' + escapeHtml(s.level) + '</div>' +
           '<div><span class="dc-tag">' + ICON.layers + ' ' + entryLabel + ' across ' + YEARS.length + ' years</span></div></div>' +
           '<div class="dc-right">' +
-          '<button class="btn btn-gold" onclick="openSubmission(\'' + escapeHtml(s.school) + '\', \'' + escapeHtml(s.department) + '\', \'' + escapeHtml(s.level) + '\')">' + ICON.edit + ' Open IEA Form</button>' +
+          '<button class="btn btn-gold" onclick="openSubmission(\'' + escapeHtml(s.school) + '\', \'' + escapeHtml(s.department) + '\', \'' + escapeHtml(s.level) + '\')">' + ICON.edit + openLabel + '</button>' +
           '<button class="btn btn-ghost" onclick="deleteSubmission(\'' + s.id + '\', \'' + escapeHtml(s.department) + '\')" style="color:var(--danger);border-color:#f5b8b8">' + ICON.trash + ' Delete</button>' +
           '</div></div>';
       }).join('');
@@ -1101,7 +1102,7 @@
         if (json.ok && json.submission) parsed = json.submission;
       } catch (err) {}
       state = mergeWithDefaults(parsed, school, dept, level);
-      activeYear = YEARS[0]; selectedSections = ['All']; dirty = false;
+      activeYear = YEARS[0]; selectedSections = [SECTIONS[0].key]; dirty = false;
       document.getElementById('mainArea').style.display = 'block';
       renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); updateStatusPill();
     }
@@ -1122,21 +1123,9 @@
 
     /* ── Section Navigation & Workflow ── */
     function selectSection(secKey) {
-      if (secKey === 'All') {
-        selectedSections = ['All'];
-      } else {
-        if (selectedSections.includes('All')) {
-          selectedSections = [secKey];
-        } else {
-          const idx = selectedSections.indexOf(secKey);
-          if (idx > -1) {
-            selectedSections.splice(idx, 1);
-            if (selectedSections.length === 0) selectedSections = ['All'];
-          } else {
-            selectedSections.push(secKey);
-          }
-        }
-      }
+      // Tab-style single section navigation (A, B, C, D, E, F).
+      if (secKey === 'All') secKey = SECTIONS[0].key;
+      selectedSections = [secKey];
       renderSectionNavBar();
       renderSections();
     }
@@ -1168,21 +1157,15 @@
     function renderSectionNavBar() {
       const container = document.getElementById('sectionNavWrapper');
       if (!container || !state) return;
-      const isAll = selectedSections.includes('All');
+      const isAll = false;
       const allCount = totalEntries(state);
 
       let activeLabelHtml = '';
-      if (isAll) {
-        activeLabelHtml = '<span class="nav-active-tag" style="background:var(--navy);color:#fff;">★ All Sections (A–F) &middot; ' + allCount + ' total entries</span>';
-      } else {
-        const activeSecObjs = SECTIONS.filter(s => selectedSections.includes(s.key));
-        if (activeSecObjs.length === 1) {
-          const s = activeSecObjs[0];
-          const c = state.years[activeYear][s.key].length;
-          activeLabelHtml = '<span class="nav-active-tag" style="background:' + s.color + ';color:#fff;">Section ' + s.key + ': ' + escapeHtml(s.title) + ' (' + c + ' ' + (c === 1 ? 'entry' : 'entries') + ')</span>';
-        } else if (activeSecObjs.length > 1) {
-          activeLabelHtml = '<span class="nav-active-tag" style="background:var(--navy);color:#fff;">Sections ' + activeSecObjs.map(x => x.key).join(', ') + ' Selected</span>';
-        }
+      const activeSecObjs = SECTIONS.filter(s => selectedSections.includes(s.key));
+      if (activeSecObjs.length >= 1) {
+        const s = activeSecObjs[0];
+        const c = state.years[activeYear][s.key].length;
+        activeLabelHtml = '<span class="nav-active-tag" style="background:' + s.color + ';color:#fff;">Section ' + s.key + ': ' + escapeHtml(s.title) + ' (' + c + ' ' + (c === 1 ? 'entry' : 'entries') + ')</span>';
       }
 
       let modeBtn = '<button class="btn-view-toggle" onclick="toggleNavViewMode()">' +
@@ -1200,15 +1183,8 @@
       '</div>';
 
       if (navViewMode === 'compact') {
-        // Render Round Buttons Row (All + A to F)
+        // Render Round Buttons Row (A to F)
         html += '<div class="round-btn-container">';
-
-        // All Sections Round Button
-        html += '<button class="round-sec-btn ' + (isAll ? 'active' : '') + '" onclick="selectSection(\'All\')" style="--sec-color:var(--navy);" title="All Sections (A–F)">' +
-          '<span class="btn-sec-letter">★</span>' +
-          '<span class="btn-sec-label">All</span>' +
-          (allCount > 0 ? '<span class="btn-badge-count">' + allCount + '</span>' : '') +
-        '</button>';
 
         // Sections A to F Round Buttons
         SECTIONS.forEach(s => {
@@ -1225,12 +1201,7 @@
 
       } else {
         // Expanded Grid View
-        html += '<div class="section-boxes-grid">' +
-          '<div class="section-box-btn ' + (isAll ? 'active' : '') + '" onclick="selectSection(\'All\')" style="--sec-color:var(--navy);" title="Show All Sections">' +
-            '<div class="sb-header"><span class="sb-badge" style="background:var(--navy)">★</span><span class="sb-count">' + allCount + ' total</span></div>' +
-            '<div class="sb-title">All Sections (A–F)</div>' +
-            '<div class="sb-sub">View Full Report</div>' +
-          '</div>';
+        html += '<div class="section-boxes-grid">';
 
         SECTIONS.forEach(s => {
           const c = state.years[activeYear][s.key].length;
@@ -1374,17 +1345,18 @@
       else if (status === 'error') { text.textContent = 'Save failed'; setTimeout(() => { el.className = 'autosave-indicator'; }, 4000); }
     }
 
-    /* ── Final submit ── */
+    /* ── Final submit ── (nothing is mandatory; any entries can be submitted) */
     async function submitFinal() {
       if (!state) { showToast('Select a reporting unit first.', true); return; }
-      if (totalEntries(state) === 0) { showToast('Add at least one entry.', true); return; }
-      const bad = findIncompleteEntry();
-      if (bad) { showToast('Entry #' + (bad.idx + 1) + ' in Section ' + bad.section.key + ' (' + bad.year + ') needs "' + bad.section.fields[0].l + '".', true); highlightEntry(bad); return; }
+      if (totalEntries(state) === 0) { showToast('Add at least one entry before submitting.', true); return; }
       try {
-        const res = await fetch('/api/iea/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: state.school, department: state.department, level: state.level, years: state.years }) });
+        const res = await fetch('/api/iea/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: state.school, department: state.department, level: state.level, years: state.years }) });
         const json = await res.json();
-        if (json.ok) { state.lastUpdated = json.lastUpdated; dirty = false; updateStatusPill(); renderSubmitSection(); showToast('Submitted successfully!'); }
-        else showToast('Submit failed: ' + (json.error || 'Error'), true);
+        if (json.ok) {
+          dirty = false;
+          showToast(json.version > 1 ? ('Submitted — saved as edited Version ' + json.version + '.') : 'Submitted successfully!');
+          backToDashboard();
+        } else showToast('Submit failed: ' + (json.error || 'Error'), true);
       } catch (err) { showToast('Submit failed: ' + err.message, true); }
     }
 

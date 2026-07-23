@@ -974,6 +974,52 @@ def iea_save():
                        {'$set': doc}, upsert=True)
     return jsonify({'ok': True, 'lastUpdated': doc['lastUpdated']})
 
+@app.route('/api/iea/submit', methods=['POST'])
+def iea_submit():
+    """Final submit — marks the submission as submitted and versions it.
+    First submit = version 1; each re-submit of an already-submitted unit
+    snapshots the previous version into history and bumps the version."""
+    if 'user_email' not in session and not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    data = request.json or {}
+    school = (data.get('school') or '').strip()
+    dept = (data.get('department') or '').strip()
+    level = (data.get('level') or '').strip()
+    if school not in IEA_SCHOOLS or dept not in IEA_SCHOOLS.get(school, {}) \
+            or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
+        return jsonify({'ok': False, 'error': 'Invalid School / Department / Programme Level'})
+
+    now = datetime.utcnow().isoformat()
+    existing = iea_col.find_one({'school': school, 'department': dept, 'level': level})
+    history = []
+    if existing and existing.get('submitted'):
+        history = list(existing.get('history', []))
+        history.append({
+            'version': existing.get('version', 1),
+            'years': existing.get('years'),
+            'submittedAt': existing.get('submittedAt', existing.get('lastUpdated', '')),
+        })
+        version = existing.get('version', 1) + 1
+    else:
+        version = 1
+
+    doc = {
+        'school': school,
+        'department': dept,
+        'level': level,
+        'years': _iea_merge_years(data.get('years')),
+        'lastUpdated': now,
+        'submitted': True,
+        'version': version,
+        'submittedAt': now,
+        'history': history[-20:],
+        'submitterEmail': session.get('user_email', ''),
+        'submitterName': session.get('user_name', ''),
+    }
+    iea_col.update_one({'school': school, 'department': dept, 'level': level},
+                       {'$set': doc}, upsert=True)
+    return jsonify({'ok': True, 'version': version, 'submittedAt': now})
+
 @app.route('/api/iea/submissions')
 def iea_submissions():
     if 'user_email' not in session and not session.get('admin'):
@@ -1005,7 +1051,10 @@ def iea_submissions():
             'submitterEmail': s.get('submitterEmail', ''),
             'submitterName': s.get('submitterName', ''),
             'totalEntries': total_entries,
-            'yearCounts': year_counts
+            'yearCounts': year_counts,
+            'submitted': bool(s.get('submitted', False)),
+            'version': s.get('version', 0),
+            'submittedAt': s.get('submittedAt', ''),
         })
     return jsonify({'ok': True, 'submissions': results})
 
