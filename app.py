@@ -1516,6 +1516,9 @@ def register():
     if not name or not email or not password:
         return jsonify({'ok': False, 'error': 'Name, Email, and Password are required'})
 
+    if len(password) < 7:
+        return jsonify({'ok': False, 'error': 'Password must be at least 7 characters'})
+
     existing = users_col.find_one({'email': email})
     if existing:
         return jsonify({'ok': False, 'error': 'You already have an account. Please use Login.'})
@@ -1586,8 +1589,8 @@ def reset_password():
     otp = data.get('otp')
     new_password = data.get('password')
 
-    if not otp or not new_password or len(str(new_password)) < 6:
-        return jsonify({'ok': False, 'error': 'Invalid OTP or password must be at least 6 characters'})
+    if not otp or not new_password or len(str(new_password)) < 7:
+        return jsonify({'ok': False, 'error': 'Invalid OTP or password must be at least 7 characters'})
 
     user = users_col.find_one({'email': email})
     if str(user.get('reset_otp')) != str(otp):
