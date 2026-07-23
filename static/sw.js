@@ -1,6 +1,10 @@
-const CACHE_NAME = 'srp-v6';
+const CACHE_NAME = 'srp-v7';
 const urlsToCache = [
-  '/static/images/applogo.png',
+  '/static/images/jgi-logo.svg',
+  '/static/images/jgi-icon-192.png',
+  '/static/images/jgi-icon-512.png',
+  '/static/images/apple-touch-icon.png',
+  '/static/images/favicon-32.png',
   '/static/images/jain.png',
   '/manifest.json'
 ];
