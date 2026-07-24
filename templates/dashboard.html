@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JAIN Sarathi — Faculty OoA Portal</title>
+  <title>OOA Portal — Office of Academics</title>
   <meta name="description" content="JAIN University's integrated academic portal that connects people, processes, and information to enable efficient academic governance, collaboration, compliance, and continuous quality enhancement.">
-  <meta property="og:title" content="JAIN Sarathi — Faculty OoA Portal">
+  <meta property="og:title" content="OOA Portal — Office of Academics">
   <meta property="og:description" content="JAIN University's integrated academic portal that connects people, processes, and information to enable efficient academic governance, collaboration, compliance, and continuous quality enhancement.">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a2558">
@@ -19,7 +19,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="JAIN Sarathi">
+  <meta name="apple-mobile-web-app-title" content="OOA Portal">
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -829,7 +829,7 @@
       <div class="logo-area">
         <img src="/static/images/jgi-logo.svg" alt="JGI" class="brand-logo">
         <div class="logo-text">
-          <div class="l1"><span style="color:#0a2558; font-weight:800;">JAIN</span> <span style="color:#16a34a; font-weight:800;">Sarathi</span></div>
+          <div class="l1"><span style="color:#0a2558; font-weight:800;">OOA</span> <span style="color:#16a34a; font-weight:800;">Portal</span></div>
           <div class="l2">JAIN (Deemed-to-be University)</div>
         </div>
       </div>
@@ -881,8 +881,11 @@
     <div class="page-heading"
       style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
       <div>
-        <h2 class="split-text-anim">Welcome to <span style="color:#0a2558; font-weight:800;">JAIN</span> <span style="color:#16a34a; font-weight:800;">Sarathi</span> Portal, Hi {{ user.name }}!</h2>
-        <p style="color:var(--ink3); margin-top:8px;">Comprehensive Portal for Office of Academics Submissions &amp; Academic Governance</p>
+        <h2 class="split-text-anim">Welcome to OOA Portal, Hi {{ user.name }}!</h2>
+        {% if user.department %}
+        <p style="color:var(--navy); font-weight: 700; margin-top:4px; font-size: 14px;">📍 {{ user.department }}</p>
+        {% endif %}
+        <p style="color:var(--ink3); margin-top:4px;">Comprehensive Portal for Office of Academics Submissions &amp; Academic Governance</p>
       </div>
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <button class="btn"
@@ -893,74 +896,8 @@
       </div>
     </div>
 
-    <!-- Department 3-Module Submission Tracker -->
-    {% if user.department and dept_status %}
-    <div style="background: #fff; border-radius: var(--r); padding: 20px 24px; border: 1.5px solid #dde3f0; box-shadow: var(--sh2); margin-bottom: 28px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
-        <div>
-          <h3 style="font-size: 16px; font-weight: 800; color: var(--navy);">Department Submissions Overview</h3>
-          <p style="font-size: 12.5px; color: var(--ink3);">Live submission status for <strong>{{ user.department }}</strong> across all 3 portal modules</p>
-        </div>
-        <span style="font-size: 11px; font-weight: 800; background: #eef2ff; color: var(--navy); padding: 4px 10px; border-radius: 99px; text-transform: uppercase;">3 Modules Active</span>
-      </div>
-      
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
-        <!-- Module 1: Readiness -->
-        <div style="background: #fafbff; border: 1.5px solid {% if dept_status.readiness.submitted %}#bbf7d0{% else %}#fef08a{% endif %}; border-radius: 10px; padding: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 13px; font-weight: 700; color: var(--navy);">📘 Semester Readiness</span>
-            {% if dept_status.readiness.submitted %}
-            <span style="background: #dcfce7; color: #15803d; font-weight: 800; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">✓ SUBMITTED</span>
-            {% else %}
-            <span style="background: #fef9c3; color: #a16207; font-weight: 700; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">⏳ PENDING</span>
-            {% endif %}
-          </div>
-          {% if dept_status.readiness.submitted %}
-          <div style="font-size: 11.5px; color: var(--ink3);">Submitted: {{ dept_status.readiness.date }}</div>
-          {% else %}
-          <div style="font-size: 11.5px; color: var(--ink3);">Not submitted yet for current term</div>
-          {% endif %}
-        </div>
-
-        <!-- Module 2: Closure -->
-        <div style="background: #fafbff; border: 1.5px solid {% if dept_status.closure.submitted %}#bbf7d0{% else %}#fef08a{% endif %}; border-radius: 10px; padding: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 13px; font-weight: 700; color: var(--navy);">📙 Semester Closure</span>
-            {% if dept_status.closure.submitted %}
-            <span style="background: #dcfce7; color: #15803d; font-weight: 800; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">✓ SUBMITTED</span>
-            {% else %}
-            <span style="background: #fef9c3; color: #a16207; font-weight: 700; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">⏳ PENDING</span>
-            {% endif %}
-          </div>
-          {% if dept_status.closure.submitted %}
-          <div style="font-size: 11.5px; color: var(--ink3);">Submitted: {{ dept_status.closure.date }}</div>
-          {% else %}
-          <div style="font-size: 11.5px; color: var(--ink3);">Not submitted yet for current term</div>
-          {% endif %}
-        </div>
-
-        <!-- Module 3: IEA -->
-        <div style="background: #fafbff; border: 1.5px solid {% if dept_status.iea.submitted %}#bbf7d0{% else %}#fef08a{% endif %}; border-radius: 10px; padding: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 13px; font-weight: 700; color: var(--navy);">📗 Innovation & Emerging (IEA)</span>
-            {% if dept_status.iea.submitted %}
-            <span style="background: #dcfce7; color: #15803d; font-weight: 800; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">✓ SUBMITTED</span>
-            {% else %}
-            <span style="background: #fef9c3; color: #a16207; font-weight: 700; font-size: 10.5px; padding: 2px 8px; border-radius: 99px;">⏳ PENDING</span>
-            {% endif %}
-          </div>
-          {% if dept_status.iea.submitted %}
-          <div style="font-size: 11.5px; color: var(--ink3);">Submitted: {{ dept_status.iea.date }}</div>
-          {% else %}
-          <div style="font-size: 11.5px; color: var(--ink3);">Draft / Pending Submission</div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
     <div class="cards-grid">
-      {% if settings.readiness_enabled %}
+      {% if settings.readiness_enabled and (user.can_readiness or user.is_admin) %}
       <a href="/readiness" class="dash-card" data-intro="Click here to prepare and submit the readiness report."
         data-step="1">
         <div class="card-icon">
@@ -977,7 +914,7 @@
       </a>
       {% endif %}
 
-      {% if settings.closure_enabled %}
+      {% if settings.closure_enabled and (user.can_closure or user.is_admin) %}
       <a href="/closure" class="dash-card"
         data-intro="Click here to compile and submit the closure report at the end of the semester." data-step="2">
         <div class="card-icon">
@@ -994,7 +931,7 @@
       </a>
       {% endif %}
 
-      {% if settings.iea_enabled %}
+      {% if settings.iea_enabled and (user.can_iea or user.is_admin) %}
       <a href="/iea" class="dash-card"
         data-intro="Submit your department's information on Programmes and Courses in Innovation and Emerging Areas (Sections A–F)."
         data-step="4">
@@ -1003,42 +940,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;color:var(--navy);"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         </div>
         <div class="card-title">Innovation &amp; Emerging Areas</div>
-        <div class="card-desc">Submission of Information on Programmes and Courses in Innovation and Emerging Areas (AY 2022-23 to AY 2026-27), as per the UGC circular — Sections A to F with supporting evidence.</div>
+        <div class="card-desc">Submission of Information on Programmes and Courses in Innovation and Emerging Areas — Sections A to F with supporting evidence.</div>
         <button class="btn">Go to IEA Submission</button>
       </a>
       {% endif %}
-    </div>
-
-    <!-- Strategic Governance Features Grid -->
-    <div style="margin-top: 48px; border-top: 1px dashed #dde3f0; padding-top: 36px;">
-      <h3 class="split-text-anim" style="font-family:'Playfair Display',serif; font-size:24px; color:var(--navy); text-align:center; margin-bottom:8px;">Office of Academics Governance Framework</h3>
-      <p style="text-align:center; color:var(--ink3); font-size:13px; margin-bottom:28px;">Streamlined digital reporting for academic preparedness, quality assurance, and regulatory compliance.</p>
-
-      <div class="home-features-grid">
-        <div class="feature-card">
-          <div class="feature-card-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          </div>
-          <h4>Semester Readiness</h4>
-          <p>Pre-semester verification of course handbooks, lab infrastructure, lesson plans, and faculty course allocations across all departments.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-card-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          </div>
-          <h4>Semester Closure Audit</h4>
-          <p>End-of-term audit covering syllabus completion, assessment rubrics, CO-PO attainment analysis, and grade submission sign-offs.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-card-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-          </div>
-          <h4>Innovation &amp; Emerging Areas</h4>
-          <p>UGC circular compliance covering multidisciplinary programmes, OBE alignment, industry-integrated skilling, and evidence repository.</p>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1063,6 +968,7 @@
         {% endif %}
         <div>
           <h3 style="color: var(--navy); font-size: 18px; margin-bottom: 2px;">{{ user.name }}</h3>
+          <p style="font-size: 13px; color: var(--navy); font-weight: 700; margin: 2px 0 6px;">{{ user.department or 'Office of Academic Affairs' }}</p>
           <span style="font-size: 11px; font-weight: 700; background: #eef2ff; color: var(--navy); padding: 2px 8px; border-radius: 99px;">
             {% if user.auth_provider == 'google' %}Google Account{% else %}Password Account{% endif %}
           </span>
@@ -1099,7 +1005,7 @@
   <div id="deptOnboardingModal" style="display:{% if not user.department or user.first_time_login %}flex{% else %}none{% endif %}; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,37,88,0.7); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(6px);">
     <div style="background:#fff; border-radius:18px; width:90%; max-width:480px; padding:32px; box-shadow:0 20px 60px rgba(0,0,0,0.35); text-align:center; font-family:'Plus Jakarta Sans', sans-serif;">
       <div style="width:54px; height:54px; border-radius:50%; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px;">🏫</div>
-      <h3 style="color:#0a2558; font-size:20px; font-weight:800; margin-bottom:8px;">Welcome to JAIN Sarathi</h3>
+      <h3 style="color:#0a2558; font-size:20px; font-weight:800; margin-bottom:8px;">Welcome to OOA Portal</h3>
       <p style="font-size:13.5px; color:#475569; line-height:1.5; margin-bottom:24px;">Please select your academic department to personalize your workspace and track departmental submissions.</p>
       
       <div style="text-align:left; margin-bottom:24px;">

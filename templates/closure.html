@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Semester Closure Portal — JAIN Sarathi OoA</title>
+  <title>Semester Closure Portal — OOA Portal</title>
   <meta name="description" content="JAIN University's integrated academic portal that connects people, processes, and information to enable efficient academic governance, collaboration, compliance, and continuous quality enhancement.">
-  <meta property="og:title" content="Semester Closure Portal — JAIN Sarathi OoA">
+  <meta property="og:title" content="Semester Closure Portal — OOA Portal">
   <meta property="og:description" content="JAIN University's integrated academic portal that connects people, processes, and information to enable efficient academic governance, collaboration, compliance, and continuous quality enhancement.">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a2558">
@@ -19,7 +19,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="JAIN Sarathi">
+  <meta name="apple-mobile-web-app-title" content="OOA Portal">
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -1341,7 +1341,7 @@
       <div class="logo-area">
         <img src="/static/images/jain.png" alt="Jain University" class="logo-img" onerror="this.style.display='none'">
         <div class="logo-text">
-          <div class="l1"><span style="color:#0a2558; font-weight:800;">JAIN</span> <span style="color:#16a34a; font-weight:800;">Sarathi</span></div>
+          <div class="l1"><span style="color:#0a2558; font-weight:800;">OOA</span> <span style="color:#16a34a; font-weight:800;">Portal</span></div>
           <div class="l2">JAIN (Deemed-to-be University)</div>
         </div>
       </div>
@@ -1517,7 +1517,7 @@
           </div>
           <div class="field"><label>Department Name <span class="req">*</span></label>
             <select id="f_dept">
-              <option value="">— Select department —</option>{% for d in departments %}<option>{{ d }}</option>{% endfor %}
+              <option value="">— Select department —</option>{% for d in departments %}<option value="{{ d }}" {% if user and user.department == d %}selected{% endif %}>{{ d }}</option>{% endfor %}
             </select>
           </div>
         </div>

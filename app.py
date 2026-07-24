@@ -133,6 +133,8 @@ def is_admin_email(email):
     return False
 
 DEPARTMENTS = [
+    "Office of Academic Affairs",
+    "Office of Academic",
     "Department of Computer Science and Engineering",
     "Department of Information Science and Engineering",
     "Department of Aerospace Engineering",
@@ -818,16 +820,20 @@ def index():
         }
     }
 
+    is_admin = is_admin_email(user_email)
     user = {
         'email': user_email,
         'name': session.get('user_name', user_doc.get('name', 'User') if user_doc else 'User'),
         'department': dept,
         'picture': user_doc.get('picture', '') if user_doc else '',
         'auth_provider': user_doc.get('auth_provider', 'password') if user_doc else 'password',
-        'is_admin': is_admin_email(user_email),
+        'is_admin': is_admin,
         'timeout_pref': user_doc.get('timeout_pref', 15) if user_doc else 15,
         'lock_enabled': user_doc.get('lock_enabled', False) if user_doc else False,
-        'first_time_login': user_doc.get('first_time_login', True) if user_doc else False
+        'first_time_login': user_doc.get('first_time_login', True) if user_doc else False,
+        'can_readiness': True if is_admin else user_doc.get('can_readiness', True) if user_doc else True,
+        'can_closure': True if is_admin else user_doc.get('can_closure', True) if user_doc else True,
+        'can_iea': True if is_admin else user_doc.get('can_iea', True) if user_doc else True,
     }
     settings = get_global_settings()
     return render_template('dashboard.html', user=user, dept_status=dept_status, settings=settings, departments=DEPARTMENTS)
@@ -1894,9 +1900,17 @@ def my_submissions():
         return jsonify({'ok': False, 'error': 'Not logged in'})
 
     email = session['user_email']
+    user_doc = users_col.find_one({'email': email}) or {}
+    dept = user_doc.get('department', '')
     form_type = request.args.get('type')
 
-    query = {'identity.submitterEmail': email}
+    if session.get('admin') or is_admin_email(email):
+        query = {}
+    elif dept:
+        query = {'$or': [{'identity.submitterEmail': email}, {'identity.dept': dept}]}
+    else:
+        query = {'identity.submitterEmail': email}
+
     if form_type:
         query['form_type'] = form_type
 
@@ -2059,6 +2073,9 @@ def admin_dashboard():
     for u in users:
         u['_id'] = str(u['_id'])
         u['is_admin'] = is_admin_email(u.get('email'))
+        u['can_readiness'] = u.get('can_readiness', True)
+        u['can_closure'] = u.get('can_closure', True)
+        u['can_iea'] = u.get('can_iea', True)
         latest_sub = submissions_col.find_one({'identity.submitterEmail': u['email']}, sort=[('timestamp', -1)])
         u['latest_dept'] = u.get('department') or (latest_sub['identity']['dept'] if latest_sub and 'identity' in latest_sub else 'N/A')
 
@@ -2088,6 +2105,30 @@ def admin_dashboard():
                            access_requests=access_requests,
                            pwa_stats=pwa_stats,
                            notifications=notifications)
+
+@app.route('/admin/update-user-permissions', methods=['POST'])
+def update_user_permissions():
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'})
+    data = request.json or {}
+    email = data.get('email', '').strip().lower()
+    if not email:
+        return jsonify({'ok': False, 'error': 'Email is required'})
+
+    can_readiness = bool(data.get('can_readiness', True))
+    can_closure = bool(data.get('can_closure', True))
+    can_iea = bool(data.get('can_iea', True))
+
+    users_col.update_one(
+        {'email': email},
+        {'$set': {
+            'can_readiness': can_readiness,
+            'can_closure': can_closure,
+            'can_iea': can_iea
+        }},
+        upsert=True
+    )
+    return jsonify({'ok': True, 'email': email, 'can_readiness': can_readiness, 'can_closure': can_closure, 'can_iea': can_iea})
 
 @app.route('/admin/settings', methods=['POST'])
 def save_settings():

@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Admin Dashboard — JAIN Sarathi OoA Portal</title>
+  <title>Admin Dashboard — OOA Portal</title>
   <meta name="description" content="JAIN University's integrated academic portal that connects people, processes, and information to enable efficient academic governance, collaboration, compliance, and continuous quality enhancement.">
-  <meta property="og:title" content="Admin Dashboard — JAIN Sarathi OoA Portal">
+  <meta property="og:title" content="Admin Dashboard — OOA Portal">
   <meta property="og:description" content="JAIN University's integrated academic portal that connects people, processes, and information to enable efficient academic governance, collaboration, compliance, and continuous quality enhancement.">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a2558">
@@ -19,7 +19,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="JAIN Sarathi">
+  <meta name="apple-mobile-web-app-title" content="OOA Portal">
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -1628,6 +1628,7 @@
                 <th style="padding: 12px 8px; color: var(--ink3);">Email Address</th>
                 <th style="padding: 12px 8px; color: var(--ink3);">Auth Type</th>
                 <th style="padding: 12px 8px; color: var(--ink3);">Role</th>
+                <th style="padding: 12px 8px; color: var(--ink3);">Module Visibility</th>
                 <th style="padding: 12px 8px; color: var(--ink3);">Department</th>
                 <th style="padding: 12px 8px; color: var(--ink3);">Joined</th>
                 <th style="padding: 12px 8px; text-align: right; color: var(--ink3);">Actions</th>
@@ -1672,6 +1673,22 @@
                     👤 Faculty / HOD
                   </span>
                   {% endif %}
+                </td>
+                <td style="padding: 12px 8px;">
+                  <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                      <input type="checkbox" onchange="saveUserPermissions('{{ u.email }}', this)" class="perm-readiness" {% if u.can_readiness %}checked{% endif %}>
+                      <span>Readiness</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                      <input type="checkbox" onchange="saveUserPermissions('{{ u.email }}', this)" class="perm-closure" {% if u.can_closure %}checked{% endif %}>
+                      <span>Closure</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                      <input type="checkbox" onchange="saveUserPermissions('{{ u.email }}', this)" class="perm-iea" {% if u.can_iea %}checked{% endif %}>
+                      <span>IEA</span>
+                    </label>
+                  </div>
                 </td>
                 <td style="padding: 12px 8px;">
                   <span style="font-size: 12px; font-weight: 600; background: #fafbff; color: var(--navy); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border);">
@@ -2796,6 +2813,32 @@
       }).catch(err => {
         alert('Network error');
         if (btn) btn.disabled = false;
+      });
+    }
+
+    function saveUserPermissions(email, elem) {
+      const tr = elem.closest('tr');
+      const canReadiness = tr.querySelector('.perm-readiness').checked;
+      const canClosure = tr.querySelector('.perm-closure').checked;
+      const canIea = tr.querySelector('.perm-iea').checked;
+
+      fetch('/admin/update-user-permissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          can_readiness: canReadiness,
+          can_closure: canClosure,
+          can_iea: canIea
+        })
+      }).then(r => r.json()).then(res => {
+        if (res.ok) {
+          alert('Updated module access permissions for ' + email);
+        } else {
+          alert('Error: ' + (res.error || 'Failed to update permissions'));
+        }
+      }).catch(err => {
+        alert('Network error updating permissions');
       });
     }
 
