@@ -893,15 +893,38 @@ def has_access_override(email, module_type):
             return user.get('closure_access_override', False)
     return False
 
+def get_user_context(user_email):
+    if not user_email:
+        return {}
+    user_doc = users_col.find_one({'email': user_email}) or {}
+    dept = user_doc.get('department', '')
+    is_admin = is_admin_email(user_email)
+    return {
+        'email': user_email,
+        'name': session.get('user_name', user_doc.get('name', 'User') if user_doc else 'User'),
+        'department': dept,
+        'picture': user_doc.get('picture', '') if user_doc else '',
+        'auth_provider': user_doc.get('auth_provider', 'password') if user_doc else 'password',
+        'is_admin': is_admin,
+        'timeout_pref': user_doc.get('timeout_pref', 15) if user_doc else 15,
+        'lock_enabled': user_doc.get('lock_enabled', False) if user_doc else False,
+        'first_time_login': user_doc.get('first_time_login', True) if user_doc else False,
+        'can_readiness': True if is_admin else user_doc.get('can_readiness', True) if user_doc else True,
+        'can_closure': True if is_admin else user_doc.get('can_closure', True) if user_doc else True,
+        'can_iea': True if is_admin else user_doc.get('can_iea', True) if user_doc else True,
+    }
+
 @app.route('/readiness')
 def readiness():
     if 'user_email' not in session:
         return redirect(url_for('login'))
+    user = get_user_context(session['user_email'])
     settings = get_global_settings()
+    if not session.get('admin') and (not settings.get('readiness_enabled', True) or not user.get('can_readiness', True)):
+        return redirect('/')
     is_passed = is_deadline_passed(settings.get('readiness_deadline'))
     override = has_access_override(session['user_email'], 'readiness')
     req = db['access_requests'].find_one({'user_email': session['user_email'], 'module': 'Semester Readiness'})
-    user = {'email': session['user_email'], 'name': session['user_name']}
     return render_template('form.html', 
                            hod_sections=HOD_SECTIONS, 
                            departments=DEPARTMENTS, 
@@ -917,23 +940,27 @@ def readiness():
 def readiness_form(sub_id=None):
     if 'user_email' not in session:
         return redirect(url_for('login'))
+    user = get_user_context(session['user_email'])
     settings = get_global_settings()
+    if not session.get('admin') and (not settings.get('readiness_enabled', True) or not user.get('can_readiness', True)):
+        return redirect('/')
     is_passed = is_deadline_passed(settings.get('readiness_deadline'))
     override = has_access_override(session['user_email'], 'readiness')
     if not session.get('admin') and is_passed and not override:
         return render_template('deadline_passed.html', module='Semester Readiness', deadline=settings.get('readiness_deadline'))
-    user = {'email': session['user_email'], 'name': session['user_name']}
     return render_template('form.html', hod_sections=HOD_SECTIONS, departments=DEPARTMENTS, user=user, view_mode='form', edit_id=sub_id, settings=settings)
 
 @app.route('/closure')
 def closure():
     if 'user_email' not in session:
         return redirect(url_for('login'))
+    user = get_user_context(session['user_email'])
     settings = get_global_settings()
+    if not session.get('admin') and (not settings.get('closure_enabled', True) or not user.get('can_closure', True)):
+        return redirect('/')
     is_passed = is_deadline_passed(settings.get('closure_deadline'))
     override = has_access_override(session['user_email'], 'closure')
     req = db['access_requests'].find_one({'user_email': session['user_email'], 'module': 'Semester Closure'})
-    user = {'email': session['user_email'], 'name': session['user_name']}
     return render_template('closure.html',
                            hod_closure_sections=HOD_CLOSURE_SECTIONS,
                            departments=DEPARTMENTS,
@@ -949,12 +976,14 @@ def closure():
 def closure_form(sub_id=None):
     if 'user_email' not in session:
         return redirect(url_for('login'))
+    user = get_user_context(session['user_email'])
     settings = get_global_settings()
+    if not session.get('admin') and (not settings.get('closure_enabled', True) or not user.get('can_closure', True)):
+        return redirect('/')
     is_passed = is_deadline_passed(settings.get('closure_deadline'))
     override = has_access_override(session['user_email'], 'closure')
     if not session.get('admin') and is_passed and not override:
         return render_template('deadline_passed.html', module='Semester Closure', deadline=settings.get('closure_deadline'))
-    user = {'email': session['user_email'], 'name': session['user_name']}
     return render_template('closure.html',
                            hod_closure_sections=HOD_CLOSURE_SECTIONS,
                            departments=DEPARTMENTS,
@@ -995,10 +1024,10 @@ def _iea_merge_years(parsed_years):
 def iea():
     if 'user_email' not in session:
         return redirect(url_for('login'))
+    user = get_user_context(session['user_email'])
     settings = get_global_settings()
-    if not settings.get('iea_enabled', True) and not session.get('admin'):
-        return redirect(url_for('index'))
-    user = {'email': session['user_email'], 'name': session['user_name']}
+    if not session.get('admin') and (not settings.get('iea_enabled', True) or not user.get('can_iea', True)):
+        return redirect('/')
     return render_template('iea.html',
                            user=user,
                            iea_schools=IEA_SCHOOLS,
