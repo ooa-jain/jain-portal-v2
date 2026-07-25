@@ -743,7 +743,7 @@
     </div>
 
     <div id="mainArea" style="display:none;">
-      <div class="year-tabs" id="yearTabs"></div>
+      <div class="year-tabs" id="yearTabs" style="display:none !important;"></div>
       <div class="section-nav-wrapper" id="sectionNavWrapper"></div>
       <div id="sectionsContainer"></div>
       <div id="submitSection"></div>
@@ -1167,10 +1167,9 @@
     }
 
     function renderYearTabs() {
-      document.getElementById('yearTabs').innerHTML = YEARS.map(y => {
-        const c = SECTIONS.reduce((sum, s) => sum + state.years[y][s.key].length, 0);
-        return '<button class="year-tab ' + (y === activeYear ? 'active' : '') + '" data-year="' + y + '">' + y + '<span class="tab-count">' + c + '</span></button>';
-      }).join('');
+      const el = document.getElementById('yearTabs');
+      if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+      if (state && state.acYear) activeYear = state.acYear;
     }
 
     /* ── Section Navigation & Workflow ── */
