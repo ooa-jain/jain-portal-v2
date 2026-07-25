@@ -1388,6 +1388,11 @@
       box-shadow: 0 4px 12px rgba(10, 37, 88, 0.15)
     }
 
+    /* ── Dimming & Blurring Unselected Items ── */
+    .filter-group:has(.tab-btn.active) .tab-btn:not(.active) { opacity: 0.55; filter: blur(0.3px); transition: all 0.2s ease; }
+    .filter-group:has(.tab-btn.active) .tab-btn:not(.active):hover { opacity: 1; filter: none; }
+    .chk-sel-group:has(.chk-sel:focus) .chk-sel:not(:focus) { opacity: 0.6; filter: blur(0.2px); }
+
     /* Mobile Hamburger & Sandwich Menu Styles */
     .hamburger-menu {
       display: none;
@@ -1645,21 +1650,15 @@
       <div class="filter-group">
         <span class="filter-label">Academic Year:</span>
         <button class="tab-btn active" onclick="filterAcYear('All', this)">All Years</button>
-        {% for year in ['2024-25', '2025-26', '2026-27', '2027-28', '2028-29'] %}
-        {% if year in settings.enabled_years %}
+        {% for year in ['2022-23', '2023-24', '2024-25', '2025-26', '2026-27', '2027-28', '2028-29'] %}
         <button class="tab-btn" onclick="filterAcYear('{{ year }}', this)">{{ year }}</button>
-        {% endif %}
         {% endfor %}
       </div>
       <div class="filter-group">
         <span class="filter-label">Semester Type:</span>
         <button class="tab-btn active" onclick="filterSem('All', this)">All Semesters</button>
-        {% if 'Even' in settings.enabled_semesters %}
         <button class="tab-btn" onclick="filterSem('Even', this)">Even Semesters</button>
-        {% endif %}
-        {% if 'Odd' in settings.enabled_semesters %}
         <button class="tab-btn" onclick="filterSem('Odd', this)">Odd Semesters</button>
-        {% endif %}
       </div>
     </div>
 
@@ -2018,18 +2017,23 @@
         const dlBtn = `<button class="btn btn-ghost" onclick="downloadSubmission('${s._id}')" title="Download Excel">📥</button>`;
         const delBtn = `<button class="btn btn-ghost" onclick="deleteOwnSubmission('${s._id}', this)" title="Delete" style="color:var(--danger);border-color:#f5b8b8">🗑</button>`;
 
-
         const statusBadge = s._draft
-          ? `<span style="background:#fff3e0; color:#b45309; border: 1px solid #ffe0b2; padding: 2px 8px; border-radius: 4px; font-weight:800; font-size:11px; display:inline-block; margin-bottom:8px;">📝 Draft</span>`
-          : `<span style="background:#e8f7ee; color:#0f5a2a; border: 1px solid #c8e6c9; padding: 2px 8px; border-radius: 4px; font-weight:800; font-size:11px; display:inline-block; margin-bottom:8px;">✅ Submitted</span>`;
+          ? `<span style="background:#fff3e0; color:#b45309; border: 1px solid #ffe0b2; padding: 2px 8px; border-radius: 4px; font-weight:800; font-size:11px; display:inline-block;">📝 Draft</span>`
+          : `<span style="background:#e8f7ee; color:#0f5a2a; border: 1px solid #c8e6c9; padding: 2px 8px; border-radius: 4px; font-weight:800; font-size:11px; display:inline-block;">✅ Submitted</span>`;
 
         const timeLabel = s._draft ? 'Last saved draft' : 'Submitted';
+        const ayVal = s.identity?.acYear || s.identity?.ac_year || '2025-26';
+        const semVal = s.identity?.semester || s.identity?.sem || 'Even';
 
         return `<div class="dash-card">
           <div class="dc-left">
-            <div>${statusBadge}</div>
-            <div class="dc-title">${s.identity?.dept || 'Draft Submission'}</div>
-            <div class="dc-sub">${timeLabel} on ${dt} · ${s.identity?.semester || ''} · A.Y. ${s.identity?.acYear || ''}</div>
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+              ${statusBadge}
+              <span class="semester-tag" style="font-size:11px; background:var(--navy); color:#fff; font-weight:800; padding:2px 10px; border-radius:99px;">AY: ${escapeHtml(ayVal)}</span>
+              <span class="semester-tag" style="font-size:11px; background:var(--gold); color:var(--navy); font-weight:800; padding:2px 10px; border-radius:99px;">SEM: ${escapeHtml(semVal)}</span>
+            </div>
+            <div class="dc-title">${escapeHtml(s.identity?.dept || 'Draft Submission')}</div>
+            <div class="dc-sub">${timeLabel} on ${dt} · ${escapeHtml(s.identity?.campus || '')}</div>
             <div><span class="dc-tag">👥 ${facCount} faculty submission${facCount !== 1 ? 's' : ''}</span></div>
           </div>
           <div class="dc-right">

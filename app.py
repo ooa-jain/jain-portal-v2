@@ -339,6 +339,8 @@ IEA_SCHOOLS = {
         "Department of Journalism & Mass Communication": ["UG", "PG"],
         "Department of Languages": ["UG", "PG"],
         "Department of Psychology & Allied Science": ["UG", "PG"],
+        "Department of CERSSE": ["UG", "PG", "Doctoral"],
+        "Department of Humanities & Social Sciences": ["UG", "PG", "Doctoral"],
     },
     "School of Design, Media & Creative Arts": {
         "Department of Art & Design": ["UG", "PG"],
@@ -1087,10 +1089,15 @@ def iea_save():
             or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
         return jsonify({'ok': False, 'error': 'Invalid School / Department / Programme Level'})
 
+    ac_year = (data.get('acYear') or data.get('ac_year') or 'AY 2025-26').strip()
+    semester = (data.get('semester') or data.get('sem') or 'Odd Semester').strip()
+
     doc = {
         'school': school,
         'department': dept,
         'level': level,
+        'acYear': ac_year,
+        'semester': semester,
         'years': _iea_merge_years(data.get('years')),
         'lastUpdated': datetime.utcnow().isoformat(),
         'submitterEmail': session.get('user_email', ''),
@@ -1115,6 +1122,9 @@ def iea_submit():
             or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
         return jsonify({'ok': False, 'error': 'Invalid School / Department / Programme Level'})
 
+    ac_year = (data.get('acYear') or data.get('ac_year') or 'AY 2025-26').strip()
+    semester = (data.get('semester') or data.get('sem') or 'Odd Semester').strip()
+
     now = datetime.utcnow().isoformat()
     existing = iea_col.find_one({'school': school, 'department': dept, 'level': level})
     history = []
@@ -1133,6 +1143,8 @@ def iea_submit():
         'school': school,
         'department': dept,
         'level': level,
+        'acYear': ac_year,
+        'semester': semester,
         'years': _iea_merge_years(data.get('years')),
         'lastUpdated': now,
         'submitted': True,
@@ -1173,6 +1185,8 @@ def iea_submissions():
             'school': s.get('school', ''),
             'department': s.get('department', ''),
             'level': s.get('level', ''),
+            'acYear': s.get('acYear') or s.get('ac_year') or 'AY 2025-26',
+            'semester': s.get('semester') or s.get('sem') or 'Odd Semester',
             'lastUpdated': s.get('lastUpdated', ''),
             'submitterEmail': s.get('submitterEmail', ''),
             'submitterName': s.get('submitterName', ''),
