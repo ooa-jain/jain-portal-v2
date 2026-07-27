@@ -335,7 +335,7 @@ IEA_SCHOOLS = {
         "Department of Mechanical Engineering": ["UG", "PG"],
     },
     "School of Humanities & Social Sciences": {
-        "Department of Economics & Social Sciences": ["UG", "PG"],
+        "Department of Economics": ["UG", "PG"],
         "Department of Journalism & Mass Communication": ["UG", "PG"],
         "Department of Languages": ["UG", "PG"],
         "Department of Psychology & Allied Science": ["UG", "PG"],
