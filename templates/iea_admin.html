@@ -163,6 +163,10 @@
     <div class="toolbar">
       <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
         <div class="year-tabs" id="yearTabs"></div>
+        <select id="ieaDataFilter" onchange="renderTable()" style="padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border); font-size: 13px; font-weight: 700; color: var(--navy); background: #fff; cursor: pointer;">
+          <option value="with_data" selected>⚡ Show Units With Data In Selected Year Only</option>
+          <option value="all">📁 Show All Units (Including 0 Entries)</option>
+        </select>
         <select id="ieaDeptFilter" onchange="renderTable()" style="padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border); font-size: 13px; font-weight: 700; color: var(--navy); background: #fff; cursor: pointer;">
           <option value="">All Departments & Schools</option>
         </select>
@@ -202,7 +206,7 @@
 
     const ICON = {
       check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
-      edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+      edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
       trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
       eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
       download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
@@ -224,8 +228,11 @@
 
     function renderKPIs() {
       const el = document.getElementById('kpiGrid');
+      const unitsWithDataThisYear = allUnits.filter(u => {
+        return SECTIONS.some(s => (u.years[activeYear][s.key] || []).length > 0);
+      }).length;
       const cards = [
-        { label: 'Units Reporting', num: allUnits.length, color: 'var(--navy)' },
+        { label: 'Units Reporting (' + activeYear + ')', num: unitsWithDataThisYear + ' / ' + allUnits.length, color: 'var(--navy)' },
         { label: 'A — New Programmes', num: totalForSection('A'), color: 'var(--a)' },
         { label: 'B — Programme Innovations', num: totalForSection('B'), color: 'var(--b)' },
         { label: 'C — Global Recognitions', num: totalForSection('C'), color: 'var(--c)' },
@@ -266,10 +273,18 @@
         return;
       }
       const selectedDept = document.getElementById('ieaDeptFilter') ? document.getElementById('ieaDeptFilter').value : '';
-      const visibleUnits = allUnits.filter(u => !selectedDept || u.department === selectedDept || u.school === selectedDept);
+      const dataFilter = document.getElementById('ieaDataFilter') ? document.getElementById('ieaDataFilter').value : 'with_data';
+
+      const visibleUnits = allUnits.filter(u => {
+        const matchDept = !selectedDept || u.department === selectedDept || u.school === selectedDept;
+        const counts = SECTIONS.map(s => (u.years[activeYear][s.key] || []).length);
+        const totalThisYear = counts.reduce((a, b) => a + b, 0);
+        const matchData = (dataFilter === 'all') || (totalThisYear > 0);
+        return matchDept && matchData;
+      });
 
       if (visibleUnits.length === 0) {
-        el.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>No matching department submissions</h3><p>Try selecting another department or "All Departments & Schools".</p></div>';
+        el.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>No department submissions found for ' + activeYear + '</h3><p>Try switching to another Academic Year or select "Show All Units (Including 0 Entries)".</p></div>';
         return;
       }
 
@@ -358,6 +373,7 @@
       const btn = e.target.closest('.year-tab');
       if (!btn) return;
       activeYear = btn.dataset.year;
+      renderKPIs();
       renderYearTabs();
       renderDownloadGroup();
       renderTable();
