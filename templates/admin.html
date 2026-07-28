@@ -1401,12 +1401,25 @@
             <button class="tab-btn" id="type_readiness" onclick="selectTypeFilter('readiness')">Readiness Only</button>
             <button class="tab-btn" id="type_closure" onclick="selectTypeFilter('closure')">Closure Only</button>
           </div>
-          <div class="search-bar">
-            <select id="subDeptFilter" onchange="filterTable()">
+          <div class="search-bar" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <select id="subYearFilter" onchange="filterTable()" style="padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); font-weight: 600; font-size: 12.5px; color: var(--navy); background: #fff;">
+              <option value="">All Academic Years</option>
+              {% set available_years = ['2024-25', '2025-26', '2026-27', '2027-28', '2022-23', '2023-24'] %}
+              {% for yr in available_years %}
+              <option value="{{ yr }}">A.Y. {{ yr }}</option>
+              {% endfor %}
+            </select>
+            <select id="subSharedFilter" onchange="filterTable()" style="padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); font-weight: 600; font-size: 12.5px; color: var(--navy); background: #fff;">
+              <option value="">All Shared & Individual Statuses</option>
+              <option value="shared">👥 Shared / Has Faculty Subs</option>
+              <option value="individual">👤 HOD Only (Individual)</option>
+              <option value="edit_requested">⚠️ Edit Requested</option>
+            </select>
+            <select id="subDeptFilter" onchange="filterTable()" style="padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); font-weight: 600; font-size: 12.5px; color: var(--navy); background: #fff;">
               <option value="">All Departments</option>
               {% for dept in departments %}<option value="{{ dept }}">{{ dept }}</option>{% endfor %}
             </select>
-            <input type="text" id="searchInput" placeholder="🔍 Search dept, HOD…" oninput="filterTable()">
+            <input type="text" id="searchInput" placeholder="🔍 Search dept, HOD…" oninput="filterTable()" style="padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 12.5px;">
           </div>
         </div>
 
@@ -1434,9 +1447,13 @@
               {% set total_chk = chk|length or 22 %}
               {% set pct = ((yes_count / total_chk * 100)|int) if total_chk else 0 %}
               <tr
-                data-search="{{ s.identity.dept }} {{ s.identity.campus }} {{ s.identity.hodName }} {{ s.identity.hodEmail }} {{ s.identity.semester }} {{ s.form_type or 'readiness' }}"
+                data-search="{{ s.identity.dept }} {{ s.identity.campus }} {{ s.identity.hodName }} {{ s.identity.hodEmail }} {{ s.identity.semester }} {{ s.form_type or 'readiness' }} {{ s.identity.acYear or '' }}"
                 data-dept="{{ s.identity.dept }}" data-campus="{{ s.identity.campus }}"
-                data-form-type="{{ s.form_type or 'readiness' }}">
+                data-form-type="{{ s.form_type or 'readiness' }}"
+                data-year="{{ s.identity.acYear or '' }}"
+                data-fac-count="{{ s.faculty_submission_count }}"
+                data-shared="{% if s.faculty_submission_count > 0 %}shared{% else %}individual{% endif %}"
+                data-edit-req="{% if s.edit_request and s.edit_request.pending %}true{% else %}false{% endif %}">
                 <td style="color:var(--ink3);font-weight:700;font-size:12px">{{ loop.index }}</td>
                 <td>
                   <div style="font-weight:700;color:var(--navy);font-size:13px;cursor:pointer;text-decoration:underline"
@@ -1608,11 +1625,14 @@
         <div class="table-header" style="flex-wrap: wrap; gap: 12px;">
           <div>
             <h2>Registered Accounts & Access Control</h2>
-            <p>Manage faculty, HODs, and admin users (Google OAuth & Password accounts)</p>
+            <p id="userCountText">Manage faculty, HODs, and admin users (Google OAuth & Password accounts)</p>
           </div>
-          <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <div style="font-size: 13px; font-weight: 700; color: var(--navy); background: #eef2ff; padding: 6px 14px; border-radius: 99px;">
               👤 {{ users|length }} Total Accounts
+            </div>
+            <div style="font-size: 13px; font-weight: 700; color: #15803d; background: #eafeea; border: 1px solid #bbf7d0; padding: 6px 14px; border-radius: 99px;">
+              ⚡ {{ logged_in_today_count }} Logged In Today
             </div>
             <button class="btn btn-primary btn-sm" onclick="document.getElementById('addUserModal').style.display='flex'" style="background: var(--navy); color: #fff; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; border: none;">
               ➕ Add User / Admin
@@ -1620,14 +1640,31 @@
           </div>
         </div>
 
+        <div style="display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button class="tab-btn user-role-tab active" id="user_tab_All" onclick="selectUserRoleFilter('All')">All Users ({{ users|length }})</button>
+            <button class="tab-btn user-role-tab" id="user_tab_logged_today" onclick="selectUserRoleFilter('logged_today')" style="color: #15803d; border-color: #bbf7d0;">⚡ Logged In Today ({{ logged_in_today_count }})</button>
+            <button class="tab-btn user-role-tab" id="user_tab_admin" onclick="selectUserRoleFilter('admin')">👑 Admins</button>
+            <button class="tab-btn user-role-tab" id="user_tab_user" onclick="selectUserRoleFilter('user')">👤 Faculty / HODs</button>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <select id="userDeptFilter" onchange="filterUsersTable()" style="padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); font-weight: 600; font-size: 12.5px; color: var(--navy); background: #fff;">
+              <option value="">All Departments</option>
+              {% for dept in departments %}<option value="{{ dept }}">{{ dept }}</option>{% endfor %}
+            </select>
+            <input type="text" id="userSearchInput" placeholder="🔍 Search name, email, dept…" oninput="filterUsersTable()" style="padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 12.5px;">
+          </div>
+        </div>
+
         <div style="overflow-x: auto; margin-top: 16px;">
-          <table class="sub-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <table class="sub-table" id="usersTable" style="width: 100%; border-collapse: collapse; font-size: 13px;">
             <thead>
               <tr style="border-bottom: 2px solid var(--border); text-align: left;">
                 <th style="padding: 12px 8px; color: var(--ink3);">User</th>
                 <th style="padding: 12px 8px; color: var(--ink3);">Email Address</th>
                 <th style="padding: 12px 8px; color: var(--ink3);">Auth Type</th>
                 <th style="padding: 12px 8px; color: var(--ink3);">Role</th>
+                <th style="padding: 12px 8px; color: var(--ink3);">Last Active</th>
                 <th style="padding: 12px 8px; color: var(--ink3);">Module Visibility</th>
                 <th style="padding: 12px 8px; color: var(--ink3);">Department</th>
                 <th style="padding: 12px 8px; color: var(--ink3);">Joined</th>
@@ -1636,7 +1673,11 @@
             </thead>
             <tbody>
               {% for u in users %}
-              <tr style="border-bottom: 1px solid var(--border);">
+              <tr style="border-bottom: 1px solid var(--border);"
+                data-user-search="{{ u.name or '' }} {{ u.email or '' }} {{ u.latest_dept or u.department or '' }}"
+                data-user-dept="{{ u.latest_dept or u.department or '' }}"
+                data-user-logged-today="{{ 'true' if u.logged_in_today else 'false' }}"
+                data-user-role="{{ 'admin' if u.is_admin else 'user' }}">
                 <td style="padding: 12px 8px;">
                   <div style="display: flex; align-items: center; gap: 10px;">
                     {% if u.picture %}
@@ -1672,6 +1713,19 @@
                   <span style="padding: 3px 10px; border-radius: 99px; font-size: 10.5px; font-weight: 700; background: #f0f4ff; color: var(--navy); border: 1px solid #c7d2fe;">
                     👤 Faculty / HOD
                   </span>
+                  {% endif %}
+                </td>
+                <td style="padding: 12px 8px;">
+                  {% if u.logged_in_today %}
+                  <span style="padding: 3px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 800; background: #dcfce7; color: #15803d; border: 1px solid #86efac;" title="Logged in today ({{ u.last_login }})">
+                    ⚡ Active Today
+                  </span>
+                  {% elif u.last_login %}
+                  <span style="font-size: 11.5px; color: var(--ink3);" title="{{ u.last_login }}">
+                    {{ u.last_login[:10] }}
+                  </span>
+                  {% else %}
+                  <span style="font-size: 11.5px; color: var(--ink3); italic;">—</span>
                   {% endif %}
                 </td>
                 <td style="padding: 12px 8px;">
@@ -1718,6 +1772,9 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
         </div>
       </div>
     </div>
@@ -2043,6 +2100,8 @@
     function filterTable() {
       const q = document.getElementById('searchInput').value.toLowerCase();
       const d = document.getElementById('subDeptFilter').value;
+      const y = document.getElementById('subYearFilter') ? document.getElementById('subYearFilter').value : '';
+      const s = document.getElementById('subSharedFilter') ? document.getElementById('subSharedFilter').value : '';
       let visibleCount = 0;
 
       document.querySelectorAll('#subTable tbody tr').forEach(tr => {
@@ -2050,13 +2109,21 @@
         const trDept = tr.dataset.dept || '';
         const trCampus = tr.dataset.campus || '';
         const trType = tr.dataset.formType || 'readiness';
+        const trYear = tr.dataset.year || '';
+        const facCount = parseInt(tr.dataset.facCount || '0', 10);
+        const isEditReq = tr.dataset.editReq === 'true';
 
         const matchSearch = searchContent.includes(q);
         const matchDept = !d || trDept === d;
         const matchCampus = activeCampusFilter === 'All' || trCampus === activeCampusFilter;
         const matchType = activeTypeFilter === 'All' || trType === activeTypeFilter;
+        const matchYear = !y || trYear === y;
+        let matchShared = true;
+        if (s === 'shared') matchShared = facCount > 0;
+        else if (s === 'individual') matchShared = facCount === 0;
+        else if (s === 'edit_requested') matchShared = isEditReq;
 
-        if (matchSearch && matchDept && matchCampus && matchType) {
+        if (matchSearch && matchDept && matchCampus && matchType && matchYear && matchShared) {
           tr.style.display = '';
           visibleCount++;
         } else {
@@ -2067,6 +2134,48 @@
       const countEl = document.getElementById('submissionCountText');
       if (countEl) {
         countEl.textContent = `${visibleCount} department(s) shown`;
+      }
+    }
+
+    let activeUserRoleFilter = 'All';
+
+    function selectUserRoleFilter(role) {
+      activeUserRoleFilter = role;
+      document.querySelectorAll('.user-role-tab').forEach(btn => btn.classList.remove('active'));
+      const btn = document.getElementById('user_tab_' + role);
+      if (btn) btn.classList.add('active');
+      filterUsersTable();
+    }
+
+    function filterUsersTable() {
+      const q = (document.getElementById('userSearchInput') ? document.getElementById('userSearchInput').value : '').toLowerCase();
+      const d = document.getElementById('userDeptFilter') ? document.getElementById('userDeptFilter').value : '';
+      let visibleCount = 0;
+
+      document.querySelectorAll('#usersTable tbody tr').forEach(tr => {
+        const searchContent = (tr.dataset.userSearch || '').toLowerCase();
+        const trDept = tr.dataset.userDept || '';
+        const isLoggedToday = tr.dataset.userLoggedToday === 'true';
+        const trRole = tr.dataset.userRole || 'user';
+
+        const matchSearch = searchContent.includes(q);
+        const matchDept = !d || trDept === d;
+        let matchRole = true;
+        if (activeUserRoleFilter === 'logged_today') matchRole = isLoggedToday;
+        else if (activeUserRoleFilter === 'admin') matchRole = trRole === 'admin';
+        else if (activeUserRoleFilter === 'user') matchRole = trRole === 'user';
+
+        if (matchSearch && matchDept && matchRole) {
+          tr.style.display = '';
+          visibleCount++;
+        } else {
+          tr.style.display = 'none';
+        }
+      });
+
+      const countEl = document.getElementById('userCountText');
+      if (countEl) {
+        countEl.textContent = `${visibleCount} account(s) shown`;
       }
     }
 

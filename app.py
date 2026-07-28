@@ -2112,6 +2112,8 @@ def admin_dashboard():
         s['_id'] = str(s['_id'])
         s['faculty_submission_count'] = faculty_submissions_col.count_documents({'parent_submission_id': s['_id']})
 
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    logged_in_today_count = 0
     users = list(users_col.find().sort('created_at', -1))
     for u in users:
         u['_id'] = str(u['_id'])
@@ -2119,8 +2121,18 @@ def admin_dashboard():
         u['can_readiness'] = u.get('can_readiness', True)
         u['can_closure'] = u.get('can_closure', True)
         u['can_iea'] = u.get('can_iea', True)
+        last_log = u.get('last_login', '')
+        is_today = bool(last_log and last_log.startswith(today_str))
+        u['logged_in_today'] = is_today
+        if is_today:
+            logged_in_today_count += 1
         latest_sub = submissions_col.find_one({'identity.submitterEmail': u['email']}, sort=[('timestamp', -1)])
         u['latest_dept'] = u.get('department') or (latest_sub['identity']['dept'] if latest_sub and 'identity' in latest_sub else 'N/A')
+
+    iea_subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
+    for s in iea_subs:
+        s['_id'] = str(s['_id'])
+        s['years'] = _iea_merge_years(s.get('years'))
 
     access_requests = list(db['access_requests'].find().sort('timestamp', -1))
     for r in access_requests:
@@ -2147,7 +2159,11 @@ def admin_dashboard():
                            users=users, settings=settings, departments=DEPARTMENTS,
                            access_requests=access_requests,
                            pwa_stats=pwa_stats,
-                           notifications=notifications)
+                           notifications=notifications,
+                           logged_in_today_count=logged_in_today_count,
+                           iea_submissions=iea_subs,
+                           iea_years=IEA_YEARS,
+                           iea_sections=IEA_SECTIONS)
 
 @app.route('/admin/update-user-permissions', methods=['POST'])
 def update_user_permissions():
