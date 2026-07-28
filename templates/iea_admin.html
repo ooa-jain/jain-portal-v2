@@ -161,7 +161,12 @@
     <div class="kpi-grid" id="kpiGrid"></div>
 
     <div class="toolbar">
-      <div class="year-tabs" id="yearTabs"></div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <div class="year-tabs" id="yearTabs"></div>
+        <select id="ieaDeptFilter" onchange="renderTable()" style="padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border); font-size: 13px; font-weight: 700; color: var(--navy); background: #fff; cursor: pointer;">
+          <option value="">All Departments & Schools</option>
+        </select>
+      </div>
       <div class="download-group" id="downloadGroup"></div>
     </div>
 
@@ -235,18 +240,40 @@
       el.innerHTML = YEARS.map(y => '<button class="year-tab ' + (y === activeYear ? 'active' : '') + '" data-year="' + y + '">' + y + '</button>').join('');
     }
 
+    function populateDeptFilter() {
+      const select = document.getElementById('ieaDeptFilter');
+      if (!select || select.options.length > 1) return;
+      const depts = Array.from(new Set(allUnits.map(u => u.department || u.school))).sort();
+      depts.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        select.appendChild(opt);
+      });
+    }
+
     function renderDownloadGroup() {
       const el = document.getElementById('downloadGroup');
-      el.innerHTML = '<a class="download-btn" href="/admin/iea-export?year=' + encodeURIComponent(activeYear) + '">' + ICON.download + ' Download ' + activeYear + ' (.xlsx)</a>';
+      el.innerHTML = '<a class="download-btn" href="/admin/iea-export?year=' + encodeURIComponent(activeYear) + '">' + ICON.download + ' Download All (' + activeYear + ')</a>' +
+        '<a class="download-btn" style="background:var(--navy); color:#fff;" href="/admin/iea-export">' + ICON.download + ' Download All Years (.xlsx)</a>';
     }
 
     function renderTable() {
+      populateDeptFilter();
       const el = document.getElementById('tableWrap');
       if (allUnits.length === 0) {
         el.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>No submissions yet</h3><p>Once departments save data, submissions will appear here.</p></div>';
         return;
       }
-      let rows = allUnits.map(u => {
+      const selectedDept = document.getElementById('ieaDeptFilter') ? document.getElementById('ieaDeptFilter').value : '';
+      const visibleUnits = allUnits.filter(u => !selectedDept || u.department === selectedDept || u.school === selectedDept);
+
+      if (visibleUnits.length === 0) {
+        el.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>No matching department submissions</h3><p>Try selecting another department or "All Departments & Schools".</p></div>';
+        return;
+      }
+
+      let rows = visibleUnits.map(u => {
         const counts = SECTIONS.map(s => ({ key: s.key, color: s.color, n: (u.years[activeYear][s.key] || []).length }));
         const totalThisYear = counts.reduce((a, c) => a + c.n, 0);
         const isExpanded = expandedUnit === unitId(u);
@@ -259,8 +286,11 @@
           '<td>' + badgeHtml + '</td>' +
           '<td><div class="section-counts">' + counts.map(c => '<div class="sc" style="background:' + c.color + '" title="Section ' + c.key + '">' + c.n + '</div>').join('') + '</div></td>' +
           '<td>' + (u.lastUpdated ? new Date(u.lastUpdated + (String(u.lastUpdated).endsWith('Z') ? '' : 'Z')).toLocaleString() : '—') + '<div class="unit-sub">' + escapeHtml(u.submitterName || '') + '</div></td>' +
-          '<td style="white-space:nowrap;"><button class="view-btn" data-unit="' + unitId(u) + '">' + ICON.eye + ' ' + (isExpanded ? 'Hide' : 'View') + '</button>' +
-          '<button class="del-btn" data-del="' + unitId(u) + '">' + ICON.trash + ' Delete</button></td>' +
+          '<td style="white-space:nowrap;">' +
+          '<button class="view-btn" data-unit="' + unitId(u) + '">' + ICON.eye + ' ' + (isExpanded ? 'Hide' : 'View') + '</button>' +
+          '<a class="download-btn" href="/admin/iea-export?sid=' + unitId(u) + '&year=' + encodeURIComponent(activeYear) + '" style="padding:6px 10px; font-size:12px; margin-left:4px;" title="Download Individual Department Report (.xlsx)">' + ICON.download + ' Individual Excel</a>' +
+          '<button class="del-btn" data-del="' + unitId(u) + '">' + ICON.trash + ' Delete</button>' +
+          '</td>' +
           '</tr>';
         if (isExpanded) {
           html += '<tr class="detail-row"><td colspan="5">' + renderUnitDetail(u) + '</td></tr>';
@@ -283,7 +313,14 @@
     }
 
     function renderUnitDetail(u) {
-      return SECTIONS.map(s => {
+      let exportBar = '<div style="background:#f1f5f9; padding:10px 14px; border-radius:8px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">' +
+        '<strong style="color:var(--navy); font-size:13px;">📄 Individual Department Export Options:</strong>' +
+        '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
+        '<a class="download-btn" style="padding:5px 12px; font-size:12px;" href="/admin/iea-export?sid=' + unitId(u) + '&year=' + encodeURIComponent(activeYear) + '">' + ICON.download + ' Download ' + activeYear + ' Excel</a>' +
+        '<a class="download-btn" style="padding:5px 12px; font-size:12px; background:var(--gold); color:var(--navy);" href="/admin/iea-export?sid=' + unitId(u) + '">' + ICON.download + ' Download All Years Excel</a>' +
+        '</div></div>';
+
+      return exportBar + SECTIONS.map(s => {
         const entries = u.years[activeYear][s.key] || [];
         return '<div class="detail-section" style="--accent:' + s.color + '">' +
           '<h4>' + s.key + ' — ' + s.title + ' (' + entries.length + ')</h4>' +

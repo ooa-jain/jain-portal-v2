@@ -1268,16 +1268,32 @@ def admin_iea_export():
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
     year = request.args.get('year')  # optional: restrict to one academic year
+    sid = request.args.get('sid')    # optional: restrict to one individual department/submission
     if year and year not in IEA_YEARS:
         return "Invalid year", 400
-    docs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
+    
+    query = {}
+    if sid:
+        try:
+            query['_id'] = ObjectId(sid)
+        except Exception:
+            return "Invalid ID", 400
+            
+    docs = list(iea_col.find(query).sort([('school', 1), ('department', 1), ('level', 1)]))
+    if not docs:
+        return "No submissions found for the specified criteria", 440
+        
     wb = build_iea_workbook(docs, year)
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)
-    suffix = year.replace(' ', '_') if year else 'AllYears'
+    
+    dept_suffix = f"_{docs[0]['department']}_{docs[0]['level']}".replace(' ', '_').replace('/', '_') if (sid and docs) else ''
+    year_suffix = f"_{year.replace(' ', '_')}" if year else '_AllYears'
+    filename = f"IEA_Report{dept_suffix}{year_suffix}.xlsx"
+    
     return send_file(buf, as_attachment=True,
-                     download_name=f"IEA_Report_{suffix}.xlsx",
+                     download_name=filename,
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 def build_iea_workbook(docs, year=None):
