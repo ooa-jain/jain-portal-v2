@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IEA — Innovation &amp; Emerging Areas Full Analytics Dashboard | OOA Portal</title>
+  <meta name="description" content="JAIN University's Innovation & Emerging Areas full analytics dashboard connecting academic governance, UGC compliance, and department reporting.">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a2558">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/images/jgi-icon-192.png">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0a2558;
+      --navy2: #143572;
+      --gold: #f2a900;
+      --gold2: #d97706;
+      --bg: #f8fafc;
+      --ink: #0f172a;
+      --ink2: #334155;
+      --ink3: #64748b;
+      --border: #e2e8f0;
+      --sh: 0 10px 25px -5px rgba(10, 37, 88, 0.08), 0 8px 10px -6px rgba(10, 37, 88, 0.04);
+      --sh-hover: 0 20px 30px -10px rgba(10, 37, 88, 0.12);
+      --a: #C9A227; --b: #2F6F4E; --c: #2C5F8A; --d: #A85C2C; --e: #6B4A8A;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(rgba(10, 37, 88, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(10, 37, 88, 0.02) 1px, transparent 1px);
+      background-size: 32px 32px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    h1, h2, h3 { font-family: 'Playfair Display', serif; }
+
+    @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .hero {
+      background: linear-gradient(135deg, var(--navy), var(--navy2));
+      color: #fff; position: relative; overflow: hidden;
+      border-bottom: 3px solid var(--gold);
+    }
+    .hero::after {
+      content: ""; position: absolute; right: -80px; top: -80px; width: 320px; height: 320px;
+      border-radius: 50%; background: radial-gradient(circle, rgba(242, 169, 0, 0.25), transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner { max-width: 1280px; margin: 0 auto; padding: 32px 28px 30px; position: relative; z-index: 1; }
+    .eyebrow { color: var(--gold); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .hero h1 { font-size: 28px; font-weight: 700; margin-top: 8px; letter-spacing: -0.02em; }
+    .hero p { margin: 8px 0 0; color: #cbd7ec; font-size: 14px; max-width: 820px; line-height: 1.5; }
+    .header-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+    .btn { border: none; padding: 10px 18px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all .2s; }
+    .btn svg { width: 16px; height: 16px; }
+    .btn-gold { background: var(--gold); color: var(--navy); box-shadow: 0 4px 12px rgba(242, 169, 0, 0.3); }
+    .btn-gold:hover { background: #e59f00; transform: translateY(-2px); }
+    .btn-navy { background: var(--navy); color: #fff; }
+    .btn-navy:hover { background: var(--navy2); transform: translateY(-2px); }
+    .btn-ghost { background: rgba(255, 255, 255, 0.12); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3); }
+    .btn-ghost:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-2px); }
+
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 28px 28px 90px; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 24px; }
+    .kpi-card {
+      background: #fff; border: 1px solid var(--border); border-radius: 14px;
+      padding: 16px 18px; border-top: 4px solid var(--kpi-color, var(--navy)); box-shadow: var(--sh);
+      animation: rise .35s ease backwards; transition: all .2s ease;
+    }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: var(--sh-hover); }
+    .kpi-num { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--ink); }
+    .kpi-label { font-size: 11.5px; color: var(--ink3); margin-top: 6px; line-height: 1.35; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+
+    .analysis-summary-card {
+      background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--sh);
+    }
+    .sec-progress-bar { display: flex; height: 12px; border-radius: 99px; overflow: hidden; background: #e2e8f0; margin-top: 12px; }
+    .sec-prog-item { height: 100%; transition: width 0.4s ease; }
+
+    .toolbar { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; box-shadow: var(--sh); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
+    .year-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .year-tab {
+      background: #f1f5f9; border: 1.5px solid var(--border); color: var(--ink2);
+      padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .year-tab:hover { border-color: var(--navy); color: var(--navy); }
+    .year-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; box-shadow: 0 4px 12px rgba(10, 37, 88, 0.25); }
+
+    .filters-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .select-input, .text-input {
+      padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border);
+      font-size: 13px; font-weight: 600; color: var(--navy); background: #fff; font-family: inherit;
+      transition: all .15s; outline: none;
+    }
+    .select-input:focus, .text-input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(10, 37, 88, 0.1); }
+    .text-input { border-radius: 10px; width: 220px; }
+
+    table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--sh); animation: slideUp .4s ease; }
+    thead th { background: #f8fafc; text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink3); padding: 14px 16px; border-bottom: 1px solid var(--border); font-weight: 800; }
+    tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 13.5px; vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+
+    .school-name { font-weight: 700; color: var(--navy); font-size: 14px; }
+    .unit-sub { font-size: 12px; color: var(--ink3); margin-top: 3px; font-weight: 500; }
+
+    .pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+    .pill svg { width: 13px; height: 13px; }
+    .pill.has-data { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .pill.empty { background: #fff3e0; color: #b45309; border: 1px solid #ffe0b2; }
+
+    .section-counts { display: flex; gap: 6px; flex-wrap: wrap; }
+    .sc { width: 28px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800; color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+
+    .view-btn { background: #eef2ff; border: 1.5px solid #c7d2fe; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; color: var(--navy); font-family: inherit; display: inline-flex; align-items: center; gap: 5px; transition: all .15s; }
+    .view-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .dl-btn { background: #fff8eb; border: 1.5px solid #fde68a; padding: 7px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; color: #b45309; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; transition: all .15s; margin-left: 4px; }
+    .dl-btn:hover { background: #fef3c7; border-color: #f59e0b; }
+
+    .empty-state { text-align: center; padding: 70px 20px; color: var(--ink3); background: #fff; border: 1px solid var(--border); border-radius: 14px; }
+    .empty-state svg { width: 50px; height: 50px; color: #cbd7ec; margin-bottom: 12px; }
+    .empty-state h3 { color: var(--ink); margin-bottom: 8px; font-size: 19px; }
+
+    /* Modal Styles */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn .2s ease; }
+    .modal-card { background: #fff; border-radius: 16px; width: 100%; max-width: 900px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; animation: slideUp .3s ease; }
+    .modal-header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h3 { font-size: 20px; font-weight: 700; color: #fff; }
+    .modal-close { background: rgba(255, 255, 255, 0.15); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; font-weight: 700; transition: all .15s; }
+    .modal-close:hover { background: rgba(255, 255, 255, 0.3); }
+    .modal-body { padding: 24px; overflow-y: auto; flex: 1; background: #fafbff; }
+    .modal-footer { padding: 16px 24px; background: #fff; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+
+    .detail-section { margin-bottom: 20px; border-left: 4px solid var(--accent); padding-left: 14px; background: #fff; border-radius: 0 10px 10px 0; padding: 14px 16px; border: 1px solid var(--border); border-left-width: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+    .detail-section h4 { font-size: 14px; margin-bottom: 10px; color: var(--navy); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; }
+    .detail-entry { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; font-size: 13px; }
+    .detail-entry .df { margin-bottom: 6px; line-height: 1.5; }
+    .detail-entry .df b { color: var(--ink3); font-weight: 700; display: inline-block; min-width: 140px; }
+    .detail-entry .df a { color: #2563eb; word-break: break-all; font-weight: 600; text-decoration: underline; }
+    .no-entries { font-size: 12.5px; color: var(--ink3); font-style: italic; }
+
+    @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 640px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tbody td { border-bottom: none; padding: 8px 14px; }
+      tbody tr { border-bottom: 1px solid var(--border); padding: 12px 0; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- HERO HEADER -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">
+        <span>JAIN University · Office of Academics</span>
+        <span style="background:var(--gold); color:var(--navy); padding:2px 8px; border-radius:99px; font-size:10px; font-weight:800;">UGC COMPLIANT</span>
+      </div>
+      <h1>Innovation &amp; Emerging Areas — Full Analytics &amp; Insights</h1>
+      <p>Comprehensive analytical view of School &amp; Department submissions across Academic Years 2022-23 to 2026-27. Inspect section entries, submitted vs draft statuses, and download department Excel reports.</p>
+      <div class="header-actions">
+        <a href="/admin/iea-export" class="btn btn-gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download All Years (.xlsx)
+        </a>
+        <a id="heroYearDownloadBtn" href="/admin/iea-export" class="btn btn-ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Selected AY (.xlsx)
+        </a>
+        {% if is_admin %}
+        <a href="/admin/iea" class="btn btn-ghost">🔑 Admin IEA Dashboard</a>
+        <a href="/admin" class="btn btn-ghost">👑 Main Admin</a>
+        {% else %}
+        <a href="/" class="btn btn-ghost">🏠 Portal Home</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- KPI SUMMARY GRID -->
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <!-- SECTION DISTRIBUTION BREAKDOWN CARD -->
+    <div class="analysis-summary-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h3 style="font-size:17px; color:var(--navy); font-weight:700;">Section Distribution Summary (<span id="summaryYearLabel">All Years</span>)</h3>
+          <p style="font-size:12.5px; color:var(--ink3); margin-top:2px;">Proportion of entries submitted across Sections A through E</p>
+        </div>
+        <div id="summaryTotalEntriesPill" style="font-size:13px; font-weight:800; color:var(--navy); background:#eef2ff; padding:6px 14px; border-radius:99px;">
+          0 Total Entries
+        </div>
+      </div>
+      <div class="sec-progress-bar" id="secProgressBar"></div>
+      <div id="secLegend" style="display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:12px; font-weight:700;"></div>
+    </div>
+
+    <!-- CONTROLS & TOOLBAR -->
+    <div class="toolbar">
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <div class="year-tabs" id="yearTabs"></div>
+      </div>
+      <div class="filters-group">
+        <select id="ieaDataFilter" onchange="renderTable()" class="select-input">
+          <option value="with_data" selected>⚡ Units With Submissions (≥1 Entry)</option>
+          <option value="draft">📝 Units Pending / Draft (0 Entries)</option>
+          <option value="all">📁 All Units (Including 0 Entries)</option>
+        </select>
+        <select id="ieaDeptFilter" onchange="renderTable()" class="select-input">
+          <option value="">All Departments &amp; Schools</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="🔍 Search dept, school…" oninput="renderTable()" class="text-input">
+      </div>
+    </div>
+
+    <!-- SUBMISSIONS & ANALYSIS TABLE -->
+    <div id="tableWrap"></div>
+  </div>
+
+  <!-- INTERACTIVE RESPONSE DETAIL MODAL -->
+  <div class="modal-overlay" id="responseModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalTitle">Department Submission Analysis</h3>
+          <p id="modalSubTitle" style="font-size:12px; color:#cbd7ec; margin-top:2px; font-family:'Plus Jakarta Sans',sans-serif;"></p>
+        </div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer" id="modalFooter">
+        <button class="btn btn-navy" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const YEARS = {{ iea_years|tojson }};
+    const SECTIONS = {{ iea_sections|tojson }};
+    const allUnits = {{ submissions|tojson }};
+
+    const ICON = {
+      check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+      edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+      trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+      eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+      download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+      folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+    };
+
+    let activeYear = 'ALL'; // 'ALL' or specific AY string
+    let currentModalUnit = null;
+
+    function escapeHtml(str) { return String(str == null ? '' : str).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+    function unitId(u) { return u._id; }
+    function unitTitle(u) { return u.school + ' — ' + u.department + ' (' + u.level + ')'; }
+
+    function totalForSection(sectionKey, year = activeYear) {
+      let n = 0;
+      const targetYears = (year === 'ALL') ? YEARS : [year];
+      allUnits.forEach(u => targetYears.forEach(y => n += (u.years[y][sectionKey] || []).length));
+      return n;
+    }
+
+    function totalEntriesForUnit(u, year = activeYear) {
+      let n = 0;
+      const targetYears = (year === 'ALL') ? YEARS : [year];
+      targetYears.forEach(y => {
+        SECTIONS.forEach(s => n += (u.years[y][s.key] || []).length);
+      });
+      return n;
+    }
+
+    function renderKPIs() {
+      const el = document.getElementById('kpiGrid');
+      const unitsWithData = allUnits.filter(u => totalEntriesForUnit(u, activeYear) > 0).length;
+      const yearLabel = (activeYear === 'ALL') ? 'All Years' : activeYear;
+
+      const cards = [
+        { label: 'Units Reporting (' + yearLabel + ')', num: unitsWithData + ' / ' + allUnits.length, color: 'var(--navy)' },
+        { label: 'A — New Programmes', num: totalForSection('A', activeYear), color: 'var(--a)' },
+        { label: 'B — Programme Innovations', num: totalForSection('B', activeYear), color: 'var(--b)' },
+        { label: 'C — Global Recognitions', num: totalForSection('C', activeYear), color: 'var(--c)' },
+        { label: 'D — Industry Skilling', num: totalForSection('D', activeYear), color: 'var(--d)' },
+        { label: 'E — Competency Learning', num: totalForSection('E', activeYear), color: 'var(--e)' },
+      ];
+      el.innerHTML = cards.map((c, i) => '<div class="kpi-card" style="--kpi-color:' + c.color + '; animation-delay:' + (i * 0.04) + 's"><div class="kpi-num">' + c.num + '</div><div class="kpi-label">' + c.label + '</div></div>').join('');
+
+      renderSectionSummaryCard();
+    }
+
+    function renderSectionSummaryCard() {
+      const yearLabel = (activeYear === 'ALL') ? 'All Years Consolidated' : activeYear;
+      document.getElementById('summaryYearLabel').textContent = yearLabel;
+
+      const secCounts = SECTIONS.map(s => ({ key: s.key, title: s.title, color: s.color, count: totalForSection(s.key, activeYear) }));
+      const totalAll = secCounts.reduce((acc, c) => acc + c.count, 0);
+
+      document.getElementById('summaryTotalEntriesPill').textContent = totalAll + ' Total Entries (' + yearLabel + ')';
+
+      const barEl = document.getElementById('secProgressBar');
+      const legendEl = document.getElementById('secLegend');
+
+      if (totalAll === 0) {
+        barEl.innerHTML = '<div class="sec-prog-item" style="width:100%; background:#cbd5e1;" title="No entries"></div>';
+        legendEl.innerHTML = '<span style="color:var(--ink3); font-weight:500;">No section entries recorded for ' + yearLabel + '</span>';
+        return;
+      }
+
+      barEl.innerHTML = secCounts.map(s => {
+        const pct = Math.round((s.count / totalAll) * 100);
+        return pct > 0 ? '<div class="sec-prog-item" style="width:' + pct + '%; background:' + s.color + ';" title="Section ' + s.key + ': ' + s.count + ' (' + pct + '%)"></div>' : '';
+      }).join('');
+
+      legendEl.innerHTML = secCounts.map(s => {
+        const pct = Math.round((s.count / totalAll) * 100);
+        return '<div style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; border-radius:3px; background:' + s.color + ';"></span><span>Sec ' + s.key + ': ' + s.count + ' (' + pct + '%)</span></div>';
+      }).join('');
+    }
+
+    function renderYearTabs() {
+      const el = document.getElementById('yearTabs');
+      const tabs = ['ALL'].concat(YEARS);
+      el.innerHTML = tabs.map(y => {
+        const label = (y === 'ALL') ? '📁 All Academic Years' : y;
+        return '<button class="year-tab ' + (y === activeYear ? 'active' : '') + '" data-year="' + y + '">' + label + '</button>';
+      }).join('');
+
+      // Update hero year download button href
+      const heroBtn = document.getElementById('heroYearDownloadBtn');
+      if (heroBtn) {
+        heroBtn.href = (activeYear === 'ALL') ? '/admin/iea-export' : '/admin/iea-export?year=' + encodeURIComponent(activeYear);
+        heroBtn.innerHTML = ICON.download + ' Download ' + (activeYear === 'ALL' ? 'All Years (.xlsx)' : activeYear + ' (.xlsx)');
+      }
+    }
+
+    function populateDeptFilter() {
+      const select = document.getElementById('ieaDeptFilter');
+      if (!select || select.options.length > 1) return;
+      const depts = Array.from(new Set(allUnits.map(u => u.department || u.school))).sort();
+      depts.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderTable() {
+      populateDeptFilter();
+      const el = document.getElementById('tableWrap');
+      if (allUnits.length === 0) {
+        el.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>No submissions found</h3><p>No department data has been registered in the system yet.</p></div>';
+        return;
+      }
+
+      const selectedDept = document.getElementById('ieaDeptFilter') ? document.getElementById('ieaDeptFilter').value : '';
+      const dataFilter = document.getElementById('ieaDataFilter') ? document.getElementById('ieaDataFilter').value : 'with_data';
+      const q = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').toLowerCase();
+
+      const visibleUnits = allUnits.filter(u => {
+        const matchDept = !selectedDept || u.department === selectedDept || u.school === selectedDept;
+        const totalEntries = totalEntriesForUnit(u, activeYear);
+        let matchData = true;
+        if (dataFilter === 'with_data') matchData = totalEntries > 0;
+        else if (dataFilter === 'draft') matchData = totalEntries === 0;
+
+        const textSearch = (u.school + ' ' + u.department + ' ' + u.level + ' ' + (u.submitterName || '') + ' ' + (u.submitterEmail || '')).toLowerCase();
+        const matchSearch = !q || textSearch.includes(q);
+
+        return matchDept && matchData && matchSearch;
+      });
+
+      if (visibleUnits.length === 0) {
+        const yearText = (activeYear === 'ALL') ? 'All Academic Years' : activeYear;
+        el.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>No department submissions found for ' + yearText + '</h3><p>Try clearing filters, selecting another Academic Year, or switching status filter to "All Units".</p></div>';
+        return;
+      }
+
+      let rows = visibleUnits.map((u, idx) => {
+        const counts = SECTIONS.map(s => {
+          let count = 0;
+          const targetYears = (activeYear === 'ALL') ? YEARS : [activeYear];
+          targetYears.forEach(y => count += (u.years[y][s.key] || []).length);
+          return { key: s.key, color: s.color, n: count };
+        });
+
+        const totalThisYear = counts.reduce((a, c) => a + c.n, 0);
+        const badgeHtml = totalThisYear > 0
+          ? '<span class="pill has-data">' + ICON.check + ' Submitted (' + totalThisYear + ')</span>'
+          : '<span class="pill empty">' + ICON.edit + ' Draft (0)</span>';
+
+        return '<tr>' +
+          '<td><span style="color:var(--ink3); font-weight:700; font-size:12px;">' + (idx + 1) + '</span></td>' +
+          '<td><div class="school-name">' + escapeHtml(u.school) + '</div><div class="unit-sub">' + escapeHtml(u.department) + ' · ' + escapeHtml(u.level) + '</div></td>' +
+          '<td>' + badgeHtml + '</td>' +
+          '<td><div class="section-counts">' + counts.map(c => '<div class="sc" style="background:' + c.color + '" title="Section ' + c.key + ': ' + c.n + ' entries">' + c.n + '</div>').join('') + '</div></td>' +
+          '<td>' + (u.lastUpdated ? new Date(u.lastUpdated + (String(u.lastUpdated).endsWith('Z') ? '' : 'Z')).toLocaleString() : '—') + '<div class="unit-sub">' + escapeHtml(u.submitterName || '') + '</div></td>' +
+          '<td style="white-space:nowrap;">' +
+          '<button class="view-btn" onclick="openResponseModal(\'' + unitId(u) + '\')">' + ICON.eye + ' View Full Analysis</button>' +
+          '<a class="dl-btn" href="/admin/iea-export?sid=' + unitId(u) + (activeYear !== 'ALL' ? '&year=' + encodeURIComponent(activeYear) : '') + '" title="Download individual department Excel report">' + ICON.download + ' Excel</a>' +
+          '</td>' +
+          '</tr>';
+      }).join('');
+
+      const yearHeader = (activeYear === 'ALL') ? 'All Years Consolidated' : activeYear;
+      el.innerHTML = '<table><thead><tr><th>#</th><th>School / Department (Level)</th><th>Status (' + yearHeader + ')</th><th>Entries by Section (A–F)</th><th>Last Updated &amp; Submitter</th><th>Actions</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+
+    function openResponseModal(id) {
+      const u = allUnits.find(x => unitId(x) === id);
+      if (!u) return;
+      currentModalUnit = u;
+
+      document.getElementById('modalTitle').textContent = u.school + ' — ' + u.department;
+      document.getElementById('modalSubTitle').textContent = u.level + ' Level · Submitter: ' + (u.submitterName || 'N/A') + ' (' + (u.submitterEmail || 'N/A') + ')';
+
+      const yearText = (activeYear === 'ALL') ? 'All Academic Years' : activeYear;
+
+      let exportBar = '<div style="background:#f1f5f9; padding:12px 16px; border-radius:10px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">' +
+        '<strong style="color:var(--navy); font-size:13.5px;">📄 Individual Department Excel Reports:</strong>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+        '<a class="btn btn-gold" style="padding:6px 14px; font-size:12px;" href="/admin/iea-export?sid=' + unitId(u) + '&year=' + encodeURIComponent(activeYear === 'ALL' ? YEARS[0] : activeYear) + '">' + ICON.download + ' Download ' + (activeYear === 'ALL' ? YEARS[0] : activeYear) + ' Excel</a>' +
+        '<a class="btn btn-navy" style="padding:6px 14px; font-size:12px;" href="/admin/iea-export?sid=' + unitId(u) + '">' + ICON.download + ' Download All Years Excel</a>' +
+        '</div></div>';
+
+      const targetYears = (activeYear === 'ALL') ? YEARS : [activeYear];
+
+      let bodyHtml = exportBar;
+
+      targetYears.forEach(y => {
+        bodyHtml += '<div style="margin-bottom:24px;"><h3 style="font-size:16px; color:var(--navy); margin-bottom:12px; padding-bottom:4px; border-bottom:2px solid var(--gold); display:inline-block;">Academic Year ' + y + '</h3>';
+
+        const yearSectionsHtml = SECTIONS.map(s => {
+          const entries = u.years[y][s.key] || [];
+          return '<div class="detail-section" style="--accent:' + s.color + '">' +
+            '<h4>Section ' + s.key + ' — ' + s.title + ' (' + entries.length + ' entries)</h4>' +
+            (entries.length === 0 ? '<p class="no-entries">No entries submitted for this section in ' + y + '.</p>' :
+              entries.map((e, ei) => '<div class="detail-entry">' +
+                '<div style="font-weight:800; color:var(--navy); margin-bottom:6px;">Entry #' + (ei + 1) + '</div>' +
+                s.fields.map(f => '<div class="df"><b>' + f.l + ':</b> ' + (e[f.k] ? escapeHtml(e[f.k]) : '<span class="no-entries">— not filled —</span>') + '</div>').join('') +
+                '<div class="df"><b>Evidence types:</b> ' + ((e.evidenceTypes && e.evidenceTypes.length) ? escapeHtml(e.evidenceTypes.join(', ')) : '<span class="no-entries">— none selected —</span>') + '</div>' +
+                '<div class="df"><b>Evidence Drive link:</b> ' + (e.evidenceLink ? '<a href="' + escapeHtml(e.evidenceLink) + '" target="_blank" rel="noopener">' + escapeHtml(e.evidenceLink) + ' ↗</a>' : '<span class="no-entries">— not provided —</span>') + '</div>' +
+                (e.evidenceMissing ? '<div class="df"><b>Evidence missing / remarks:</b> ' + escapeHtml(e.evidenceMissing) + '</div>' : '') +
+                '</div>').join('')
+            ) +
+            '</div>';
+        }).join('');
+
+        bodyHtml += yearSectionsHtml + '</div>';
+      });
+
+      document.getElementById('modalBody').innerHTML = bodyHtml;
+      document.getElementById('responseModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('responseModal').style.display = 'none';
+      currentModalUnit = null;
+    }
+
+    document.getElementById('yearTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.year-tab');
+      if (!btn) return;
+      activeYear = btn.dataset.year;
+      renderKPIs();
+      renderYearTabs();
+      renderTable();
+    });
+
+    // ESC Key to close modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    renderKPIs();
+    renderYearTabs();
+    renderTable();
+  </script>
+</body>
+
+</html>

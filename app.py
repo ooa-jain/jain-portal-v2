@@ -1239,6 +1239,37 @@ def iea_user_delete(sid):
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)})
 
+@app.route('/iea-analysis')
+def iea_analysis_page():
+    subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
+    for s in subs:
+        s['_id'] = str(s['_id'])
+        s['years'] = _iea_merge_years(s.get('years'))
+    feedback = list(db['iea_feedback'].find().sort('createdAt', -1))
+    for f in feedback:
+        f['_id'] = str(f['_id'])
+    is_admin = bool(session.get('admin'))
+    return render_template('iea_analysis.html',
+                           submissions=subs,
+                           feedback=feedback,
+                           iea_years=IEA_YEARS,
+                           iea_sections=IEA_SECTIONS,
+                           departments=DEPARTMENTS,
+                           is_admin=is_admin)
+
+@app.route('/api/iea/analysis-data')
+def iea_analysis_data():
+    subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
+    for s in subs:
+        s['_id'] = str(s['_id'])
+        s['years'] = _iea_merge_years(s.get('years'))
+    return jsonify({
+        'ok': True,
+        'submissions': subs,
+        'iea_years': IEA_YEARS,
+        'iea_sections': IEA_SECTIONS
+    })
+
 @app.route('/admin/iea')
 def admin_iea():
     if not session.get('admin'):
