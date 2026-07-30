@@ -1415,10 +1415,12 @@
     }
 
     function setRatingValue(secKey, entryId, fieldKey, val) {
-      const entry = state.years[activeYear][secKey].find(x => x.id === entryId);
+      const curKey = ensureStateYear(activeYear);
+      const arr = (state.years[curKey] && state.years[curKey][secKey]) ? state.years[curKey][secKey] : [];
+      const entry = arr.find(x => x.id === entryId);
       if (entry) {
         entry[fieldKey] = String(val);
-        saveState();
+        dirty = true; scheduleAutoSave();
         renderSections();
       }
     }
@@ -1449,7 +1451,7 @@
       const el = document.getElementById('submitSection');
       const count = totalEntries(state);
       const sectionCounts = SECTIONS.map(s => {
-        let c = 0; YEARS.forEach(y => c += state.years[y][s.key].length);
+        let c = 0; YEARS.forEach(y => { const yk = ensureStateYear(y); c += (state.years[yk] && state.years[yk][s.key]) ? state.years[yk][s.key].length : 0; });
         return '<div class="stat-chip"><span style="width:22px;height:22px;border-radius:6px;background:' + s.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">' + s.key + '</span> ' + c + ' entries</div>';
       }).join('');
       el.innerHTML = '<div class="submit-section"><h3>' + ICON.send + ' Ready to Submit?</h3><p>Review your entries across all sections and academic years before submitting.</p><div class="submit-stats">' + sectionCounts + '</div><div class="submit-actions"><button class="btn btn-ghost" onclick="downloadBackup()">' + ICON.download + ' Download Backup</button><button class="btn btn-success" onclick="submitFinal()" ' + (count === 0 ? 'disabled style="opacity:.5;cursor:not-allowed;"' : '') + '>' + ICON.send + ' Submit (' + count + ' entries)</button></div></div>';
@@ -1589,7 +1591,7 @@
     function showToast(msg, isErr) { const t = document.getElementById('toast'); t.innerHTML = (isErr ? ICON.x : ICON.check) + ' ' + msg; t.className = 'toast show' + (isErr ? ' err' : ''); clearTimeout(t._timer); t._timer = setTimeout(() => t.className = 'toast', isErr ? 4200 : 2400); }
 
     function findIncompleteEntry() {
-      for (const y of YEARS) for (const s of SECTIONS) { const arr = state.years[y][s.key]; for (let i = 0; i < arr.length; i++) if (!String(arr[i][s.fields[0].k] || '').trim()) return { year: y, section: s, idx: i, entry: arr[i] }; }
+      for (const y of YEARS) { const yk = ensureStateYear(y); for (const s of SECTIONS) { const arr = (state.years[yk] && state.years[yk][s.key]) ? state.years[yk][s.key] : []; for (let i = 0; i < arr.length; i++) if (!String(arr[i][s.fields[0].k] || '').trim()) return { year: y, section: s, idx: i, entry: arr[i] }; } }
       return null;
     }
     function highlightEntry(bad) { activeYear = bad.year; renderYearTabs(); renderSectionNavBar(); renderSections(); const el = document.querySelector('.entry-card[data-entry="' + bad.entry.id + '"]'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 2500); } }
