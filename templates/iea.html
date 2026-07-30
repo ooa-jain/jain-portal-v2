@@ -167,6 +167,9 @@
     .ay-status-banner.submitted { background: #dcfce7; border: 1.5px solid #86efac; color: #14532d; }
     .ay-status-banner.pending { background: #fef3c7; border: 1.5px solid #fde68a; color: #78350f; }
 
+    .ay-tabs-flex:has(.ay-tab-btn.active) .ay-tab-btn:not(.active) { opacity: 0.5; filter: blur(0.4px); transform: scale(0.97); transition: all 0.2s ease; }
+    .ay-tabs-flex:has(.ay-tab-btn.active) .ay-tab-btn:not(.active):hover { opacity: 1; filter: none; transform: scale(1.02); }
+
     /* ── Year Tabs ── */
     .year-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; position: sticky; top: 68px; z-index: 90; background: rgba(255,255,255,.95); backdrop-filter: blur(8px); padding: 10px 0; border-bottom: 1px solid #dde3f0 }
     .year-tab { background: #fff; border: 1.5px solid #dde3f0; color: var(--ink); padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; transition: all .15s }
@@ -1499,7 +1502,25 @@
       dirty = true; scheduleAutoSave();
     }
 
-    function addEntry(sk) { state.years[activeYear][sk].push(emptyEntry(sk)); dirty = true; renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); scheduleAutoSave(); }
+    function addEntry(sk) {
+      const newEntry = emptyEntry(sk);
+      state.years[activeYear][sk].push(newEntry);
+      dirty = true;
+      selectedSections = [sk];
+      renderYearTabs();
+      renderSectionNavBar();
+      renderSections();
+      renderSubmitSection();
+      scheduleAutoSave();
+      setTimeout(() => {
+        const el = document.querySelector('.entry-card[data-entry="' + newEntry.id + '"]');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('flash');
+          setTimeout(() => el.classList.remove('flash'), 1800);
+        }
+      }, 50);
+    }
     function removeEntry(sk, eid) { if (!confirm('Remove this entry?')) return; state.years[activeYear][sk] = state.years[activeYear][sk].filter(e => e.id !== eid); dirty = true; renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); scheduleAutoSave(); }
     function updateField(sk, eid, fk, val) { const entry = state.years[activeYear][sk].find(e => e.id === eid); if (entry) { entry[fk] = val; dirty = true; scheduleAutoSave(); } }
     function toggleEvidenceType(sk, eid, val, checked) {
