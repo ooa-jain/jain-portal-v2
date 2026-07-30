@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from bson import ObjectId
 from dotenv import load_dotenv
-import json, os, io, openpyxl, random, secrets, base64
+import json, os, io, openpyxl, random, secrets, base64, re
 from datetime import datetime
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -35,6 +35,14 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'jain_ooa_semreadiness_2025_secret')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+
+@app.after_request
+def add_cache_control_headers(response):
+    if request.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 # ── Firebase (Google sign-in) — public web config, sourced from .env with
 #    the project's values as fallback so it works out of the box. ──

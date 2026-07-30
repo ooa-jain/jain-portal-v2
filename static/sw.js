@@ -1,4 +1,4 @@
-const CACHE_NAME = 'srp-v7';
+const CACHE_NAME = 'srp-v8';
 const urlsToCache = [
   '/static/images/jgi-logo.svg',
   '/static/images/jgi-icon-192.png',

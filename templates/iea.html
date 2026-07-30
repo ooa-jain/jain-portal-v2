@@ -1021,11 +1021,12 @@
       const list = document.getElementById('dashList');
       try {
         const res = await fetch('/api/iea/submissions');
+        if (!res.ok) throw new Error('Server returned HTTP ' + res.status);
         const data = await res.json();
         if (data.ok) {
           submissionsCache = data.submissions || [];
           renderDashboard();
-        } else list.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>Error loading</h3><p>Could not load submissions.</p></div>';
+        } else list.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>Error loading</h3><p>' + (data.error || 'Could not load submissions.') + '</p></div>';
       } catch (err) { list.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>Connection error</h3><p>' + err.message + '</p></div>'; }
     }
 
@@ -1170,8 +1171,10 @@
       let parsed = null;
       try {
         const res = await fetch('/api/iea/load?school=' + encodeURIComponent(school) + '&dept=' + encodeURIComponent(dept) + '&level=' + encodeURIComponent(level));
-        const json = await res.json();
-        if (json.ok && json.submission) parsed = json.submission;
+        if (res.ok) {
+          const json = await res.json();
+          if (json.ok && json.submission) parsed = json.submission;
+        }
       } catch (err) {}
       state = mergeWithDefaults(parsed, school, dept, level, acYear);
       activeYear = normYear(acYear || (parsed && parsed.acYear) || YEARS[0]);
@@ -1604,10 +1607,14 @@
     }
 
     /* ── Event delegation ── */
-    document.getElementById('yearTabs').addEventListener('click', e => { const b = e.target.closest('.year-tab'); if (b) { activeYear = b.dataset.year; renderYearTabs(); renderSectionNavBar(); renderSections(); } });
-    document.getElementById('sectionsContainer').addEventListener('click', e => { const b = e.target.closest('[data-action]'); if (!b) return; if (b.dataset.action === 'add') addEntry(b.dataset.section); if (b.dataset.action === 'remove') removeEntry(b.dataset.section, b.dataset.entry); });
-    document.getElementById('sectionsContainer').addEventListener('input', e => { const t = e.target; if (t.type === 'checkbox' && t.dataset.field === 'evidenceTypes') return; if (t.dataset.field) updateField(t.dataset.section, t.dataset.entry, t.dataset.field, t.value); });
-    document.getElementById('sectionsContainer').addEventListener('change', e => { const t = e.target; if (t.type === 'checkbox' && t.dataset.field === 'evidenceTypes') toggleEvidenceType(t.dataset.section, t.dataset.entry, t.dataset.value, t.checked); });
+    const yt = document.getElementById('yearTabs');
+    if (yt) yt.addEventListener('click', e => { const b = e.target.closest('.year-tab'); if (b) { activeYear = b.dataset.year; renderYearTabs(); renderSectionNavBar(); renderSections(); } });
+    const sc = document.getElementById('sectionsContainer');
+    if (sc) {
+      sc.addEventListener('click', e => { const b = e.target.closest('[data-action]'); if (!b) return; if (b.dataset.action === 'add') addEntry(b.dataset.section); if (b.dataset.action === 'remove') removeEntry(b.dataset.section, b.dataset.entry); });
+      sc.addEventListener('input', e => { const t = e.target; if (t.type === 'checkbox' && t.dataset.field === 'evidenceTypes') return; if (t.dataset.field) updateField(t.dataset.section, t.dataset.entry, t.dataset.field, t.value); });
+      sc.addEventListener('change', e => { const t = e.target; if (t.type === 'checkbox' && t.dataset.field === 'evidenceTypes') toggleEvidenceType(t.dataset.section, t.dataset.entry, t.dataset.value, t.checked); });
+    }
 
     /* ── Portal feedback (home page) ── */
     let fbRating = 0;
