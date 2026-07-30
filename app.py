@@ -1071,7 +1071,12 @@ def iea_load():
     level = request.args.get('level', '').strip()
     if not school or not dept or not level:
         return jsonify({'ok': False, 'error': 'Missing school/department/level'})
-    doc = iea_col.find_one({'school': school, 'department': dept, 'level': level})
+    doc = iea_col.find_one({'$or': [
+        {'school': school, 'department': dept, 'level': level},
+        {'school': {'$regex': f'^{re.escape(school)}$', '$options': 'i'},
+         'department': {'$regex': f'^{re.escape(dept)}$', '$options': 'i'},
+         'level': {'$regex': f'^{re.escape(level)}$', '$options': 'i'}}
+    ]})
     if not doc:
         return jsonify({'ok': True, 'submission': None})
     doc['_id'] = str(doc['_id'])
@@ -1109,9 +1114,6 @@ def iea_save():
 
 @app.route('/api/iea/submit', methods=['POST'])
 def iea_submit():
-    """Final submit — marks the submission as submitted and versions it.
-    First submit = version 1; each re-submit of an already-submitted unit
-    snapshots the previous version into history and bumps the version."""
     if 'user_email' not in session and not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Not logged in'})
     data = request.json or {}
@@ -1163,11 +1165,26 @@ def iea_submissions():
     if 'user_email' not in session and not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Not logged in'})
 
-    # Non-admin users see only their own submissions on the dashboard.
-    # Admins (e.g. impersonating or reviewing) see the full consolidated list.
     query = {}
     if not session.get('admin'):
-        query = {'submitterEmail': session.get('user_email', '')}
+        user_email = session.get('user_email', '').strip()
+        user = get_user_context(user_email)
+        user_dept = user.get('department', '').strip() if user else ''
+        user_school = user.get('school', '').strip() if user else ''
+        
+        or_conds = []
+        if user_email:
+            or_conds.append({'submitterEmail': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}})
+        if user_dept:
+            or_conds.append({'department': {'$regex': f'^{re.escape(user_dept)}$', '$options': 'i'}})
+        if user_school and not user_dept:
+            or_conds.append({'school': {'$regex': f'^{re.escape(user_school)}$', '$options': 'i'}})
+            
+        if or_conds:
+            query = {'$or': or_conds}
+        else:
+            query = {}
+
     subs = list(iea_col.find(query).sort([('school', 1), ('department', 1), ('level', 1)]))
     results = []
     for s in subs:

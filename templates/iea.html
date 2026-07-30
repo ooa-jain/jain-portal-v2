@@ -1038,7 +1038,7 @@
 
       const filtered = submissionsCache.filter(s => {
         const isDraft = !s.submitted;
-        let matchAY = activeAYFilter === 'All' || (s.yearCounts && s.yearCounts[activeAYFilter] > 0);
+        let matchAY = activeAYFilter === 'All' || (s.yearCounts && Object.keys(s.yearCounts).some(k => normYear(k) === normYear(activeAYFilter) && s.yearCounts[k] > 0));
         let matchStatus = activeStatusFilter === 'All' ||
           (activeStatusFilter === 'Submitted' && !isDraft) ||
           (activeStatusFilter === 'Draft' && isDraft);
