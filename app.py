@@ -1173,13 +1173,16 @@ def iea_submissions():
     if 'user_email' not in session and not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Not logged in'})
 
-    query = {}
-    if not session.get('admin'):
-        user_email = session.get('user_email', '').strip()
-        user = get_user_context(user_email)
-        user_dept = user.get('department', '').strip() if user else ''
-        user_school = user.get('school', '').strip() if user else ''
-        
+    user_email = session.get('user_email', '').strip()
+    user = get_user_context(user_email)
+    user_dept = user.get('department', '').strip() if user else ''
+    user_school = user.get('school', '').strip() if user else ''
+
+    show_all = (request.args.get('all') == 'true')
+
+    if show_all and session.get('admin'):
+        query = {}
+    else:
         or_conds = []
         if user_email:
             or_conds.append({'submitterEmail': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}})
@@ -1191,7 +1194,7 @@ def iea_submissions():
         if or_conds:
             query = {'$or': or_conds}
         else:
-            query = {}
+            query = {'submitterEmail': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}} if user_email else {}
 
     subs = list(iea_col.find(query).sort([('school', 1), ('department', 1), ('level', 1)]))
     results = []
@@ -2014,12 +2017,13 @@ def my_submissions():
     if 'user_email' not in session:
         return jsonify({'ok': False, 'error': 'Not logged in'})
 
-    email = session['user_email']
+    email = session['user_email'].strip()
     user_doc = users_col.find_one({'email': email}) or {}
     dept = user_doc.get('department', '')
     form_type = request.args.get('type')
+    show_all = (request.args.get('all') == 'true')
 
-    if session.get('admin') or is_admin_email(email):
+    if show_all and (session.get('admin') or is_admin_email(email)):
         query = {}
     elif dept:
         query = {'$or': [{'identity.submitterEmail': email}, {'identity.dept': dept}]}
