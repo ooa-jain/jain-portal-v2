@@ -389,7 +389,7 @@ IEA_SECTIONS = [
     {"key": "A", "color": "#C9A227", "title": "New Programmes Introduced",
      "sub": "For each new programme introduced in this academic year",
      "fields": [
-         {"k": "name", "l": "New programme introduced", "t": "text"},
+         {"k": "name", "l": "New programme introduced (IN INNOVATIVE AND EMERGING AREAS)", "t": "text"},
          {"k": "area", "l": "Innovation / Emerging area addressed", "t": "text",
           "ph": "e.g., AI, Data Science, Cyber Security, FinTech, Sustainability, Industry 4.0/5.0..."},
          {"k": "newCourses", "l": "New courses introduced", "t": "textarea"},
@@ -397,19 +397,15 @@ IEA_SECTIONS = [
          {"k": "collaborations", "l": "Industry / Academic collaborations", "t": "textarea"},
      ]},
     {"key": "B", "color": "#2F6F4E", "title": "Innovations in Existing Programmes & Courses",
-     "sub": "Significant innovations, course-level enhancements, OBE mapping, and in-time execution",
+     "sub": "Significant innovations, course-level enhancements, and curriculum enhancements",
      "fields": [
          {"k": "programme", "l": "Programme Name", "t": "text", "ph": "e.g., B.Tech CSE / M.Sc Data Science"},
          {"k": "courseCode", "l": "Course Code", "t": "text", "ph": "e.g., 22CSE301 / MAT102"},
          {"k": "courseName", "l": "Course Name", "t": "text", "ph": "e.g., Advanced AI & Machine Learning"},
-         {"k": "obeDetails", "l": "OBE Integration & CO-PO Alignment", "t": "textarea", "ph": "Details on Outcome-Based Education & CO-PO attainment alignment..."},
-         {"k": "inTimeDetails", "l": "In-Time Execution & Delivery Timeline", "t": "textarea", "ph": "Workflow, session timeline, and in-time course delivery details..."},
          {"k": "curriculumRevisions", "l": "Curriculum revisions", "t": "textarea"},
-         {"k": "courseRevisions", "l": "Revision of Courses", "t": "textarea", "ph": "Courses revised this year — updated syllabi, modernised content, revised outcomes, credit/structure changes..."},
          {"k": "newElectives", "l": "New electives / minors / majors / specialisations", "t": "textarea"},
          {"k": "interdisciplinary", "l": "Interdisciplinary pathways", "t": "textarea"},
          {"k": "experiential", "l": "Experiential learning", "t": "textarea"},
-         {"k": "research", "l": "Research integration", "t": "textarea"},
      ]},
     {"key": "C", "color": "#2C5F8A", "title": "Recognition by Global Professional Bodies",
      "sub": "Accreditations, benchmarking, and their impact",
@@ -3141,7 +3137,7 @@ if __name__ == '__main__':
     os.makedirs('uploads', exist_ok=True)
     os.makedirs(os.path.join('static', 'uploads'), exist_ok=True)
     start_deadline_scheduler()
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5002))
     debug = os.environ.get('FLASK_DEBUG', '0') == '1'
     app.run(debug=debug, host='0.0.0.0', port=port)
 

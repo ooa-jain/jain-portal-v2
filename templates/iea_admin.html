@@ -344,12 +344,31 @@
         return '<div class="detail-section" style="--accent:' + s.color + '">' +
           '<h4>' + s.key + ' — ' + s.title + ' (' + entries.length + ')</h4>' +
           (entries.length === 0 ? '<p class="no-entries">No entries submitted.</p>' :
-            entries.map(e => '<div class="detail-entry">' +
-              s.fields.map(f => '<div class="df"><b>' + f.l + ':</b> ' + (e[f.k] ? escapeHtml(e[f.k]) : '<span class="no-entries">— not filled —</span>') + '</div>').join('') +
-              '<div class="df"><b>Evidence types:</b> ' + ((e.evidenceTypes && e.evidenceTypes.length) ? escapeHtml(e.evidenceTypes.join(', ')) : '<span class="no-entries">— none selected —</span>') + '</div>' +
-              '<div class="df"><b>Evidence Drive link:</b> ' + (e.evidenceLink ? '<a href="' + escapeHtml(e.evidenceLink) + '" target="_blank" rel="noopener">' + escapeHtml(e.evidenceLink) + '</a>' : '<span class="no-entries">— not provided —</span>') + '</div>' +
-              (e.evidenceMissing ? '<div class="df"><b>Evidence missing:</b> ' + escapeHtml(e.evidenceMissing) + '</div>' : '') +
-              '</div>').join('')
+            entries.map(e => {
+              let evDetailHtml = '';
+              if (e.evidenceDetails) {
+                Object.keys(e.evidenceDetails).forEach(t => {
+                  const d = e.evidenceDetails[t];
+                  if (d && (d.driveLink || d.fileUrl || d.notes)) {
+                    evDetailHtml += '<div style="font-size:12px; background:#f8fafc; padding:6px 10px; border-radius:6px; margin-top:4px; border:1px solid #e2e8f0;">' +
+                      '<b>' + escapeHtml(t) + ':</b> ' +
+                      (d.driveLink ? '<a href="' + escapeHtml(d.driveLink) + '" target="_blank" rel="noopener">🔗 Google Drive Link</a> ' : '') +
+                      (d.fileUrl ? '<a href="' + escapeHtml(d.fileUrl) + '" target="_blank" rel="noopener">📁 Uploaded File (' + escapeHtml(d.fileName || 'File') + ')</a> ' : '') +
+                      (d.notes ? '<i>Remarks: ' + escapeHtml(d.notes) + '</i>' : '') +
+                    '</div>';
+                  }
+                });
+              }
+              const mainDriveLink = e.evidenceLink ? '<a href="' + escapeHtml(e.evidenceLink) + '" target="_blank" rel="noopener">🔗 ' + escapeHtml(e.evidenceLink) + '</a>' : '<span class="no-entries">— not provided —</span>';
+
+              return '<div class="detail-entry">' +
+                s.fields.map(f => '<div class="df"><b>' + f.l + ':</b> ' + (e[f.k] ? escapeHtml(e[f.k]) : '<span class="no-entries">— not filled —</span>') + '</div>').join('') +
+                '<div class="df"><b>Evidence types:</b> ' + ((e.evidenceTypes && e.evidenceTypes.length) ? escapeHtml(e.evidenceTypes.join(', ')) : '<span class="no-entries">— none selected —</span>') + '</div>' +
+                '<div class="df"><b>Google Drive Link (shared with access to Office of Academics):</b> ' + mainDriveLink + '</div>' +
+                (evDetailHtml ? '<div class="df"><b>Evidence Links & Attachments:</b>' + evDetailHtml + '</div>' : '') +
+                (e.evidenceMissing ? '<div class="df"><b>Evidence missing / remarks:</b> ' + escapeHtml(e.evidenceMissing) + '</div>' : '') +
+                '</div>';
+            }).join('')
           ) +
           '</div>';
       }).join('');

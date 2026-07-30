@@ -154,6 +154,19 @@
     svg { display: inline-block; vertical-align: middle; }
     #statusPill svg { width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0; }
 
+    /* ── AY Year Tabs (Ascending, Green Active) ── */
+    .ay-tabs-box { background: #ffffff; border: 1.5px solid #dde3f0; border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(10,37,88,0.04); }
+    .ay-tabs-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--navy); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .ay-tabs-flex { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ay-tab-btn { background: #ffffff; border: 2px solid #dde3f0; color: var(--ink); padding: 9px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; transition: all .2s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+    .ay-tab-btn:hover { border-color: #16a34a; color: #15803d; background: #f0fdf4; transform: translateY(-1px); }
+    .ay-tab-btn.active { background: #16a34a !important; border-color: #15803d !important; color: #ffffff !important; font-weight: 800; box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35); transform: scale(1.03); }
+    .ay-tab-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 800; background: #f1f5f9; color: var(--ink2); }
+    .ay-tab-btn.active .ay-tab-badge { background: rgba(255,255,255,0.25); color: #ffffff; }
+    .ay-status-banner { margin-top: 14px; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 800; display: flex; align-items: center; gap: 8px; animation: rise .3s ease; }
+    .ay-status-banner.submitted { background: #dcfce7; border: 1.5px solid #86efac; color: #14532d; }
+    .ay-status-banner.pending { background: #fef3c7; border: 1.5px solid #fde68a; color: #78350f; }
+
     /* ── Year Tabs ── */
     .year-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; position: sticky; top: 68px; z-index: 90; background: rgba(255,255,255,.95); backdrop-filter: blur(8px); padding: 10px 0; border-bottom: 1px solid #dde3f0 }
     .year-tab { background: #fff; border: 1.5px solid #dde3f0; color: var(--ink); padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; transition: all .15s }
@@ -716,34 +729,19 @@
           <div class="ch-sub">Choose your School, Department, and Programme Level</div>
         </div>
       </div>
-      <div class="field-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+      <div class="field-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
         <div class="field"><label>School / Centre <span class="req">*</span></label><select id="schoolSelect"><option value="">— Select School —</option></select></div>
         <div class="field"><label>Department <span class="req">*</span></label><select id="deptSelect" disabled><option value="">Select School first</option></select></div>
         <div class="field"><label>Programme Level <span class="req">*</span></label><select id="levelSelect" disabled><option value="">Select Department first</option></select></div>
-        <div class="field"><label>Academic Year (AY) <span class="req">*</span></label>
-          <select id="aySelect">
-            <option value="AY 2026-27">AY 2026-27</option>
-            <option value="AY 2025-26" selected>AY 2025-26</option>
-            <option value="AY 2024-25">AY 2024-25</option>
-            <option value="AY 2023-24">AY 2023-24</option>
-            <option value="AY 2022-23">AY 2022-23</option>
-          </select>
-        </div>
-        <div class="field"><label>Semester <span class="req">*</span></label>
-          <select id="semSelect">
-            <option value="Odd Semester" selected>Odd Semester</option>
-            <option value="Even Semester">Even Semester</option>
-          </select>
-        </div>
       </div>
       <div id="statusPill" style="font-size:12.5px; color:var(--ink3); margin-top:12px; font-weight:600; display:flex; align-items:center; gap:6px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        Select School, Department, Programme Level, Academic Year, and Semester to begin or resume a submission.
+        Select School, Department, and Programme Level to begin or resume a submission.
       </div>
     </div>
 
     <div id="mainArea" style="display:none;">
-      <div class="year-tabs" id="yearTabs" style="display:none !important;"></div>
+      <div id="yearTabsContainer"></div>
       <div class="section-nav-wrapper" id="sectionNavWrapper"></div>
       <div id="sectionsContainer"></div>
       <div id="submitSection"></div>
@@ -828,11 +826,11 @@
 
         <h4 class="terms-h">Information to be Submitted</h4>
 
-        <div class="terms-sec"><h5>A. New Programmes Introduced in Innovation and Emerging Areas</h5>
-          <ul><li>New programmes introduced</li><li>Innovation/Emerging area addressed</li><li>New courses introduced</li><li>Unique programme features</li><li>Industry/Academic collaborations</li></ul></div>
+        <div class="terms-sec"><h5>A. New Programmes Introduced (IN INNOVATIVE AND EMERGING AREAS)</h5>
+          <ul><li>New programme introduced (IN INNOVATIVE AND EMERGING AREAS)</li><li>Innovation/Emerging area addressed</li><li>New courses introduced</li><li>Unique programme features</li><li>Industry/Academic collaborations</li></ul></div>
 
         <div class="terms-sec"><h5>B. Innovations in Existing Programmes</h5>
-          <ul><li>Curriculum revisions</li><li>New electives/minors/majors/specialisations</li><li>Interdisciplinary pathways</li><li>Experiential learning</li><li>Research integration</li></ul></div>
+          <ul><li>Curriculum revisions</li><li>New electives/minors/majors/specialisations</li><li>Interdisciplinary pathways</li><li>Experiential learning</li></ul></div>
 
         <div class="terms-sec"><h5>C. Recognition by Global Professional Bodies</h5>
           <ul><li>Accreditations</li><li>Recognitions</li><li>Certifications</li><li>Curriculum mapping</li><li>International benchmarking</li><li>Impact on student outcomes</li></ul></div>
@@ -987,7 +985,7 @@
       window.scrollTo(0, 0);
     }
 
-    async function openSubmission(school, dept, level, acYear, semester) {
+    async function openSubmission(school, dept, level, acYear) {
       document.getElementById('dashView').style.display = 'none';
       document.getElementById('formView').style.display = 'block';
       document.getElementById('formView').classList.add('animate-rise');
@@ -996,9 +994,7 @@
       if (DEPT_DATA[school]) { deptSelect.disabled = false; Object.keys(DEPT_DATA[school]).sort().forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; deptSelect.appendChild(o); }); deptSelect.value = dept; }
       levelSelect.innerHTML = '<option value="">Select Programme Level</option>';
       if (DEPT_DATA[school] && DEPT_DATA[school][dept]) { levelSelect.disabled = false; DEPT_DATA[school][dept].forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; levelSelect.appendChild(o); }); levelSelect.value = level; }
-      if (acYear) aySelect.value = acYear;
-      if (semester) semSelect.value = semester;
-      await loadUnit(school, dept, level, acYear, semester);
+      await loadUnit(school, dept, level, acYear);
       window.scrollTo(0, 0);
     }
 
@@ -1060,11 +1056,9 @@
           : '<span class="status-badge status-submitted">' + ICON.check + ' Submitted' + (s.version > 1 ? ' · v' + s.version : '') + '</span>';
         const openLabel = isDraft ? ' Open IEA Form' : ' Edit Submission';
         const ayVal = s.acYear || 'AY 2025-26';
-        const semVal = s.semester || 'Odd Semester';
         const headerTags = '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px;">' +
           badge +
           '<span class="semester-tag" style="font-size:11px; background:var(--navy); color:#fff; font-weight:800; padding:2px 10px; border-radius:99px;">AY: ' + escapeHtml(ayVal) + '</span>' +
-          '<span class="semester-tag" style="font-size:11px; background:var(--gold); color:var(--navy); font-weight:800; padding:2px 10px; border-radius:99px;">SEM: ' + escapeHtml(semVal) + '</span>' +
         '</div>';
         return '<div class="dash-card">' +
           '<div class="dc-left">' + headerTags +
@@ -1072,7 +1066,7 @@
           '<div class="dc-sub">Last saved: ' + when + ' · ' + escapeHtml(s.school) + ' · ' + escapeHtml(s.level) + '</div>' +
           '<div><span class="dc-tag">' + ICON.layers + ' ' + entryLabel + ' across ' + YEARS.length + ' years</span></div></div>' +
           '<div class="dc-right">' +
-          '<button class="btn btn-gold" onclick="openSubmission(\'' + escapeHtml(s.school) + '\', \'' + escapeHtml(s.department) + '\', \'' + escapeHtml(s.level) + '\', \'' + escapeHtml(s.acYear || '') + '\', \'' + escapeHtml(s.semester || '') + '\')">' + ICON.edit + openLabel + '</button>' +
+          '<button class="btn btn-gold" onclick="openSubmission(\'' + escapeHtml(s.school) + '\', \'' + escapeHtml(s.department) + '\', \'' + escapeHtml(s.level) + '\', \'' + escapeHtml(s.acYear || '') + '\')">' + ICON.edit + openLabel + '</button>' +
           '<button class="btn btn-ghost" onclick="deleteSubmission(\'' + s.id + '\', \'' + escapeHtml(s.department) + '\')" style="color:var(--danger);border-color:#f5b8b8">' + ICON.trash + ' Delete</button>' +
           '</div></div>';
       }).join('');
@@ -1092,8 +1086,6 @@
     const schoolSelect = document.getElementById('schoolSelect');
     const deptSelect = document.getElementById('deptSelect');
     const levelSelect = document.getElementById('levelSelect');
-    const aySelect = document.getElementById('aySelect');
-    const semSelect = document.getElementById('semSelect');
 
     Object.keys(DEPT_DATA).sort().forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; schoolSelect.appendChild(o); });
 
@@ -1110,9 +1102,7 @@
       levelSelect.disabled = false;
       DEPT_DATA[schoolSelect.value][deptSelect.value].forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; levelSelect.appendChild(o); });
     });
-    levelSelect.addEventListener('change', () => { if (levelSelect.value) loadUnit(schoolSelect.value, deptSelect.value, levelSelect.value, aySelect.value, semSelect.value); });
-    aySelect.addEventListener('change', () => { if (levelSelect.value) loadUnit(schoolSelect.value, deptSelect.value, levelSelect.value, aySelect.value, semSelect.value); });
-    semSelect.addEventListener('change', () => { if (levelSelect.value) loadUnit(schoolSelect.value, deptSelect.value, levelSelect.value, aySelect.value, semSelect.value); });
+    levelSelect.addEventListener('change', () => { if (levelSelect.value) loadUnit(schoolSelect.value, deptSelect.value, levelSelect.value, activeYear); });
 
     /* ── State helpers ── */
     function emptyYears() { const o = {}; YEARS.forEach(y => { o[y] = {}; SECTIONS.forEach(s => { o[y][s.key] = []; }); }); return o; }
@@ -1126,11 +1116,12 @@
       s.fields.forEach(f => obj[f.k] = '');
       return obj;
     }
-    function mergeWithDefaults(parsed, school, dept, level, acYear, semester) {
+    function mergeWithDefaults(parsed, school, dept, level, acYear) {
       const base = {
         school, department: dept, level,
-        acYear: acYear || (parsed && parsed.acYear) || 'AY 2025-26',
-        semester: semester || (parsed && parsed.semester) || 'Odd Semester',
+        acYear: acYear || (parsed && parsed.acYear) || YEARS[0],
+        submitted: parsed ? (parsed.submitted || false) : false,
+        submittedYears: (parsed && parsed.submittedYears) || {},
         years: emptyYears(), lastUpdated: (parsed && parsed.lastUpdated) || null
       };
       if (parsed && parsed.years) {
@@ -1143,7 +1134,7 @@
     function totalEntries(st) { let n = 0; YEARS.forEach(y => SECTIONS.forEach(s => n += st.years[y][s.key].length)); return n; }
     function unitLabel(st) { return st.school + ' — ' + st.department + ' (' + st.level + ')'; }
 
-    async function loadUnit(school, dept, level, acYear, semester) {
+    async function loadUnit(school, dept, level, acYear) {
       document.getElementById('statusPill').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg> Loading...';
       let parsed = null;
       try {
@@ -1151,10 +1142,9 @@
         const json = await res.json();
         if (json.ok && json.submission) parsed = json.submission;
       } catch (err) {}
-      state = mergeWithDefaults(parsed, school, dept, level, acYear, semester);
-      if (parsed && parsed.acYear) aySelect.value = parsed.acYear;
-      if (parsed && parsed.semester) semSelect.value = parsed.semester;
-      activeYear = YEARS[0]; selectedSections = [SECTIONS[0].key]; dirty = false;
+      state = mergeWithDefaults(parsed, school, dept, level, acYear);
+      activeYear = acYear || (parsed && parsed.acYear) || YEARS[0];
+      selectedSections = [SECTIONS[0].key]; dirty = false;
       document.getElementById('mainArea').style.display = 'block';
       renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); updateStatusPill();
     }
@@ -1166,10 +1156,65 @@
       else { const when = state.lastUpdated ? new Date(state.lastUpdated + (state.lastUpdated.endsWith('Z') ? '' : 'Z')).toLocaleString() : 'never'; pill.innerHTML = ICON.check + ' ' + count + ' entries · Last saved: ' + when; pill.style.color = '#2F6F4E'; }
     }
 
+    function switchAY(year) {
+      activeYear = year;
+      if (state) state.acYear = year;
+      renderYearTabs();
+      renderSectionNavBar();
+      renderSections();
+      renderSubmitSection();
+    }
+
     function renderYearTabs() {
-      const el = document.getElementById('yearTabs');
-      if (el) { el.style.display = 'none'; el.innerHTML = ''; }
-      if (state && state.acYear) activeYear = state.acYear;
+      const el = document.getElementById('yearTabsContainer');
+      if (!el || !state) return;
+
+      const sortedYears = [...YEARS].sort();
+      if (!activeYear || !sortedYears.includes(activeYear)) activeYear = sortedYears[0];
+
+      let tabsHtml = '<div class="ay-tabs-box">';
+      tabsHtml += '<div class="ay-tabs-title">' + ICON.layers + ' Select Academic Year (AY)</div>';
+      tabsHtml += '<div class="ay-tabs-flex">';
+
+      let activeYearEntries = 0;
+      let activeYearSubmitted = false;
+
+      sortedYears.forEach(y => {
+        const isAct = (y === activeYear);
+        let count = 0;
+        if (state.years && state.years[y]) {
+          SECTIONS.forEach(s => {
+            count += (state.years[y][s.key] || []).length;
+          });
+        }
+        const isSubmittedForY = (state.submitted || (state.submittedYears && state.submittedYears[y])) && count > 0;
+        if (isAct) {
+          activeYearEntries = count;
+          activeYearSubmitted = isSubmittedForY;
+        }
+
+        const badgeText = isSubmittedForY ? '✓ Submitted' : (count + ' entries');
+        tabsHtml += '<button type="button" class="ay-tab-btn ' + (isAct ? 'active' : '') + '" onclick="switchAY(\'' + y + '\')">' +
+          '<span>' + escapeHtml(y) + '</span>' +
+          '<span class="ay-tab-badge">' + badgeText + '</span>' +
+        '</button>';
+      });
+
+      tabsHtml += '</div>';
+
+      if (activeYearSubmitted) {
+        tabsHtml += '<div class="ay-status-banner submitted">' +
+          ICON.check + ' You have been submitted for ' + escapeHtml(activeYear) + ' (' + activeYearEntries + ' entries).' +
+        '</div>';
+      } else {
+        tabsHtml += '<div class="ay-status-banner pending">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+          'Pending submission for ' + escapeHtml(activeYear) + ' (' + activeYearEntries + ' entries so far).' +
+        '</div>';
+      }
+
+      tabsHtml += '</div>';
+      el.innerHTML = tabsHtml;
     }
 
     /* ── Section Navigation & Workflow ── */
@@ -1384,8 +1429,7 @@
           school: state.school,
           department: state.department,
           level: state.level,
-          acYear: aySelect.value || state.acYear || 'AY 2025-26',
-          semester: semSelect.value || state.semester || 'Odd Semester',
+          acYear: activeYear || state.acYear || YEARS[0],
           years: state.years
         };
         const res = await fetch('/api/iea/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -1413,14 +1457,17 @@
           school: state.school,
           department: state.department,
           level: state.level,
-          acYear: aySelect.value || state.acYear || 'AY 2025-26',
-          semester: semSelect.value || state.semester || 'Odd Semester',
+          acYear: activeYear || state.acYear || YEARS[0],
           years: state.years
         };
         const res = await fetch('/api/iea/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const json = await res.json();
         if (json.ok) {
           dirty = false;
+          state.submitted = true;
+          if (!state.submittedYears) state.submittedYears = {};
+          state.submittedYears[activeYear] = true;
+          renderYearTabs();
           showToast(json.version > 1 ? ('Submitted — saved as edited Version ' + json.version + '.') : 'Submitted successfully!');
           backToDashboard();
         } else showToast('Submit failed: ' + (json.error || 'Error'), true);
