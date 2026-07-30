@@ -1108,6 +1108,25 @@
     levelSelect.addEventListener('change', () => { if (levelSelect.value) loadUnit(schoolSelect.value, deptSelect.value, levelSelect.value, activeYear); });
 
     /* ── State helpers ── */
+    function normYear(y) {
+      return String(y || '').replace(/[\u2013\u2014]/g, '-').trim();
+    }
+
+    function ensureStateYear(y) {
+      if (!state) return activeYear || YEARS[0];
+      if (!state.years) state.years = emptyYears();
+      const ny = normYear(y || activeYear || YEARS[0]);
+      let key = Object.keys(state.years).find(k => normYear(k) === ny);
+      if (!key) {
+        key = YEARS.find(k => normYear(k) === ny) || ny;
+        state.years[key] = {};
+      }
+      SECTIONS.forEach(s => {
+        if (!Array.isArray(state.years[key][s.key])) state.years[key][s.key] = [];
+      });
+      return key;
+    }
+
     function emptyYears() { const o = {}; YEARS.forEach(y => { o[y] = {}; SECTIONS.forEach(s => { o[y][s.key] = []; }); }); return o; }
     function slugify(s) { return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
     function genId() { return 'e' + Math.random().toString(36).slice(2, 9); }
@@ -1122,19 +1141,28 @@
     function mergeWithDefaults(parsed, school, dept, level, acYear) {
       const base = {
         school, department: dept, level,
-        acYear: acYear || (parsed && parsed.acYear) || YEARS[0],
+        acYear: normYear(acYear || (parsed && parsed.acYear) || YEARS[0]),
         submitted: parsed ? (parsed.submitted || false) : false,
         submittedYears: (parsed && parsed.submittedYears) || {},
         years: emptyYears(), lastUpdated: (parsed && parsed.lastUpdated) || null
       };
       if (parsed && parsed.years) {
-        YEARS.forEach(y => { if (parsed.years[y]) { SECTIONS.forEach(s => {
-          if (Array.isArray(parsed.years[y][s.key])) base.years[y][s.key] = parsed.years[y][s.key].map(e => Object.assign({ evidenceTypes: [], evidenceLink: '', evidenceMissing: '', evidenceDetails: {} }, e));
-        }); } });
+        const normParsed = {};
+        Object.keys(parsed.years).forEach(k => { normParsed[normYear(k)] = parsed.years[k]; });
+        YEARS.forEach(y => {
+          const ny = normYear(y);
+          if (normParsed[ny]) {
+            SECTIONS.forEach(s => {
+              if (Array.isArray(normParsed[ny][s.key])) {
+                base.years[y][s.key] = normParsed[ny][s.key].map(e => Object.assign({ evidenceTypes: [], evidenceLink: '', evidenceMissing: '', evidenceDetails: {} }, e));
+              }
+            });
+          }
+        });
       }
       return base;
     }
-    function totalEntries(st) { let n = 0; YEARS.forEach(y => SECTIONS.forEach(s => n += st.years[y][s.key].length)); return n; }
+    function totalEntries(st) { let n = 0; if (!st || !st.years) return 0; YEARS.forEach(y => { const yKey = ensureStateYear(y); SECTIONS.forEach(s => n += (st.years[yKey] && st.years[yKey][s.key]) ? st.years[yKey][s.key].length : 0); }); return n; }
     function unitLabel(st) { return st.school + ' — ' + st.department + ' (' + st.level + ')'; }
 
     async function loadUnit(school, dept, level, acYear) {
@@ -1146,7 +1174,8 @@
         if (json.ok && json.submission) parsed = json.submission;
       } catch (err) {}
       state = mergeWithDefaults(parsed, school, dept, level, acYear);
-      activeYear = acYear || (parsed && parsed.acYear) || YEARS[0];
+      activeYear = normYear(acYear || (parsed && parsed.acYear) || YEARS[0]);
+      ensureStateYear(activeYear);
       selectedSections = [SECTIONS[0].key]; dirty = false;
       document.getElementById('mainArea').style.display = 'block';
       renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); updateStatusPill();
@@ -1160,8 +1189,9 @@
     }
 
     function switchAY(year) {
-      activeYear = year;
-      if (state) state.acYear = year;
+      activeYear = normYear(year);
+      if (state) state.acYear = activeYear;
+      ensureStateYear(activeYear);
       renderYearTabs();
       renderSectionNavBar();
       renderSections();
@@ -1173,7 +1203,11 @@
       if (!el || !state) return;
 
       const sortedYears = [...YEARS].sort();
-      if (!activeYear || !sortedYears.includes(activeYear)) activeYear = sortedYears[0];
+      const normActive = normYear(activeYear);
+      const matchedYear = sortedYears.find(y => normYear(y) === normActive) || sortedYears[0];
+      activeYear = matchedYear;
+
+      const curYearKey = ensureStateYear(activeYear);
 
       let tabsHtml = '<div class="ay-tabs-box">';
       tabsHtml += '<div class="ay-tabs-title">' + ICON.layers + ' Select Academic Year (AY)</div>';
@@ -1183,21 +1217,22 @@
       let activeYearSubmitted = false;
 
       sortedYears.forEach(y => {
-        const isAct = (y === activeYear);
+        const isAct = (normYear(y) === normYear(activeYear));
+        const yKey = ensureStateYear(y);
         let count = 0;
-        if (state.years && state.years[y]) {
+        if (state.years && state.years[yKey]) {
           SECTIONS.forEach(s => {
-            count += (state.years[y][s.key] || []).length;
+            count += (state.years[yKey][s.key] || []).length;
           });
         }
-        const isSubmittedForY = (state.submitted || (state.submittedYears && state.submittedYears[y])) && count > 0;
+        const isSubmittedForY = (state.submitted || (state.submittedYears && (state.submittedYears[y] || state.submittedYears[yKey]))) && count > 0;
         if (isAct) {
           activeYearEntries = count;
           activeYearSubmitted = isSubmittedForY;
         }
 
         const badgeText = isSubmittedForY ? '✓ Submitted' : (count + ' entries');
-        tabsHtml += '<button type="button" class="ay-tab-btn ' + (isAct ? 'active' : '') + '" onclick="switchAY(\'' + y + '\')">' +
+        tabsHtml += '<button type="button" class="ay-tab-btn ' + (isAct ? 'active' : '') + '" onclick="switchAY(\'' + escapeHtml(y) + '\')">' +
           '<span>' + escapeHtml(y) + '</span>' +
           '<span class="ay-tab-badge">' + badgeText + '</span>' +
         '</button>';
@@ -1256,6 +1291,7 @@
     function renderSectionNavBar() {
       const container = document.getElementById('sectionNavWrapper');
       if (!container || !state) return;
+      const curKey = ensureStateYear(activeYear);
       const isAll = false;
       const allCount = totalEntries(state);
 
@@ -1263,7 +1299,7 @@
       const activeSecObjs = SECTIONS.filter(s => selectedSections.includes(s.key));
       if (activeSecObjs.length >= 1) {
         const s = activeSecObjs[0];
-        const c = state.years[activeYear][s.key].length;
+        const c = (state.years[curKey] && state.years[curKey][s.key]) ? state.years[curKey][s.key].length : 0;
         activeLabelHtml = '<span class="nav-active-tag" style="background:' + s.color + ';color:#fff;">Section ' + s.key + ': ' + escapeHtml(s.title) + ' (' + c + ' ' + (c === 1 ? 'entry' : 'entries') + ')</span>';
       }
 
@@ -1287,7 +1323,7 @@
 
         // Sections A to F Round Buttons
         SECTIONS.forEach(s => {
-          const c = state.years[activeYear][s.key].length;
+          const c = (state.years[curKey] && state.years[curKey][s.key]) ? state.years[curKey][s.key].length : 0;
           const isAct = !isAll && selectedSections.includes(s.key);
           html += '<button class="round-sec-btn ' + (isAct ? 'active' : '') + '" onclick="selectSection(\'' + s.key + '\')" style="--sec-color:' + s.color + ';" title="Section ' + s.key + ': ' + escapeHtml(s.title) + '">' +
             '<span class="btn-sec-letter">' + s.key + '</span>' +
@@ -1303,7 +1339,7 @@
         html += '<div class="section-boxes-grid">';
 
         SECTIONS.forEach(s => {
-          const c = state.years[activeYear][s.key].length;
+          const c = (state.years[curKey] && state.years[curKey][s.key]) ? state.years[curKey][s.key].length : 0;
           const isAct = !isAll && selectedSections.includes(s.key);
           html += '<div class="section-box-btn ' + (isAct ? 'active' : '') + '" onclick="selectSection(\'' + s.key + '\')" style="--sec-color:' + s.color + ';" title="' + escapeHtml(s.title) + '">' +
             '<div class="sb-header"><span class="sb-badge">' + s.key + '</span><span class="sb-count">' + c + ' ' + (c===1?'entry':'entries') + '</span></div>' +
@@ -1324,7 +1360,8 @@
     }
 
     function renderSectionPanel(s) {
-      const entries = state.years[activeYear][s.key];
+      const curKey = ensureStateYear(activeYear);
+      const entries = (state.years[curKey] && state.years[curKey][s.key]) ? state.years[curKey][s.key] : [];
       const secKeys = ['A', 'B', 'C', 'D', 'E', 'F'];
       const curIdx = secKeys.indexOf(s.key);
       const prevKey = curIdx > 0 ? secKeys[curIdx - 1] : null;
@@ -1494,7 +1531,9 @@
     }
     function removeEvidenceFile(sk, eid, type) { updateEvidenceDetail(sk, eid, type, 'fileUrl', ''); updateEvidenceDetail(sk, eid, type, 'fileName', ''); renderSections(); }
     function updateEvidenceDetail(sk, eid, type, key, val) {
-      const entry = state.years[activeYear][sk].find(e => e.id === eid); if (!entry) return;
+      const curKey = ensureStateYear(activeYear);
+      const entry = (state.years[curKey] && state.years[curKey][sk]) ? state.years[curKey][sk].find(e => e.id === eid) : null;
+      if (!entry) return;
       if (!entry.evidenceDetails) entry.evidenceDetails = {};
       if (!entry.evidenceDetails[type]) entry.evidenceDetails[type] = {};
       entry.evidenceDetails[type][key] = val;
@@ -1503,8 +1542,10 @@
     }
 
     function addEntry(sk) {
+      const curKey = ensureStateYear(activeYear);
       const newEntry = emptyEntry(sk);
-      state.years[activeYear][sk].push(newEntry);
+      if (!Array.isArray(state.years[curKey][sk])) state.years[curKey][sk] = [];
+      state.years[curKey][sk].push(newEntry);
       dirty = true;
       selectedSections = [sk];
       renderYearTabs();
@@ -1521,10 +1562,23 @@
         }
       }, 50);
     }
-    function removeEntry(sk, eid) { if (!confirm('Remove this entry?')) return; state.years[activeYear][sk] = state.years[activeYear][sk].filter(e => e.id !== eid); dirty = true; renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); scheduleAutoSave(); }
-    function updateField(sk, eid, fk, val) { const entry = state.years[activeYear][sk].find(e => e.id === eid); if (entry) { entry[fk] = val; dirty = true; scheduleAutoSave(); } }
+    function removeEntry(sk, eid) {
+      if (!confirm('Remove this entry?')) return;
+      const curKey = ensureStateYear(activeYear);
+      if (state.years[curKey] && state.years[curKey][sk]) {
+        state.years[curKey][sk] = state.years[curKey][sk].filter(e => e.id !== eid);
+      }
+      dirty = true; renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); scheduleAutoSave();
+    }
+    function updateField(sk, eid, fk, val) {
+      const curKey = ensureStateYear(activeYear);
+      const entry = (state.years[curKey] && state.years[curKey][sk]) ? state.years[curKey][sk].find(e => e.id === eid) : null;
+      if (entry) { entry[fk] = val; dirty = true; scheduleAutoSave(); }
+    }
     function toggleEvidenceType(sk, eid, val, checked) {
-      const entry = state.years[activeYear][sk].find(e => e.id === eid); if (!entry) return;
+      const curKey = ensureStateYear(activeYear);
+      const entry = (state.years[curKey] && state.years[curKey][sk]) ? state.years[curKey][sk].find(e => e.id === eid) : null;
+      if (!entry) return;
       if (!Array.isArray(entry.evidenceTypes)) entry.evidenceTypes = [];
       const idx = entry.evidenceTypes.indexOf(val);
       if (checked && idx === -1) { entry.evidenceTypes.push(val); if (!entry.evidenceDetails) entry.evidenceDetails = {}; if (!entry.evidenceDetails[val]) entry.evidenceDetails[val] = { fileUrl: '', fileName: '', driveLink: '', notes: '' }; }

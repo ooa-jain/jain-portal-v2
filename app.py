@@ -997,12 +997,16 @@ def closure_form(sub_id=None):
 def _iea_empty_years():
     return {y: {s['key']: [] for s in IEA_SECTIONS} for y in IEA_YEARS}
 
+def _iea_norm_year(y):
+    return str(y or '').replace('–', '-').replace('—', '-').strip()
+
 def _iea_merge_years(parsed_years):
     """Normalise a submitted/stored years object against the master shape."""
     base = _iea_empty_years()
     if isinstance(parsed_years, dict):
+        norm_map = {_iea_norm_year(k): v for k, v in parsed_years.items()}
         for y in IEA_YEARS:
-            ydata = parsed_years.get(y)
+            ydata = norm_map.get(_iea_norm_year(y))
             if not isinstance(ydata, dict):
                 continue
             for s in IEA_SECTIONS:
