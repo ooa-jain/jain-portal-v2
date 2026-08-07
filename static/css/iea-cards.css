@@ -1,0 +1,119 @@
+/* ══════════════════════════════════════════════════════════════
+   IEA School → Department card grid.
+   Shared by the admin dashboard (/admin/iea) and the public
+   analytics page (/iea-analysis) so both stay in step.
+   Expects the host page to define --navy, --gold, --border,
+   --ink2, --ink3, --sh and the section colour --b.
+   ══════════════════════════════════════════════════════════════ */
+
+.school-block { margin-bottom: 30px; animation: slideUp .35s ease backwards; }
+.school-head {
+  display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  padding: 0 2px 10px; margin-bottom: 14px; border-bottom: 2px solid var(--border);
+}
+.school-head h2 { font-size: 19px; color: var(--navy); font-weight: 700; }
+.school-meta { font-size: 12.5px; color: var(--ink3); font-weight: 600; }
+
+.dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+
+.dept-card {
+  background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 16px 17px;
+  box-shadow: var(--sh); display: flex; flex-direction: column; gap: 11px;
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.dept-card:hover { border-color: var(--navy); transform: translateY(-2px); box-shadow: 0 8px 22px rgba(10, 37, 88, .1); }
+.dept-card.is-open { border-color: var(--gold); box-shadow: 0 8px 22px rgba(242, 169, 0, .18); }
+.dept-card.no-data { opacity: .72; }
+
+/* School shown on the card itself, so a card still makes sense
+   out of context — e.g. opened from a shared link. */
+.dc-school {
+  font-size: 10.5px; font-weight: 800; color: var(--gold);
+  text-transform: uppercase; letter-spacing: .07em; line-height: 1.3;
+}
+.dc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.dc-name { font-weight: 800; color: var(--navy); font-size: 14.5px; line-height: 1.35; }
+.level-badge {
+  flex-shrink: 0; background: #eef2fb; color: var(--navy); border-radius: 6px;
+  padding: 3px 9px; font-size: 11px; font-weight: 800; letter-spacing: .03em;
+}
+.dc-sub { font-size: 12px; color: var(--ink3); font-weight: 500; line-height: 1.5; }
+
+/* Year chips — filled years stand out, unfilled are dimmed/blurred */
+.years-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.yr {
+  font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
+  border: 1.5px solid transparent; white-space: nowrap;
+}
+.yr.filled { background: #e4f0e8; color: var(--b, #2F6F4E); border-color: #b9dcc6; }
+.yr.blank { background: #f4f6fa; color: #b3bccd; border-color: #e8ecf4; opacity: .55; filter: blur(.3px); }
+
+.yr-count { font-size: 12px; font-weight: 800; color: var(--ink2); }
+.yr-count .of { color: var(--ink3); font-weight: 600; }
+
+.dc-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 4px; }
+.dc-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.card-btn {
+  background: none; border: 1.5px solid var(--border); padding: 5px 10px; border-radius: 7px;
+  font-size: 11.5px; font-weight: 700; cursor: pointer; color: var(--navy); font-family: inherit;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: all .15s;
+}
+.card-btn svg { width: 13px; height: 13px; }
+.card-btn:hover { border-color: var(--gold); }
+.card-btn.danger { border-color: #fecaca; color: #b91c1c; }
+.card-btn.danger:hover { background: #fef2f2; border-color: #ef4444; }
+.card-btn.copied { border-color: #2F6F4E; color: #2F6F4E; background: #e4f0e8; }
+
+/* Expanded all-years panel */
+.detail-panel {
+  grid-column: 1 / -1; background: #fbfcfe; border: 1.5px solid var(--gold);
+  border-radius: 12px; padding: 18px; animation: rise .3s ease;
+}
+.detail-panel-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.detail-panel-head h3 { font-size: 16px; color: var(--navy); }
+.detail-panel-head .dp-school { font-size: 11px; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 3px; }
+.detail-panel-head .dp-sub { font-size: 12px; color: var(--ink3); margin-top: 3px; font-weight: 500; }
+
+.year-block { background: #fff; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+.year-block-head {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  background: #f1f5fb; padding: 10px 14px; border-bottom: 1px solid var(--border);
+}
+.year-block-head .yb-title { font-weight: 800; color: var(--navy); font-size: 13.5px; }
+.year-block-head .yb-count { font-size: 11.5px; color: var(--ink3); font-weight: 700; }
+.year-block-body { padding: 14px; }
+.year-empty { padding: 12px 14px; font-size: 12.5px; color: var(--ink3); font-style: italic; }
+.empty-sections { font-size: 11.5px; color: var(--ink3); font-style: italic; margin-top: 6px; }
+
+.iea-detail-section { margin-bottom: 16px; border-left: 4px solid var(--accent); padding-left: 12px; }
+.iea-detail-section h4 { font-size: 13.5px; margin-bottom: 8px; color: #111827; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; }
+.iea-detail-entry { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 12.5px; }
+.iea-detail-entry .df { margin-bottom: 5px; line-height: 1.5; }
+.iea-detail-entry .df b { color: var(--ink3); font-weight: 700; }
+.iea-detail-entry .df a { color: #2563eb; word-break: break-all; }
+.iea-no-entries { font-size: 12.5px; color: var(--ink3); font-style: italic; }
+
+.share-note { font-size: 11.5px; color: var(--ink3); background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 8px 11px; word-break: break-all; }
+.share-note b { color: var(--ink2); }
+
+/* Banner shown when the page is opened from a shared department link */
+.focus-banner {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  background: linear-gradient(135deg, #0a2558, #143572); color: #fff;
+  border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; animation: rise .3s ease;
+}
+.focus-banner .fb-eyebrow { font-size: 10.5px; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: .1em; }
+.focus-banner .fb-title { font-size: 17px; font-weight: 800; margin-top: 4px; }
+.focus-banner .fb-sub { font-size: 12.5px; color: #cbd7ec; margin-top: 3px; }
+.focus-banner a {
+  background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .35); color: #fff;
+  padding: 8px 15px; border-radius: 8px; font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap;
+}
+.focus-banner a:hover { background: rgba(255, 255, 255, .24); }
+
+.iea-empty-state { text-align: center; padding: 60px 20px; color: var(--ink3); background: #fff; border: 1px solid var(--border); border-radius: 12px; }
+.iea-empty-state svg { width: 44px; height: 44px; color: #cbd7ec; margin-bottom: 10px; }
+.iea-empty-state h3 { color: #111827; margin-bottom: 8px; font-size: 18px; }
+
+@media (max-width: 640px) { .dept-grid { grid-template-columns: 1fr; } }

@@ -19,6 +19,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap"
     rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/iea-cards.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -132,88 +133,6 @@
     .empty-state svg { width: 44px; height: 44px; color: #cbd7ec; margin-bottom: 10px; }
     .empty-state h3 { color: var(--ink); margin-bottom: 8px; font-size: 18px; }
 
-    /* ── School → Department card layout ── */
-    .school-block { margin-bottom: 30px; animation: slideUp .35s ease backwards; }
-    .school-head {
-      display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-      padding: 0 2px 10px; margin-bottom: 14px; border-bottom: 2px solid var(--border);
-    }
-    .school-head h2 { font-size: 19px; color: var(--navy); font-weight: 700; }
-    .school-meta { font-size: 12.5px; color: var(--ink3); font-weight: 600; }
-
-    .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
-
-    .dept-card {
-      background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 16px 17px;
-      box-shadow: var(--sh); display: flex; flex-direction: column; gap: 11px;
-      transition: border-color .15s, transform .15s, box-shadow .15s;
-    }
-    .dept-card:hover { border-color: var(--navy); transform: translateY(-2px); box-shadow: 0 8px 22px rgba(10, 37, 88, .1); }
-    .dept-card.is-open { border-color: var(--gold); box-shadow: 0 8px 22px rgba(242, 169, 0, .18); }
-    .dept-card.no-data { opacity: .72; }
-
-    .dc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-    .dc-name { font-weight: 800; color: var(--navy); font-size: 14.5px; line-height: 1.35; }
-    .level-badge {
-      flex-shrink: 0; background: #eef2fb; color: var(--navy); border-radius: 6px;
-      padding: 3px 9px; font-size: 11px; font-weight: 800; letter-spacing: .03em;
-    }
-    .dc-sub { font-size: 12px; color: var(--ink3); font-weight: 500; line-height: 1.5; }
-
-    /* Year chips — filled years stand out, unfilled are dimmed/blurred */
-    .years-row { display: flex; flex-wrap: wrap; gap: 5px; }
-    .yr {
-      font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
-      border: 1.5px solid transparent; white-space: nowrap;
-    }
-    .yr.filled { background: #e4f0e8; color: var(--b); border-color: #b9dcc6; }
-    .yr.blank { background: #f4f6fa; color: #b3bccd; border-color: #e8ecf4; opacity: .55; filter: blur(.3px); }
-
-    .yr-count { font-size: 12px; font-weight: 800; color: var(--ink2); }
-    .yr-count .of { color: var(--ink3); font-weight: 600; }
-
-    .dc-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 4px; }
-    .dc-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-    .dc-actions .view-btn, .dc-actions .del-btn, .dc-actions .download-btn, .dc-actions .link-btn { padding: 5px 10px; font-size: 11.5px; margin: 0; }
-    .link-btn {
-      background: none; border: 1.5px solid var(--border); padding: 6px 12px; border-radius: 7px;
-      font-size: 12.5px; font-weight: 700; cursor: pointer; color: var(--navy); font-family: inherit;
-      display: inline-flex; align-items: center; gap: 4px;
-    }
-    .link-btn svg { width: 13px; height: 13px; }
-    .link-btn:hover { border-color: var(--gold); }
-    .link-btn.copied { border-color: var(--b); color: var(--b); background: #e4f0e8; }
-
-    /* Expanded all-years panel */
-    .detail-panel {
-      grid-column: 1 / -1; background: #fbfcfe; border: 1.5px solid var(--gold);
-      border-radius: 12px; padding: 18px; animation: rise .3s ease;
-    }
-    .detail-panel-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-    .detail-panel-head h3 { font-size: 16px; color: var(--navy); }
-    .detail-panel-head .dp-sub { font-size: 12px; color: var(--ink3); margin-top: 3px; font-weight: 500; }
-
-    .year-block { background: #fff; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
-    .year-block-head {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-      background: #f1f5fb; padding: 10px 14px; border-bottom: 1px solid var(--border);
-    }
-    .year-block-head .yb-title { font-weight: 800; color: var(--navy); font-size: 13.5px; }
-    .year-block-head .yb-count { font-size: 11.5px; color: var(--ink3); font-weight: 700; }
-    .year-block-body { padding: 14px; }
-    .year-empty { padding: 12px 14px; font-size: 12.5px; color: var(--ink3); font-style: italic; }
-    .empty-sections { font-size: 11.5px; color: var(--ink3); font-style: italic; margin-top: 6px; }
-
-    .share-note { font-size: 11.5px; color: var(--ink3); background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 8px 11px; word-break: break-all; }
-    .share-note b { color: var(--ink2); }
-
-    .search-input {
-      padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border);
-      font-size: 13px; font-weight: 600; color: var(--navy); font-family: inherit; background: #fff; min-width: 230px; outline: none;
-    }
-    .search-input:focus { border-color: var(--navy); }
-
-    @media (max-width: 640px) { .dept-grid { grid-template-columns: 1fr; } }
 
     @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 560px) {
@@ -286,6 +205,7 @@
     </div>
   </div>
 
+  <script src="/static/js/iea-cards.js"></script>
   <script>
     const YEARS = {{ iea_years|tojson }};
     const SECTIONS = {{ iea_sections|tojson }};
@@ -301,34 +221,12 @@
       link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
     };
 
-    let yearFilter = '';          // '' = all academic years
-    let expandedUnit = null;
+    let yearFilter = '';   // '' = all academic years
 
     function escapeHtml(str) { return String(str == null ? '' : str).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
-    function unitId(u) { return u._id; }
-    function unitTitle(u) { return u.school + ' — ' + u.department + ' (' + u.level + ')'; }
 
-    /* ── Counting helpers ───────────────────────────────── */
-    function entriesIn(u, year, sectionKey) {
-      return (u.years && u.years[year] && u.years[year][sectionKey]) ? u.years[year][sectionKey] : [];
-    }
-    function countForYear(u, year) {
-      return SECTIONS.reduce((n, s) => n + entriesIn(u, year, s.key).length, 0);
-    }
-    function filledYears(u) {
-      return YEARS.filter(y => countForYear(u, y) > 0);
-    }
-    function totalEntries(u) {
-      return YEARS.reduce((n, y) => n + countForYear(u, y), 0);
-    }
-    /* Years in scope: the whole range, or just the one being filtered on. */
     function scopeYears() { return yearFilter ? [yearFilter] : YEARS; }
-
-    function lastUpdatedText(u) {
-      if (!u.lastUpdated) return '—';
-      const raw = String(u.lastUpdated);
-      return new Date(raw + (raw.endsWith('Z') ? '' : 'Z')).toLocaleString();
-    }
+    function countForYear(u, y) { return IEACards.countForYear(u, y); }
 
     /* ── KPIs ───────────────────────────────────────────── */
     function renderKPIs() {
@@ -347,7 +245,7 @@
         { label: 'Academic Years In View', num: scope.length, color: 'var(--c)' },
       ];
       SECTIONS.slice(0, 2).forEach(s => {
-        const n = allUnits.reduce((acc, u) => acc + scope.reduce((m, y) => m + entriesIn(u, y, s.key).length, 0), 0);
+        const n = allUnits.reduce((acc, u) => acc + scope.reduce((m, y) => m + IEACards.entriesIn(u, y, s.key).length, 0), 0);
         cards.push({ label: s.key + ' — ' + s.title, num: n, color: s.color });
       });
 
@@ -368,9 +266,16 @@
 
     function onYearFilterChange() {
       yearFilter = document.getElementById('ieaYearFilter').value;
+      IEACards.setYear(yearFilter);
       renderKPIs();
       renderDownloadGroup();
-      renderCards();
+    }
+
+    function renderCards() {
+      IEACards.setFilters({
+        search: document.getElementById('ieaSearch').value,
+        data: document.getElementById('ieaDataFilter').value
+      });
     }
 
     function renderDownloadGroup() {
@@ -382,238 +287,19 @@
         '<a class="download-btn" style="background:var(--navy); color:#fff;" href="/admin/iea-export">' + ICON.download + ' Download All Years (one tab per year)</a>';
     }
 
-    /* ── Share link for a department ────────────────────── */
-    function shareLinkFor(u) {
-      return location.origin + '/iea?school=' + encodeURIComponent(u.school) +
-        '&dept=' + encodeURIComponent(u.department) + '&level=' + encodeURIComponent(u.level);
-    }
-
-    function copyShareLink(id, btn) {
-      const u = allUnits.find(x => unitId(x) === id);
-      if (!u) return;
-      const link = shareLinkFor(u);
-      const done = () => {
-        const original = btn.innerHTML;
-        btn.classList.add('copied');
-        btn.innerHTML = ICON.check + ' Copied';
-        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = original; }, 1800);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(link).then(done).catch(() => window.prompt('Copy this link:', link));
-      } else {
-        window.prompt('Copy this link:', link);
-      }
-    }
-
-    /* ── Cards: grouped by school, one card per department ─ */
-    function renderCards() {
-      populateYearFilter();
-      const el = document.getElementById('cardsWrap');
-
-      if (allUnits.length === 0) {
-        el.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>No submissions yet</h3><p>Once departments save data, they will appear here as cards.</p></div>';
-        return;
-      }
-
-      const q = (document.getElementById('ieaSearch') ? document.getElementById('ieaSearch').value : '').trim().toLowerCase();
-      const dataFilter = document.getElementById('ieaDataFilter') ? document.getElementById('ieaDataFilter').value : 'with_data';
-      const scope = scopeYears();
-
-      const visible = allUnits.filter(u => {
-        const haystack = [u.school, u.department, u.level, u.submitterName, u.submitterEmail].join(' ').toLowerCase();
-        if (q && haystack.indexOf(q) === -1) return false;
-        if (dataFilter === 'all') return true;
-        return scope.some(y => countForYear(u, y) > 0);
-      });
-
-      if (visible.length === 0) {
-        el.innerHTML = '<div class="empty-state">' + ICON.folder + '<h3>No departments match</h3><p>Try clearing the search, choosing another academic year, or switching to "Show All Departments".</p></div>';
-        return;
-      }
-
-      // group by school, preserving alphabetical order
-      const bySchool = new Map();
-      visible.forEach(u => {
-        if (!bySchool.has(u.school)) bySchool.set(u.school, []);
-        bySchool.get(u.school).push(u);
-      });
-      const schools = Array.from(bySchool.keys()).sort();
-
-      el.innerHTML = schools.map((school, si) => {
-        const units = bySchool.get(school).sort((a, b) =>
-          (a.department + a.level).localeCompare(b.department + b.level));
-        const schoolEntries = units.reduce((n, u) => n + scope.reduce((m, y) => m + countForYear(u, y), 0), 0);
-        const reporting = units.filter(u => scope.some(y => countForYear(u, y) > 0)).length;
-
-        const cards = units.map(u => {
-          const filled = filledYears(u);
-          const isOpen = expandedUnit === unitId(u);
-          const hasData = filled.length > 0;
-
-          const chips = YEARS.map(y => {
-            const n = countForYear(u, y);
-            const cls = n > 0 ? 'yr filled' : 'yr blank';
-            return '<span class="' + cls + '" title="' + escapeHtml(y) + ': ' + n + ' ' + (n === 1 ? 'entry' : 'entries') + '">' +
-              escapeHtml(y.replace('AY ', '')) + (n > 0 ? ' · ' + n : '') + '</span>';
-          }).join('');
-
-          const who = u.submitterName || u.submitterEmail
-            ? escapeHtml(u.submitterName || '') + (u.submitterEmail ? ' · ' + escapeHtml(u.submitterEmail) : '')
-            : 'No submitter recorded';
-
-          const card =
-            '<div class="dept-card' + (isOpen ? ' is-open' : '') + (hasData ? '' : ' no-data') + '">' +
-              '<div class="dc-top">' +
-                '<div class="dc-name">' + escapeHtml(u.department) + '</div>' +
-                '<span class="level-badge">' + escapeHtml(u.level) + '</span>' +
-              '</div>' +
-              '<div class="dc-sub">' + who + '<br>Last updated: ' + lastUpdatedText(u) + '</div>' +
-              '<div class="years-row">' + chips + '</div>' +
-              '<div class="dc-foot">' +
-                '<span class="yr-count">' + filled.length + ' <span class="of">of ' + YEARS.length + ' years filled</span></span>' +
-                '<div class="dc-actions">' +
-                  '<button class="view-btn" data-unit="' + unitId(u) + '">' + ICON.eye + ' ' + (isOpen ? 'Hide' : 'View all years') + '</button>' +
-                  '<button class="link-btn" data-link="' + unitId(u) + '">' + ICON.link + ' Copy link</button>' +
-                  '<a class="download-btn" href="/admin/iea-export?sid=' + unitId(u) + '" title="Excel — one tab per year">' + ICON.download + ' Excel</a>' +
-                  '<button class="del-btn" data-del="' + unitId(u) + '">' + ICON.trash + '</button>' +
-                '</div>' +
-              '</div>' +
-            '</div>';
-
-          return card + (isOpen ? renderUnitDetail(u) : '');
-        }).join('');
-
-        return '<div class="school-block" style="animation-delay:' + (si * 0.04) + 's">' +
-          '<div class="school-head">' +
-            '<h2>' + escapeHtml(school) + '</h2>' +
-            '<span class="school-meta">' + reporting + ' of ' + units.length + ' departments reporting · ' +
-              schoolEntries + ' ' + (schoolEntries === 1 ? 'entry' : 'entries') +
-              (yearFilter ? ' in ' + escapeHtml(yearFilter) : ' across all years') + '</span>' +
-          '</div>' +
-          '<div class="dept-grid">' + cards + '</div>' +
-        '</div>';
-      }).join('');
-
-      el.querySelectorAll('.view-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.unit;
-          expandedUnit = expandedUnit === id ? null : id;
-          renderCards();
-        });
-      });
-      el.querySelectorAll('.link-btn').forEach(btn => {
-        btn.addEventListener('click', () => copyShareLink(btn.dataset.link, btn));
-      });
-      el.querySelectorAll('.del-btn').forEach(btn => {
-        btn.addEventListener('click', () => deleteUnit(btn.dataset.del));
-      });
-    }
-
-    /* ── Expanded panel: every year the department filled ── */
-    function renderUnitDetail(u) {
-      const filled = filledYears(u);
-      const shown = yearFilter ? filled.filter(y => y === yearFilter) : filled;
-
-      const head =
-        '<div class="detail-panel-head">' +
-          '<div>' +
-            '<h3>' + escapeHtml(u.department) + ' · ' + escapeHtml(u.level) + '</h3>' +
-            '<div class="dp-sub">' + escapeHtml(u.school) + ' — showing ' + shown.length + ' ' +
-              (shown.length === 1 ? 'year' : 'years') + ' with entries, out of ' + YEARS.length + ' tracked.</div>' +
-          '</div>' +
-          '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
-            '<a class="download-btn" href="/admin/iea-export?sid=' + unitId(u) + '">' + ICON.download + ' All years (.xlsx)</a>' +
-          '</div>' +
-        '</div>' +
-        '<div class="share-note"><b>Share link for this department:</b> ' + escapeHtml(shareLinkFor(u)) +
-          (u.submitterEmail ? '<br><b>Filled by:</b> ' + escapeHtml(u.submitterEmail) : '') + '</div>';
-
-      if (shown.length === 0) {
-        return '<div class="detail-panel">' + head +
-          '<div class="year-empty" style="margin-top:12px;">This department has not filled any entries' +
-          (yearFilter ? ' for ' + escapeHtml(yearFilter) : ' yet') + '.</div></div>';
-      }
-
-      const blocks = shown.map(y => {
-        const n = countForYear(u, y);
-        const withEntries = SECTIONS.filter(s => entriesIn(u, y, s.key).length > 0);
-        const withoutEntries = SECTIONS.filter(s => entriesIn(u, y, s.key).length === 0);
-
-        const body = withEntries.map(s => renderSection(u, y, s)).join('') +
-          (withoutEntries.length
-            ? '<div class="empty-sections">No entries for section' + (withoutEntries.length > 1 ? 's' : '') + ' ' +
-              withoutEntries.map(s => s.key).join(', ') + '.</div>'
-            : '');
-
-        return '<div class="year-block">' +
-          '<div class="year-block-head">' +
-            '<span class="yb-title">' + escapeHtml(y) + '</span>' +
-            '<span class="yb-count">' + n + ' ' + (n === 1 ? 'entry' : 'entries') + ' · ' +
-              '<a href="/admin/iea-export?sid=' + unitId(u) + '&year=' + encodeURIComponent(y) + '" style="color:#2563eb;">Excel</a></span>' +
-          '</div>' +
-          '<div class="year-block-body">' + body + '</div>' +
-        '</div>';
-      }).join('');
-
-      return '<div class="detail-panel">' + head + '<div style="margin-top:14px;">' + blocks + '</div></div>';
-    }
-
-    function renderSection(u, year, s) {
-      const entries = entriesIn(u, year, s.key);
-      return '<div class="detail-section" style="--accent:' + s.color + '">' +
-        '<h4>' + s.key + ' — ' + escapeHtml(s.title) + ' (' + entries.length + ')</h4>' +
-        entries.map(e => {
-          let evDetailHtml = '';
-          if (e.evidenceDetails) {
-            Object.keys(e.evidenceDetails).forEach(t => {
-              const d = e.evidenceDetails[t];
-              if (d && (d.driveLink || d.fileUrl || d.notes)) {
-                evDetailHtml += '<div style="font-size:12px; background:#f8fafc; padding:6px 10px; border-radius:6px; margin-top:4px; border:1px solid #e2e8f0;">' +
-                  '<b>' + escapeHtml(t) + ':</b> ' +
-                  (d.driveLink ? '<a href="' + escapeHtml(d.driveLink) + '" target="_blank" rel="noopener">🔗 Google Drive Link</a> ' : '') +
-                  (d.fileUrl ? '<a href="' + escapeHtml(d.fileUrl) + '" target="_blank" rel="noopener">📁 Uploaded File (' + escapeHtml(d.fileName || 'File') + ')</a> ' : '') +
-                  (d.notes ? '<i>Remarks: ' + escapeHtml(d.notes) + '</i>' : '') +
-                '</div>';
-              }
-            });
-          }
-          const mainDriveLink = e.evidenceLink
-            ? '<a href="' + escapeHtml(e.evidenceLink) + '" target="_blank" rel="noopener">🔗 ' + escapeHtml(e.evidenceLink) + '</a>'
-            : '<span class="no-entries">— not provided —</span>';
-
-          return '<div class="detail-entry">' +
-            s.fields.map(f => '<div class="df"><b>' + escapeHtml(f.l) + ':</b> ' + (e[f.k] ? escapeHtml(e[f.k]) : '<span class="no-entries">— not filled —</span>') + '</div>').join('') +
-            '<div class="df"><b>Evidence types:</b> ' + ((e.evidenceTypes && e.evidenceTypes.length) ? escapeHtml(e.evidenceTypes.join(', ')) : '<span class="no-entries">— none selected —</span>') + '</div>' +
-            '<div class="df"><b>Google Drive Link (shared with Office of Academics):</b> ' + mainDriveLink + '</div>' +
-            (evDetailHtml ? '<div class="df"><b>Evidence Links & Attachments:</b>' + evDetailHtml + '</div>' : '') +
-            (e.evidenceMissing ? '<div class="df"><b>Evidence missing / remarks:</b> ' + escapeHtml(e.evidenceMissing) + '</div>' : '') +
-          '</div>';
-        }).join('') +
-      '</div>';
-    }
-
-    function deleteUnit(id) {
-      const u = allUnits.find(x => unitId(x) === id);
-      if (!u) return;
-      if (!confirm('Delete the entire IEA submission for:\n\n' + unitTitle(u) + '\n\nThis removes all years and cannot be undone.')) return;
-      fetch('/admin/iea-delete/' + id, { method: 'POST' })
-        .then(r => r.json())
-        .then(res => {
-          if (res.ok) {
-            const idx = allUnits.findIndex(x => unitId(x) === id);
-            if (idx > -1) allUnits.splice(idx, 1);
-            if (expandedUnit === id) expandedUnit = null;
-            renderKPIs();
-            renderCards();
-          } else alert(res.error || 'Delete failed');
-        })
-        .catch(() => alert('Network error'));
-    }
-
     populateYearFilter();
-    renderKPIs();
     renderDownloadGroup();
-    renderCards();
+
+    // mount first — its onChange callback renders the KPIs
+    IEACards.mount({
+      mountId: 'cardsWrap',
+      units: allUnits,
+      years: YEARS,
+      sections: SECTIONS,
+      canDelete: true,
+      canExport: true,
+      onChange: renderKPIs
+    });
   </script>
 </body>
 
