@@ -25,6 +25,7 @@ window.IEACards = (function () {
     download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
     folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
     link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'
   };
 
@@ -35,6 +36,18 @@ window.IEACards = (function () {
   var dataFilter = 'with_data';
   var expandedUnit = null;
   var focus = null;           // {school, department, level} when opened via share link
+
+  // Some stored entries arrived HTML-escaped. Decode once before we escape for
+  // output, otherwise "today&#39;s" renders as literal entity text.
+  var _decoder = null;
+  function decodeStored(str) {
+    var v = String(str == null ? '' : str);
+    if (v.indexOf('&') === -1) return v;
+    if (!_decoder) _decoder = document.createElement('textarea');
+    _decoder.innerHTML = v;          // textarea parses as text — no script can run
+    return _decoder.value;
+  }
+  function escText(str) { return esc(decodeStored(str)); }
 
   function esc(str) {
     return String(str == null ? '' : str).replace(/[&<>"]/g, function (ch) {
@@ -138,7 +151,6 @@ window.IEACards = (function () {
             ? 'Showing this department\'s Innovation &amp; Emerging Areas analysis across all academic years.'
             : 'No submission has been recorded for this department yet.') + '</div>' +
         '</div>' +
-        '<a href="' + location.pathname + '">View all departments →</a>' +
       '</div>';
     }
 
@@ -235,21 +247,39 @@ window.IEACards = (function () {
     return card + (isOpen ? renderUnitDetail(u) : '');
   }
 
-  function renderUnitDetail(u) {
+  /* ── Detail panel: one tab per year + an Analysis tab ─── */
+  var ANALYSIS_TAB = '__analysis';
+  var detailTab = {};   // unitId -> active tab ('AY ...' or '__analysis')
+
+  function detailYears(u) {
     var filled = filledYears(u);
-    var shown = yearFilter ? filled.filter(function (y) { return y === yearFilter; }) : filled;
+    return yearFilter ? filled.filter(function (y) { return y === yearFilter; }) : filled;
+  }
+
+  function activeTabFor(u) {
+    var shown = detailYears(u);
+    var t = detailTab[unitId(u)];
+    if (t === ANALYSIS_TAB) return t;
+    if (t && shown.indexOf(t) > -1) return t;
+    return shown.length ? shown[0] : ANALYSIS_TAB;
+  }
+
+  function renderUnitDetail(u) {
+    var shown = detailYears(u);
+    var active = activeTabFor(u);
+    var id = unitId(u);
 
     var head =
       '<div class="detail-panel-head">' +
         '<div>' +
           '<div class="dp-school">' + esc(u.school) + '</div>' +
           '<h3>' + esc(u.department) + ' · ' + esc(u.level) + '</h3>' +
-          '<div class="dp-sub">Showing ' + shown.length + ' ' + (shown.length === 1 ? 'year' : 'years') +
-            ' with entries, out of ' + cfg.years.length + ' tracked.</div>' +
+          '<div class="dp-sub">' + shown.length + ' of ' + cfg.years.length +
+            ' academic years filled. Pick a year below, or open Analysis for the overview.</div>' +
         '</div>' +
         (cfg.canExport
           ? '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
-              '<a class="card-btn" href="/admin/iea-export?sid=' + unitId(u) + '">' + ICON.download + ' All years (.xlsx)</a>' +
+              '<a class="card-btn" href="/admin/iea-export?sid=' + id + '">' + ICON.download + ' All years (.xlsx)</a>' +
             '</div>'
           : '') +
       '</div>' +
@@ -262,31 +292,169 @@ window.IEACards = (function () {
         (yearFilter ? ' for ' + esc(yearFilter) : ' yet') + '.</div></div>';
     }
 
-    var blocks = shown.map(function (y) {
+    // Tab strip: every filled year, then Analysis
+    var tabs = shown.map(function (y) {
       var n = countForYear(u, y);
-      var withEntries = cfg.sections.filter(function (s) { return entriesIn(u, y, s.key).length > 0; });
-      var without = cfg.sections.filter(function (s) { return entriesIn(u, y, s.key).length === 0; });
+      return '<button class="dt-tab' + (active === y ? ' active' : '') + '" data-tab="' + id + '|' + esc(y) + '">' +
+        esc(y) + '<span class="dt-tab-badge">' + n + '</span></button>';
+    }).join('') +
+      '<button class="dt-tab analysis' + (active === ANALYSIS_TAB ? ' active' : '') + '" data-tab="' + id + '|' + ANALYSIS_TAB + '">' +
+        ICON.chart + ' Analysis</button>';
 
-      var body = withEntries.map(function (s) { return renderSection(u, y, s); }).join('') +
-        (without.length
-          ? '<div class="empty-sections">No entries for section' + (without.length > 1 ? 's' : '') + ' ' +
-            without.map(function (s) { return s.key; }).join(', ') + '.</div>'
-          : '');
+    var body = (active === ANALYSIS_TAB)
+      ? renderAnalysis(u, shown)
+      : renderYearPane(u, active);
 
-      return '<div class="year-block">' +
-        '<div class="year-block-head">' +
-          '<span class="yb-title">' + esc(y) + '</span>' +
-          '<span class="yb-count">' + n + ' ' + (n === 1 ? 'entry' : 'entries') +
-            (cfg.canExport
-              ? ' · <a href="/admin/iea-export?sid=' + unitId(u) + '&year=' + encodeURIComponent(y) + '" style="color:#2563eb;">Excel</a>'
-              : '') +
-          '</span>' +
-        '</div>' +
-        '<div class="year-block-body">' + body + '</div>' +
+    return '<div class="detail-panel">' + head +
+      '<div class="dt-tabs">' + tabs + '</div>' +
+      '<div class="dt-pane">' + body + '</div>' +
+    '</div>';
+  }
+
+  function renderYearPane(u, y) {
+    var n = countForYear(u, y);
+    var withEntries = cfg.sections.filter(function (s) { return entriesIn(u, y, s.key).length > 0; });
+    var without = cfg.sections.filter(function (s) { return entriesIn(u, y, s.key).length === 0; });
+
+    var body = withEntries.map(function (s) { return renderSection(u, y, s); }).join('') +
+      (without.length
+        ? '<div class="empty-sections">No entries for section' + (without.length > 1 ? 's' : '') + ' ' +
+          without.map(function (s) { return s.key; }).join(', ') + '.</div>'
+        : '');
+
+    return '<div class="year-block">' +
+      '<div class="year-block-head">' +
+        '<span class="yb-title">' + esc(y) + '</span>' +
+        '<span class="yb-count">' + n + ' ' + (n === 1 ? 'entry' : 'entries') +
+          (cfg.canExport
+            ? ' · <a href="/admin/iea-export?sid=' + unitId(u) + '&year=' + encodeURIComponent(y) + '" style="color:#2563eb;">Excel</a>'
+            : '') +
+        '</span>' +
+      '</div>' +
+      '<div class="year-block-body">' + body + '</div>' +
+    '</div>';
+  }
+
+  /* ── Charts (inline SVG, no external library) ─────────── */
+  function donutChart(data, size) {
+    var total = data.reduce(function (n, d) { return n + d.value; }, 0);
+    if (!total) return '<div class="chart-empty">No entries to chart.</div>';
+
+    var cx = size / 2, cy = size / 2, r = size / 2 - 4, ir = r * 0.58;
+    var nonZero = data.filter(function (d) { return d.value > 0; });
+    var svg = '';
+
+    if (nonZero.length === 1) {
+      // A single slice is a full ring — arc maths degenerates at 360°.
+      svg = '<circle cx="' + cx + '" cy="' + cy + '" r="' + ((r + ir) / 2) + '" fill="none" stroke="' +
+        nonZero[0].color + '" stroke-width="' + (r - ir) + '"><title>' + esc(nonZero[0].label) +
+        ': ' + nonZero[0].value + ' (100%)</title></circle>';
+    } else {
+      var angle = -Math.PI / 2;
+      nonZero.forEach(function (d) {
+        var sweep = (d.value / total) * Math.PI * 2;
+        var end = angle + sweep;
+        var large = sweep > Math.PI ? 1 : 0;
+        var x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
+        var x2 = cx + r * Math.cos(end), y2 = cy + r * Math.sin(end);
+        var x3 = cx + ir * Math.cos(end), y3 = cy + ir * Math.sin(end);
+        var x4 = cx + ir * Math.cos(angle), y4 = cy + ir * Math.sin(angle);
+        var pct = Math.round((d.value / total) * 100);
+        svg += '<path d="M' + x1.toFixed(2) + ' ' + y1.toFixed(2) +
+          ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2.toFixed(2) + ' ' + y2.toFixed(2) +
+          ' L' + x3.toFixed(2) + ' ' + y3.toFixed(2) +
+          ' A' + ir + ' ' + ir + ' 0 ' + large + ' 0 ' + x4.toFixed(2) + ' ' + y4.toFixed(2) + ' Z" fill="' +
+          d.color + '"><title>' + esc(d.label) + ': ' + d.value + ' (' + pct + '%)</title></path>';
+        angle = end;
+      });
+    }
+
+    return '<svg viewBox="0 0 ' + size + ' ' + size + '" width="' + size + '" height="' + size + '" role="img">' +
+      svg +
+      '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" font-size="26" font-weight="800" fill="#0a2558">' + total + '</text>' +
+      '<text x="' + cx + '" y="' + (cy + 16) + '" text-anchor="middle" font-size="10" font-weight="700" fill="#6b7280">ENTRIES</text>' +
+      '</svg>';
+  }
+
+  function barChart(data, opts) {
+    opts = opts || {};
+    var max = data.reduce(function (n, d) { return Math.max(n, d.value); }, 0);
+    if (!max) return '<div class="chart-empty">No entries to chart.</div>';
+    return '<div class="bar-chart">' + data.map(function (d) {
+      var pct = (d.value / max) * 100;
+      return '<div class="bar-row" title="' + esc(d.label) + ': ' + d.value + '">' +
+        '<span class="bar-label">' + esc(d.label) + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + pct.toFixed(1) + '%; background:' +
+          (d.color || '#0a2558') + ';"></span></span>' +
+        '<span class="bar-value">' + d.value + '</span>' +
       '</div>';
-    }).join('');
+    }).join('') + '</div>';
+  }
 
-    return '<div class="detail-panel">' + head + '<div style="margin-top:14px;">' + blocks + '</div></div>';
+  function renderAnalysis(u, shown) {
+    var years = shown.length ? shown : cfg.years;
+
+    // Entries per section, across the years in view
+    var bySection = cfg.sections.map(function (s) {
+      return {
+        label: s.key + ' — ' + s.title,
+        short: 'Section ' + s.key,
+        value: years.reduce(function (n, y) { return n + entriesIn(u, y, s.key).length; }, 0),
+        color: s.color
+      };
+    });
+    var total = bySection.reduce(function (n, d) { return n + d.value; }, 0);
+
+    // Entries per academic year (every tracked year, so gaps are visible)
+    var byYear = cfg.years.map(function (y) {
+      return { label: String(y).replace('AY ', ''), value: countForYear(u, y), color: '#0a2558' };
+    });
+
+    var filled = filledYears(u);
+    var busiest = byYear.slice().sort(function (a, b) { return b.value - a.value; })[0];
+    var topSection = bySection.slice().sort(function (a, b) { return b.value - a.value; })[0];
+
+    var stats =
+      '<div class="an-stats">' +
+        '<div class="an-stat"><div class="an-stat-num">' + total + '</div><div class="an-stat-label">Total entries</div></div>' +
+        '<div class="an-stat"><div class="an-stat-num">' + filled.length + ' / ' + cfg.years.length +
+          '</div><div class="an-stat-label">Years filled</div></div>' +
+        '<div class="an-stat"><div class="an-stat-num">' +
+          (total ? (total / Math.max(filled.length, 1)).toFixed(1) : '0') +
+          '</div><div class="an-stat-label">Avg entries per filled year</div></div>' +
+        '<div class="an-stat"><div class="an-stat-num">' +
+          (busiest && busiest.value ? esc(busiest.label) : '—') +
+          '</div><div class="an-stat-label">Most active year</div></div>' +
+      '</div>';
+
+    var legend = '<div class="chart-legend">' + bySection.map(function (d) {
+      var pct = total ? Math.round((d.value / total) * 100) : 0;
+      return '<div class="lg-item' + (d.value ? '' : ' zero') + '">' +
+        '<span class="lg-dot" style="background:' + d.color + '"></span>' +
+        '<span class="lg-text">' + esc(d.short) + '</span>' +
+        '<span class="lg-val">' + d.value + ' · ' + pct + '%</span>' +
+      '</div>';
+    }).join('') + '</div>';
+
+    return stats +
+      '<div class="chart-grid">' +
+        '<div class="chart-card">' +
+          '<h5>Entry mix by section</h5>' +
+          '<div class="donut-wrap">' + donutChart(bySection, 180) + legend + '</div>' +
+        '</div>' +
+        '<div class="chart-card">' +
+          '<h5>Entries per academic year</h5>' +
+          barChart(byYear) +
+        '</div>' +
+        '<div class="chart-card wide">' +
+          '<h5>Section totals (A–F)</h5>' +
+          barChart(bySection.map(function (d) { return { label: d.short, value: d.value, color: d.color }; })) +
+        '</div>' +
+      '</div>' +
+      (topSection && topSection.value
+        ? '<div class="an-note">Strongest area: <b>' + esc(topSection.label) + '</b> with ' +
+          topSection.value + ' of ' + total + ' entries.</div>'
+        : '');
   }
 
   function renderSection(u, year, s) {
@@ -303,7 +471,7 @@ window.IEACards = (function () {
                 '<b>' + esc(t) + ':</b> ' +
                 (d.driveLink ? '<a href="' + esc(d.driveLink) + '" target="_blank" rel="noopener">🔗 Google Drive Link</a> ' : '') +
                 (d.fileUrl ? '<a href="' + esc(d.fileUrl) + '" target="_blank" rel="noopener">📁 Uploaded File (' + esc(d.fileName || 'File') + ')</a> ' : '') +
-                (d.notes ? '<i>Remarks: ' + esc(d.notes) + '</i>' : '') +
+                (d.notes ? '<i>Remarks: ' + escText(d.notes) + '</i>' : '') +
               '</div>';
             }
           });
@@ -315,13 +483,13 @@ window.IEACards = (function () {
         return '<div class="iea-detail-entry">' +
           s.fields.map(function (f) {
             return '<div class="df"><b>' + esc(f.l) + ':</b> ' +
-              (e[f.k] ? esc(e[f.k]) : '<span class="iea-no-entries">— not filled —</span>') + '</div>';
+              (e[f.k] ? escText(e[f.k]) : '<span class="iea-no-entries">— not filled —</span>') + '</div>';
           }).join('') +
           '<div class="df"><b>Evidence types:</b> ' +
-            ((e.evidenceTypes && e.evidenceTypes.length) ? esc(e.evidenceTypes.join(', ')) : '<span class="iea-no-entries">— none selected —</span>') + '</div>' +
+            ((e.evidenceTypes && e.evidenceTypes.length) ? escText(e.evidenceTypes.join(', ')) : '<span class="iea-no-entries">— none selected —</span>') + '</div>' +
           '<div class="df"><b>Google Drive Link (shared with Office of Academics):</b> ' + mainDriveLink + '</div>' +
           (evDetailHtml ? '<div class="df"><b>Evidence Links &amp; Attachments:</b>' + evDetailHtml + '</div>' : '') +
-          (e.evidenceMissing ? '<div class="df"><b>Evidence missing / remarks:</b> ' + esc(e.evidenceMissing) + '</div>' : '') +
+          (e.evidenceMissing ? '<div class="df"><b>Evidence missing / remarks:</b> ' + escText(e.evidenceMissing) + '</div>' : '') +
         '</div>';
       }).join('') +
     '</div>';
@@ -340,6 +508,13 @@ window.IEACards = (function () {
     });
     el.querySelectorAll('[data-del]').forEach(function (btn) {
       btn.addEventListener('click', function () { deleteUnit(btn.getAttribute('data-del')); });
+    });
+    el.querySelectorAll('[data-tab]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var parts = btn.getAttribute('data-tab').split('|');
+        detailTab[parts[0]] = parts.slice(1).join('|');
+        render();
+      });
     });
   }
 
