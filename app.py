@@ -1056,6 +1056,59 @@ def _iea_merge_years(parsed_years):
                     base[y][s['key']] = clean
     return base
 
+def _iea_count_entries(years):
+    """Total entries across every year/section of a (possibly partial) years blob."""
+    n = 0
+    if isinstance(years, dict):
+        for _y, secs in years.items():
+            if isinstance(secs, dict):
+                for _k, lst in secs.items():
+                    if isinstance(lst, list):
+                        n += len(lst)
+    return n
+
+def _iea_version_timeline(doc):
+    """Compact edit history — one row per submitted version, oldest first.
+
+    Each stored history entry carries a full snapshot of that version's data.
+    Those snapshots are far too heavy to hand to the browser, so the timeline
+    ships only the version number, its date, its size and who filed it.
+    """
+    rows = []
+    for h in (doc.get('history') or []):
+        if not isinstance(h, dict):
+            continue
+        rows.append({
+            'version': h.get('version', 1),
+            'at': h.get('submittedAt') or h.get('lastUpdated') or '',
+            'entries': _iea_count_entries(h.get('years')),
+            'by': h.get('submitterName') or h.get('submitterEmail') or '',
+        })
+    if doc.get('submitted'):
+        rows.append({
+            'version': doc.get('version', 1),
+            'at': doc.get('submittedAt') or doc.get('lastUpdated') or '',
+            'entries': _iea_count_entries(doc.get('years')),
+            'by': doc.get('submitterName') or doc.get('submitterEmail') or '',
+            'current': True,
+        })
+    rows.sort(key=lambda r: r.get('version') or 0)
+    return rows
+
+def _iea_public_doc(doc):
+    """Shape one IEA submission for a template/API payload."""
+    doc['_id'] = str(doc['_id'])
+    doc['years'] = _iea_merge_years(doc.get('years'))
+    doc['versions'] = _iea_version_timeline(doc)
+    # Derive when this department started filling for rows saved before the
+    # field existed, so the timeline still has a starting point.
+    if not doc.get('createdAt'):
+        earliest = next((r['at'] for r in doc['versions'] if r.get('at')), '')
+        doc['createdAt'] = earliest or doc.get('lastUpdated', '')
+        doc['createdAtEstimated'] = True
+    doc.pop('history', None)
+    return doc
+
 @app.route('/iea')
 def iea():
     if 'user_email' not in session:
@@ -1171,7 +1224,8 @@ def iea_save():
         'submitterName': session.get('user_name', ''),
     }
     iea_col.update_one({'school': school, 'department': dept, 'level': level},
-                       {'$set': doc}, upsert=True)
+                       {'$set': doc, '$setOnInsert': {'createdAt': doc['lastUpdated']}},
+                       upsert=True)
     return jsonify({'ok': True, 'lastUpdated': doc['lastUpdated']})
 
 @app.route('/api/iea/submit', methods=['POST'])
@@ -1201,6 +1255,8 @@ def iea_submit():
             'version': existing.get('version', 1),
             'years': existing.get('years'),
             'submittedAt': existing.get('submittedAt', existing.get('lastUpdated', '')),
+            'submitterName': existing.get('submitterName', ''),
+            'submitterEmail': existing.get('submitterEmail', ''),
         })
         version = existing.get('version', 1) + 1
     else:
@@ -1228,7 +1284,7 @@ def iea_submit():
         'submitterName': session.get('user_name', ''),
     }
     iea_col.update_one({'school': school, 'department': dept, 'level': level},
-                       {'$set': doc}, upsert=True)
+                       {'$set': doc, '$setOnInsert': {'createdAt': now}}, upsert=True)
     return jsonify({'ok': True, 'version': version, 'submittedAt': now})
 
 @app.route('/api/iea/submissions')
@@ -1332,10 +1388,8 @@ def iea_user_delete(sid):
 
 @app.route('/iea-analysis')
 def iea_analysis_page():
-    subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
-    for s in subs:
-        s['_id'] = str(s['_id'])
-        s['years'] = _iea_merge_years(s.get('years'))
+    subs = [_iea_public_doc(d) for d in
+            iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)])]
     feedback = list(db['iea_feedback'].find().sort('createdAt', -1))
     for f in feedback:
         f['_id'] = str(f['_id'])
@@ -1350,10 +1404,8 @@ def iea_analysis_page():
 
 @app.route('/api/iea/analysis-data')
 def iea_analysis_data():
-    subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
-    for s in subs:
-        s['_id'] = str(s['_id'])
-        s['years'] = _iea_merge_years(s.get('years'))
+    subs = [_iea_public_doc(d) for d in
+            iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)])]
     return jsonify({
         'ok': True,
         'submissions': subs,
@@ -1365,10 +1417,8 @@ def iea_analysis_data():
 def admin_iea():
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
-    subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
-    for s in subs:
-        s['_id'] = str(s['_id'])
-        s['years'] = _iea_merge_years(s.get('years'))
+    subs = [_iea_public_doc(d) for d in
+            iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)])]
     feedback = list(db['iea_feedback'].find().sort('createdAt', -1))
     for f in feedback:
         f['_id'] = str(f['_id'])
@@ -2336,10 +2386,8 @@ def admin_dashboard():
             logged_in_today_count += 1
         u['latest_dept'] = u.get('department') or latest_dept_by_email.get(email) or 'N/A'
 
-    iea_subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
-    for s in iea_subs:
-        s['_id'] = str(s['_id'])
-        s['years'] = _iea_merge_years(s.get('years'))
+    iea_subs = [_iea_public_doc(d) for d in
+                iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)])]
 
     access_requests = list(db['access_requests'].find().sort('timestamp', -1))
     for r in access_requests:

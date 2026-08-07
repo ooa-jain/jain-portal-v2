@@ -391,6 +391,78 @@ window.IEACards = (function () {
     }).join('') + '</div>';
   }
 
+  /* ── Submission history: registered → each edited version ─ */
+  function fmtDateTime(v) {
+    if (!v) return '—';
+    var raw = String(v);
+    var d = new Date(raw + (raw.slice(-1) === 'Z' || raw.indexOf('Z') > -1 ? '' : 'Z'));
+    return isNaN(d.getTime()) ? esc(raw) : d.toLocaleString();
+  }
+
+  function renderTimeline(u) {
+    var versions = u.versions || [];
+    var submittedYears = u.submittedYears || {};
+
+    var rows = '<div class="tl-row start">' +
+      '<span class="tl-dot"></span>' +
+      '<div class="tl-body">' +
+        '<div class="tl-title">Started filling' +
+          (u.createdAtEstimated ? ' <span class="tl-est" title="Recorded before this was tracked — earliest known activity">estimated</span>' : '') +
+        '</div>' +
+        '<div class="tl-meta">' + fmtDateTime(u.createdAt) +
+          (u.submitterName || u.submitterEmail
+            ? ' · ' + esc(u.submitterName || u.submitterEmail)
+            : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+    if (!versions.length) {
+      rows += '<div class="tl-row">' +
+        '<span class="tl-dot pending"></span>' +
+        '<div class="tl-body">' +
+          '<div class="tl-title">Not submitted yet</div>' +
+          '<div class="tl-meta">Saved as a draft — last edit ' + fmtDateTime(u.lastUpdated) + '.</div>' +
+        '</div>' +
+      '</div>';
+    } else {
+      rows += versions.map(function (v) {
+        var isFirst = v.version === 1;
+        return '<div class="tl-row' + (v.current ? ' current' : '') + '">' +
+          '<span class="tl-dot' + (v.current ? ' current' : '') + '"></span>' +
+          '<div class="tl-body">' +
+            '<div class="tl-title">Version ' + v.version +
+              (isFirst ? ' <span class="tl-tag">first submission</span>' : ' <span class="tl-tag edit">edited</span>') +
+              (v.current ? ' <span class="tl-tag now">current</span>' : '') +
+            '</div>' +
+            '<div class="tl-meta">' + fmtDateTime(v.at) +
+              ' · ' + v.entries + ' ' + (v.entries === 1 ? 'entry' : 'entries') +
+              (v.by ? ' · ' + esc(v.by) : '') +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // Per-year submission dates, where recorded
+    var yearRows = cfg.years.filter(function (y) { return submittedYears[y]; })
+      .map(function (y) {
+        return '<div class="ty-row"><span class="ty-year">' + esc(y) + '</span>' +
+          '<span class="ty-date">' + fmtDateTime(submittedYears[y]) + '</span></div>';
+      }).join('');
+
+    return '<div class="chart-card wide tl-card">' +
+      '<h5>Submission history</h5>' +
+      '<div class="tl">' + rows + '</div>' +
+      (yearRows
+        ? '<div class="ty-block"><div class="ty-head">Submitted per academic year</div>' + yearRows + '</div>'
+        : '') +
+      '<div class="tl-foot">Last edit of any kind: <b>' + fmtDateTime(u.lastUpdated) + '</b>' +
+        (versions.length ? ' · Currently on version <b>' + versions[versions.length - 1].version + '</b>' : '') +
+      '</div>' +
+    '</div>';
+  }
+
   function renderAnalysis(u, shown) {
     var years = shown.length ? shown : cfg.years;
 
@@ -437,6 +509,7 @@ window.IEACards = (function () {
     }).join('') + '</div>';
 
     return stats +
+      renderTimeline(u) +
       '<div class="chart-grid">' +
         '<div class="chart-card">' +
           '<h5>Entry mix by section</h5>' +
