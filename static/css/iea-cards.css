@@ -12,6 +12,8 @@
   padding: 0 2px 10px; margin-bottom: 14px; border-bottom: 2px solid var(--border);
 }
 .school-head h2 { font-size: 19px; color: var(--navy); font-weight: 700; }
+.school-head .sh-left { min-width: 0; }
+.school-head .sh-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .school-meta { font-size: 12.5px; color: var(--ink3); font-weight: 600; }
 
 .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
@@ -199,6 +201,16 @@
 .focus-banner .fb-eyebrow { font-size: 10.5px; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: .1em; }
 .focus-banner .fb-title { font-size: 17px; font-weight: 800; margin-top: 4px; }
 .focus-banner .fb-sub { font-size: 12.5px; color: #cbd7ec; margin-top: 3px; }
+.focus-banner .fb-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.focus-banner .fb-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .35); color: #fff;
+  padding: 8px 15px; border-radius: 8px; font-size: 12.5px; font-weight: 700;
+  text-decoration: none; white-space: nowrap; cursor: pointer; font-family: inherit;
+}
+.focus-banner .fb-btn svg { width: 14px; height: 14px; }
+.focus-banner .fb-btn:hover { background: rgba(255, 255, 255, .26); }
+.focus-banner .fb-btn.copied { background: #e4f0e8; color: #0a2558; border-color: #e4f0e8; }
 .focus-banner a {
   background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .35); color: #fff;
   padding: 8px 15px; border-radius: 8px; font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap;

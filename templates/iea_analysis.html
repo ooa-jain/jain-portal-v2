@@ -272,7 +272,9 @@
     function focusFromQueryString() {
       const qs = new URLSearchParams(location.search);
       const school = qs.get('school'), dept = qs.get('dept'), level = qs.get('level');
-      if (!school || !dept || !level) return null;
+      if (!school) return null;
+      // school alone = whole-school link; school+dept+level = one department
+      if (!dept || !level) return { school: school };
       return { school: school, department: dept, level: level };
     }
     const FOCUS = focusFromQueryString();
@@ -281,7 +283,8 @@
       const el = document.getElementById('kpiGrid');
       // When a single department is in focus, the numbers describe that department.
       const pool = FOCUS
-        ? allUnits.filter(u => u.school === FOCUS.school && u.department === FOCUS.department && u.level === FOCUS.level)
+        ? allUnits.filter(u => u.school === FOCUS.school &&
+            (!FOCUS.department || (u.department === FOCUS.department && u.level === FOCUS.level)))
         : allUnits;
       const unitsWithData = pool.filter(u => totalEntriesForUnit(u) > 0).length;
       const yearLabel = (activeYear === 'ALL') ? 'All Years' : activeYear;
@@ -289,7 +292,7 @@
       const sectionCount = key => pool.reduce((n, u) =>
         n + scopeYears().reduce((m, y) => m + IEACards.entriesIn(u, y, key).length, 0), 0);
 
-      const cards = FOCUS
+      const cards = (FOCUS && FOCUS.department)
         ? [
             { label: 'Years Filled (' + yearLabel + ')', num: IEACards.filledYears(pool[0] || { years: {} }).length + ' / ' + YEARS.length, color: 'var(--navy)' },
             { label: 'Total Entries', num: pool.reduce((n, u) => n + totalEntriesForUnit(u), 0), color: 'var(--gold)' },

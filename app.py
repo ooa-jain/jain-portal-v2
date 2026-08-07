@@ -1435,38 +1435,87 @@ def admin_iea_delete(sid):
     iea_col.delete_one({'_id': ObjectId(sid)})
     return jsonify({'ok': True})
 
+def _iea_send_workbook(docs, year, name_hint):
+    """Render docs to a workbook and hand it back as a download."""
+    if not docs:
+        return "No submissions found for the specified criteria", 404
+    wb = build_iea_workbook(docs, year)
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    safe = re.sub(r'[^A-Za-z0-9]+', '_', name_hint or '').strip('_')
+    year_suffix = f"_{year.replace(' ', '_')}" if year else '_AllYears'
+    filename = f"IEA_Report{('_' + safe) if safe else ''}{year_suffix}.xlsx"
+    return send_file(buf, as_attachment=True, download_name=filename,
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+@app.route('/iea-export')
+def iea_public_export():
+    """Excel for a single department or a single school.
+
+    Open to anyone, matching /iea-analysis, which already displays exactly this
+    data — the spreadsheet is the same content in another format. A school or
+    department must be named; the everything-at-once dump stays admin-only.
+    """
+    year = request.args.get('year')
+    school = (request.args.get('school') or '').strip()
+    dept = (request.args.get('dept') or request.args.get('department') or '').strip()
+    level = (request.args.get('level') or '').strip()
+    sid = request.args.get('sid')
+    if year and year not in IEA_YEARS:
+        return "Invalid year", 400
+
+    if sid:
+        try:
+            query = {'_id': ObjectId(sid)}
+        except Exception:
+            return "Invalid ID", 400
+        hint = ''
+    elif school and dept and level:
+        if school not in IEA_SCHOOLS or dept not in IEA_SCHOOLS.get(school, {}) \
+                or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
+            return "Unknown school / department / level", 404
+        query = {'school': school, 'department': dept, 'level': level}
+        hint = f"{dept}_{level}"
+    elif school:
+        if school not in IEA_SCHOOLS:
+            return "Unknown school", 404
+        query = {'school': school}
+        hint = school
+    else:
+        return "Specify a school, or a school, department and level", 400
+
+    docs = list(iea_col.find(query).sort([('school', 1), ('department', 1), ('level', 1)]))
+    if docs and not hint:
+        hint = f"{docs[0].get('department', '')}_{docs[0].get('level', '')}"
+    return _iea_send_workbook(docs, year, hint)
+
 @app.route('/admin/iea-export')
 def admin_iea_export():
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
     year = request.args.get('year')  # optional: restrict to one academic year
-    sid = request.args.get('sid')    # optional: restrict to one individual department/submission
+    sid = request.args.get('sid')    # optional: restrict to one department/submission
+    school = (request.args.get('school') or '').strip()
     if year and year not in IEA_YEARS:
         return "Invalid year", 400
-    
+
     query = {}
     if sid:
         try:
             query['_id'] = ObjectId(sid)
         except Exception:
             return "Invalid ID", 400
-            
+    elif school:
+        query['school'] = school
+
     docs = list(iea_col.find(query).sort([('school', 1), ('department', 1), ('level', 1)]))
-    if not docs:
-        return "No submissions found for the specified criteria", 440
-        
-    wb = build_iea_workbook(docs, year)
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-    
-    dept_suffix = f"_{docs[0]['department']}_{docs[0]['level']}".replace(' ', '_').replace('/', '_') if (sid and docs) else ''
-    year_suffix = f"_{year.replace(' ', '_')}" if year else '_AllYears'
-    filename = f"IEA_Report{dept_suffix}{year_suffix}.xlsx"
-    
-    return send_file(buf, as_attachment=True,
-                     download_name=filename,
-                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    hint = ''
+    if sid and docs:
+        hint = f"{docs[0].get('department', '')}_{docs[0].get('level', '')}"
+    elif school:
+        hint = school
+    return _iea_send_workbook(docs, year, hint)
 
 def build_iea_workbook(docs, year=None):
     """Excel report for IEA submissions — one tab per academic year, sections A-F

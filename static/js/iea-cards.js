@@ -49,6 +49,12 @@ window.IEACards = (function () {
   }
   function escText(str) { return esc(decodeStored(str)); }
 
+  // House style: names read with the word "and", not an ampersand.
+  function niceName(str) {
+    return decodeStored(str).replace(/\s*&\s*/g, ' and ');
+  }
+  function escName(str) { return esc(niceName(str)); }
+
   function esc(str) {
     return String(str == null ? '' : str).replace(/[&<>"]/g, function (ch) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
@@ -84,10 +90,27 @@ window.IEACards = (function () {
       '&dept=' + encodeURIComponent(u.department) + '&level=' + encodeURIComponent(u.level);
   }
 
+  function schoolShareLink(school) {
+    return location.origin + '/iea-analysis?school=' + encodeURIComponent(school);
+  }
+
+  // Public export — same scoping rules as the analysis page it sits beside.
+  function exportUrlFor(u, year) {
+    return '/iea-export?sid=' + encodeURIComponent(unitId(u)) +
+      (year ? '&year=' + encodeURIComponent(year) : '');
+  }
+  function schoolExportUrl(school, year) {
+    return '/iea-export?school=' + encodeURIComponent(school) +
+      (year ? '&year=' + encodeURIComponent(year) : '');
+  }
+
   function copyShareLink(id, btn) {
     var u = findUnit(id);
     if (!u) return;
-    var link = shareLinkFor(u);
+    copyText(shareLinkFor(u), btn);
+  }
+
+  function copyText(link, btn) {
     var original = btn.innerHTML;
     var done = function () {
       btn.classList.add('copied');
@@ -109,10 +132,10 @@ window.IEACards = (function () {
   }
 
   function matchesFocus(u) {
-    return focus &&
-      u.school === focus.school &&
-      u.department === focus.department &&
-      u.level === focus.level;
+    if (!focus) return false;
+    if (u.school !== focus.school) return false;
+    if (!focus.department) return true;          // school-wide share link
+    return u.department === focus.department && u.level === focus.level;
   }
 
   /* ── Render ───────────────────────────────────────────── */
@@ -143,13 +166,25 @@ window.IEACards = (function () {
     var banner = '';
     if (focus) {
       var f = visible[0];
+      var isSchoolWide = !focus.department;
       banner = '<div class="focus-banner">' +
         '<div>' +
-          '<div class="fb-eyebrow">' + esc(focus.school) + '</div>' +
-          '<div class="fb-title">' + esc(focus.department) + ' · ' + esc(focus.level) + '</div>' +
+          '<div class="fb-eyebrow">' +
+            (isSchoolWide ? 'School analysis' : escName(focus.school)) + '</div>' +
+          '<div class="fb-title">' +
+            (isSchoolWide ? escName(focus.school)
+                          : escName(focus.department) + ' · ' + escName(focus.level)) + '</div>' +
           '<div class="fb-sub">' + (f
-            ? 'Showing this department\'s Innovation &amp; Emerging Areas analysis across all academic years.'
-            : 'No submission has been recorded for this department yet.') + '</div>' +
+            ? (isSchoolWide
+                ? 'Showing every department in this school across all academic years.'
+                : 'Showing this department\'s Innovation and Emerging Areas analysis across all academic years.')
+            : 'No submission has been recorded yet.') + '</div>' +
+        '</div>' +
+        '<div class="fb-actions">' +
+          '<button class="fb-btn" data-copyschool="' + esc(focus.school) + '">' + ICON.link + ' Copy this link</button>' +
+          '<a class="fb-btn" href="' + (isSchoolWide
+              ? schoolExportUrl(focus.school, yearFilter)
+              : (f ? exportUrlFor(f, yearFilter) : '#')) + '">' + ICON.download + ' Excel</a>' +
         '</div>' +
       '</div>';
     }
@@ -184,10 +219,19 @@ window.IEACards = (function () {
 
       return '<div class="school-block" style="animation-delay:' + (si * 0.04) + 's">' +
         '<div class="school-head">' +
-          '<h2>' + esc(school) + '</h2>' +
-          '<span class="school-meta">' + reporting + ' of ' + units.length + ' departments reporting · ' +
-            schoolEntries + ' ' + (schoolEntries === 1 ? 'entry' : 'entries') +
-            (yearFilter ? ' in ' + esc(yearFilter) : ' across all years') + '</span>' +
+          '<div class="sh-left">' +
+            '<h2>' + escName(school) + '</h2>' +
+            '<span class="school-meta">' + reporting + ' of ' + units.length + ' departments reporting · ' +
+              schoolEntries + ' ' + (schoolEntries === 1 ? 'entry' : 'entries') +
+              (yearFilter ? ' in ' + escName(yearFilter) : ' across all years') + '</span>' +
+          '</div>' +
+          (focus ? '' :
+            '<div class="sh-actions">' +
+              '<button class="card-btn" data-copyschool="' + esc(school) + '" title="Share this school\'s analysis">' +
+                ICON.link + ' Copy school link</button>' +
+              '<a class="card-btn" href="' + schoolExportUrl(school, yearFilter) + '" title="Excel for every department in this school">' +
+                ICON.download + ' School Excel</a>' +
+            '</div>') +
         '</div>' +
         '<div class="dept-grid">' + cards + '</div>' +
       '</div>';
@@ -222,19 +266,18 @@ window.IEACards = (function () {
       '<button class="card-btn" data-unit="' + unitId(u) + '">' + ICON.eye + ' ' +
         (isOpen ? 'Hide' : 'View all years') + '</button>' +
       '<button class="card-btn" data-link="' + unitId(u) + '">' + ICON.link + ' Copy link</button>' +
-      (cfg.canExport
-        ? '<a class="card-btn" href="/admin/iea-export?sid=' + unitId(u) + '" title="Excel — one tab per year">' + ICON.download + ' Excel</a>'
-        : '') +
+      '<a class="card-btn" href="' + exportUrlFor(u, yearFilter) + '" title="Excel — one tab per year">' +
+        ICON.download + ' Excel</a>' +
       (cfg.canDelete
         ? '<button class="card-btn danger" data-del="' + unitId(u) + '">' + ICON.trash + '</button>'
         : '');
 
     var card =
       '<div class="dept-card' + (isOpen ? ' is-open' : '') + (hasData ? '' : ' no-data') + '">' +
-        '<div class="dc-school">' + esc(u.school) + '</div>' +
+        '<div class="dc-school">' + escName(u.school) + '</div>' +
         '<div class="dc-top">' +
-          '<div class="dc-name">' + esc(u.department) + '</div>' +
-          '<span class="level-badge">' + esc(u.level) + '</span>' +
+          '<div class="dc-name">' + escName(u.department) + '</div>' +
+          '<span class="level-badge">' + escName(u.level) + '</span>' +
         '</div>' +
         '<div class="dc-sub">' + who + '<br>Last updated: ' + lastUpdatedText(u) + '</div>' +
         '<div class="years-row">' + chips + '</div>' +
@@ -272,16 +315,14 @@ window.IEACards = (function () {
     var head =
       '<div class="detail-panel-head">' +
         '<div>' +
-          '<div class="dp-school">' + esc(u.school) + '</div>' +
-          '<h3>' + esc(u.department) + ' · ' + esc(u.level) + '</h3>' +
+          '<div class="dp-school">' + escName(u.school) + '</div>' +
+          '<h3>' + escName(u.department) + ' · ' + escName(u.level) + '</h3>' +
           '<div class="dp-sub">' + shown.length + ' of ' + cfg.years.length +
             ' academic years filled. Pick a year below, or open Analysis for the overview.</div>' +
         '</div>' +
-        (cfg.canExport
-          ? '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
-              '<a class="card-btn" href="/admin/iea-export?sid=' + id + '">' + ICON.download + ' All years (.xlsx)</a>' +
-            '</div>'
-          : '') +
+        '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
+          '<a class="card-btn" href="' + exportUrlFor(u) + '">' + ICON.download + ' All years (.xlsx)</a>' +
+        '</div>' +
       '</div>' +
       '<div class="share-note"><b>Share link for this department:</b> ' + esc(shareLinkFor(u)) +
         (u.submitterEmail ? '<br><b>Filled by:</b> ' + esc(u.submitterEmail) : '') + '</div>';
@@ -326,9 +367,7 @@ window.IEACards = (function () {
       '<div class="year-block-head">' +
         '<span class="yb-title">' + esc(y) + '</span>' +
         '<span class="yb-count">' + n + ' ' + (n === 1 ? 'entry' : 'entries') +
-          (cfg.canExport
-            ? ' · <a href="/admin/iea-export?sid=' + unitId(u) + '&year=' + encodeURIComponent(y) + '" style="color:#2563eb;">Excel</a>'
-            : '') +
+          ' · <a href="' + exportUrlFor(u, y) + '" style="color:#2563eb;">Excel</a>' +
         '</span>' +
       '</div>' +
       '<div class="year-block-body">' + body + '</div>' +
@@ -581,6 +620,11 @@ window.IEACards = (function () {
     });
     el.querySelectorAll('[data-del]').forEach(function (btn) {
       btn.addEventListener('click', function () { deleteUnit(btn.getAttribute('data-del')); });
+    });
+    el.querySelectorAll('[data-copyschool]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        copyText(schoolShareLink(btn.getAttribute('data-copyschool')), btn);
+      });
     });
     el.querySelectorAll('[data-tab]').forEach(function (btn) {
       btn.addEventListener('click', function () {
