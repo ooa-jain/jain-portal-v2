@@ -1752,9 +1752,33 @@
       else if (document.getElementById('fbOverlay').classList.contains('show')) closeFeedback();
     });
 
+    /* Deep link: /iea?school=..&dept=..&level=.. opens that unit directly, so admin
+       can share a department's link with the person who fills it. */
+    function openFromQueryString() {
+      const qs = new URLSearchParams(location.search);
+      const school = qs.get('school'), dept = qs.get('dept'), level = qs.get('level');
+      if (!school || !dept || !level) return false;
+      if (!DEPT_DATA[school] || !DEPT_DATA[school][dept] || DEPT_DATA[school][dept].indexOf(level) === -1) {
+        showToast('That shared link points to a unit that no longer exists.', true);
+        return false;
+      }
+      document.getElementById('dashView').style.display = 'none';
+      document.getElementById('formView').style.display = 'block';
+
+      schoolSelect.value = school;
+      schoolSelect.dispatchEvent(new Event('change'));
+      deptSelect.value = dept;
+      deptSelect.dispatchEvent(new Event('change'));
+      levelSelect.value = level;
+      levelSelect.dispatchEvent(new Event('change'));
+      window.scrollTo(0, 0);
+      return true;
+    }
+
     // Boot
     renderFbStars();
     loadDashboard();
+    openFromQueryString();
   </script>
 </body>
 </html>
