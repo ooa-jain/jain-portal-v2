@@ -32,9 +32,11 @@ window.IEACards = (function () {
   var cfg = null;
   var yearFilter = '';        // '' = every academic year
   var searchTerm = '';
-  var deptFilter = '';        // exact school or department name, '' = all
+  var schoolFilter = '';      // exact school name, '' = all
+  var deptFilter = '';        // exact department name, '' = all
   var dataFilter = 'with_data';
   var expandedUnit = null;
+  var lastVisible = [];       // units shown by the most recent render
   var focus = null;           // {school, department, level} when opened via share link
 
   // Some stored entries arrived HTML-escaped. Decode once before we escape for
@@ -144,6 +146,7 @@ window.IEACards = (function () {
     if (!el) return;
 
     if (!cfg.units.length) {
+      lastVisible = [];
       el.innerHTML = '<div class="iea-empty-state">' + ICON.folder +
         '<h3>No submissions yet</h3><p>Once departments save data, they will appear here as cards.</p></div>';
       notify(0, 0);
@@ -155,13 +158,18 @@ window.IEACards = (function () {
 
     var visible = cfg.units.filter(function (u) {
       if (focus) return matchesFocus(u);
-      if (deptFilter && u.department !== deptFilter && u.school !== deptFilter) return false;
+      if (schoolFilter && u.school !== schoolFilter) return false;
+      if (deptFilter && u.department !== deptFilter) return false;
       var haystack = [u.school, u.department, u.level, u.submitterName, u.submitterEmail].join(' ').toLowerCase();
       if (q && haystack.indexOf(q) === -1) return false;
       if (dataFilter === 'all') return true;
       var has = scope.some(function (y) { return countForYear(u, y) > 0; });
       return dataFilter === 'draft' ? !has : has;
     });
+
+    lastVisible = visible;
+    // Choosing one department from the pickers opens it straight away.
+    if (deptFilter && visible.length === 1) expandedUnit = unitId(visible[0]);
 
     var banner = '';
     if (focus) {
@@ -190,6 +198,7 @@ window.IEACards = (function () {
     }
 
     if (!visible.length) {
+      lastVisible = [];
       el.innerHTML = banner + '<div class="iea-empty-state">' + ICON.folder +
         '<h3>No departments match</h3><p>Try clearing the search, choosing another academic year, or switching to "Show All Departments".</p></div>';
       notify(0, 0);
@@ -681,12 +690,35 @@ window.IEACards = (function () {
     getYear: function () { return yearFilter; },
     setSearch: function (q) { searchTerm = q || ''; render(); },
     setDeptFilter: function (d) { deptFilter = d || ''; render(); },
+    /* Cascading school → department pickers. */
+    setScope: function (school, dept) {
+      schoolFilter = school || '';
+      deptFilter = dept || '';
+      if (!deptFilter) expandedUnit = null;
+      render();
+    },
+    /* Schools present in the data, each with its departments. */
+    schoolIndex: function () {
+      var map = {};
+      (cfg && cfg.units ? cfg.units : []).forEach(function (u) {
+        if (!map[u.school]) map[u.school] = {};
+        map[u.school][u.department] = (map[u.school][u.department] || 0) + 1;
+      });
+      return Object.keys(map).sort().map(function (school) {
+        return { school: school, departments: Object.keys(map[school]).sort() };
+      });
+    },
+    niceName: niceName,
+    /* Units the last render displayed — hosts scope their KPIs to this. */
+    visibleUnits: function () { return lastVisible.slice(); },
+    isScoped: function () { return !!(schoolFilter || deptFilter || focus); },
     setDataFilter: function (v) { dataFilter = v || 'with_data'; render(); },
     /* Apply several filters with a single re-render. */
     setFilters: function (o) {
       o = o || {};
       if ('search' in o) searchTerm = o.search || '';
       if ('dept' in o) deptFilter = o.dept || '';
+      if ('school' in o) schoolFilter = o.school || '';
       if ('data' in o) dataFilter = o.data || 'with_data';
       if ('year' in o) yearFilter = o.year || '';
       render();

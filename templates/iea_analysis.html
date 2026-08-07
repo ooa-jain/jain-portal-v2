@@ -174,9 +174,7 @@
           <span style="background:var(--gold); color:var(--navy); padding:2px 8px; border-radius:99px; font-size:10px; font-weight:800;">UGC COMPLIANT</span>
         </div>
       </div>
-      <h1>Innovation &amp; Emerging Areas — Full Analytics &amp; Insights</h1>
-      <p>Comprehensive analytical view of School &amp; Department submissions across Academic Years 2022-23 to 2026-27. Inspect section entries, submitted vs draft statuses, and download department Excel reports.</p>
-      <div class="header-actions">
+      <div class="header-actions" style="margin-top:6px;">
         {% if is_admin %}
         <a href="/admin/iea-export" class="btn btn-gold">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -222,13 +220,16 @@
         <div class="year-tabs" id="yearTabs"></div>
       </div>
       <div class="filters-group">
+        <select id="schoolPicker" onchange="onSchoolPicked()" class="select-input">
+          <option value="">🏫 All Schools</option>
+        </select>
+        <select id="deptPicker" onchange="onDeptPicked()" class="select-input" disabled>
+          <option value="">All Departments</option>
+        </select>
         <select id="ieaDataFilter" onchange="renderTable()" class="select-input">
           <option value="with_data" selected>⚡ Units With Submissions (≥1 Entry)</option>
           <option value="draft">📝 Units Pending / Draft (0 Entries)</option>
           <option value="all">📁 All Units (Including 0 Entries)</option>
-        </select>
-        <select id="ieaDeptFilter" onchange="renderTable()" class="select-input">
-          <option value="">All Departments &amp; Schools</option>
         </select>
         <input type="text" id="searchInput" placeholder="🔍 Search dept, school…" oninput="renderTable()" class="text-input">
       </div>
@@ -282,17 +283,18 @@
     function renderKPIs() {
       const el = document.getElementById('kpiGrid');
       // When a single department is in focus, the numbers describe that department.
-      const pool = FOCUS
-        ? allUnits.filter(u => u.school === FOCUS.school &&
-            (!FOCUS.department || (u.department === FOCUS.department && u.level === FOCUS.level)))
-        : allUnits;
+      // Follow whatever the cards are currently showing (school/department pickers,
+      // search, or a shared link), falling back to everything before first render.
+      const shown = IEACards.visibleUnits();
+      const pool = (IEACards.isScoped() || shown.length) ? shown : allUnits;
       const unitsWithData = pool.filter(u => totalEntriesForUnit(u) > 0).length;
       const yearLabel = (activeYear === 'ALL') ? 'All Years' : activeYear;
 
       const sectionCount = key => pool.reduce((n, u) =>
         n + scopeYears().reduce((m, y) => m + IEACards.entriesIn(u, y, key).length, 0), 0);
 
-      const cards = (FOCUS && FOCUS.department)
+      const single = pool.length === 1;
+      const cards = single
         ? [
             { label: 'Years Filled (' + yearLabel + ')', num: IEACards.filledYears(pool[0] || { years: {} }).length + ' / ' + YEARS.length, color: 'var(--navy)' },
             { label: 'Total Entries', num: pool.reduce((n, u) => n + totalEntriesForUnit(u), 0), color: 'var(--gold)' },
@@ -302,7 +304,7 @@
             { label: 'D — Industry Skilling', num: sectionCount('D'), color: 'var(--d)' },
           ]
         : [
-            { label: 'Units Reporting (' + yearLabel + ')', num: unitsWithData + ' / ' + allUnits.length, color: 'var(--navy)' },
+            { label: 'Units Reporting (' + yearLabel + ')', num: unitsWithData + ' / ' + pool.length, color: 'var(--navy)' },
             { label: 'A — New Programmes', num: sectionCount('A'), color: 'var(--a)' },
             { label: 'B — Programme Innovations', num: sectionCount('B'), color: 'var(--b)' },
             { label: 'C — Global Recognitions', num: sectionCount('C'), color: 'var(--c)' },
@@ -365,22 +367,55 @@
       }
     }
 
-    function populateDeptFilter() {
-      const select = document.getElementById('ieaDeptFilter');
-      if (!select || select.options.length > 1) return;
-      const depts = Array.from(new Set(allUnits.map(u => u.department || u.school))).sort();
-      depts.forEach(d => {
+    /* ── Cascading pickers: All Schools → its departments ── */
+    let SCHOOL_INDEX = [];
+
+    function populateSchoolPicker() {
+      SCHOOL_INDEX = IEACards.schoolIndex();
+      const sel = document.getElementById('schoolPicker');
+      if (!sel || sel.options.length > 1) return;
+      SCHOOL_INDEX.forEach(s => {
         const opt = document.createElement('option');
-        opt.value = d; opt.textContent = d;
-        select.appendChild(opt);
+        opt.value = s.school;
+        opt.textContent = IEACards.niceName(s.school) +
+          '  (' + s.departments.length + ' dept' + (s.departments.length === 1 ? '' : 's') + ')';
+        sel.appendChild(opt);
       });
+    }
+
+    function onSchoolPicked() {
+      const school = document.getElementById('schoolPicker').value;
+      const dsel = document.getElementById('deptPicker');
+      dsel.innerHTML = '<option value="">All Departments</option>';
+
+      if (!school) {
+        dsel.disabled = true;
+      } else {
+        dsel.disabled = false;
+        const row = SCHOOL_INDEX.find(s => s.school === school);
+        (row ? row.departments : []).forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = IEACards.niceName(d);
+          dsel.appendChild(opt);
+        });
+      }
+      IEACards.setScope(school, '');
+      renderKPIs();
+    }
+
+    function onDeptPicked() {
+      IEACards.setScope(
+        document.getElementById('schoolPicker').value,
+        document.getElementById('deptPicker').value
+      );
+      renderKPIs();
     }
 
     /* Kept as the name the toolbar's inline handlers call. */
     function renderTable() {
       IEACards.setFilters({
         search: document.getElementById('searchInput').value,
-        dept: document.getElementById('ieaDeptFilter').value,
         data: document.getElementById('ieaDataFilter').value
       });
     }
@@ -394,7 +429,6 @@
       renderYearTabs();
     });
 
-    populateDeptFilter();
     renderYearTabs();
 
     // mount first — its onChange callback renders the KPIs
@@ -408,6 +442,8 @@
       focus: FOCUS,
       onChange: renderKPIs
     });
+
+    populateSchoolPicker();
 
     if (FOCUS) {
       // A shared link is about one department — hide the browse-everything controls.

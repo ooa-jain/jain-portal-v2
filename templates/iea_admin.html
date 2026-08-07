@@ -168,6 +168,12 @@
 
     <div class="toolbar">
       <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <select id="schoolPicker" onchange="onSchoolPicked()" style="padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border); font-size: 13px; font-weight: 700; color: var(--navy); background: #fff; cursor: pointer;">
+          <option value="">🏫 All Schools</option>
+        </select>
+        <select id="deptPicker" onchange="onDeptPicked()" disabled style="padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border); font-size: 13px; font-weight: 700; color: var(--navy); background: #fff; cursor: pointer;">
+          <option value="">All Departments</option>
+        </select>
         <input type="text" class="search-input" id="ieaSearch" placeholder="🔍 Search school, department or person…" oninput="renderCards()">
         <select id="ieaYearFilter" onchange="onYearFilterChange()" style="padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border); font-size: 13px; font-weight: 700; color: var(--navy); background: #fff; cursor: pointer;">
           <option value="">📅 All Academic Years</option>
@@ -232,20 +238,23 @@
     function renderKPIs() {
       const el = document.getElementById('kpiGrid');
       const scope = scopeYears();
-      const reporting = allUnits.filter(u => scope.some(y => countForYear(u, y) > 0));
-      const schools = new Set(allUnits.map(u => u.school));
+      // Follow whatever the cards are currently showing.
+      const shownUnits = IEACards.visibleUnits();
+      const pool = (IEACards.isScoped() || shownUnits.length) ? shownUnits : allUnits;
+      const reporting = pool.filter(u => scope.some(y => countForYear(u, y) > 0));
+      const schools = new Set(pool.map(u => u.school));
       const schoolsReporting = new Set(reporting.map(u => u.school));
-      const entries = allUnits.reduce((n, u) => n + scope.reduce((m, y) => m + countForYear(u, y), 0), 0);
+      const entries = pool.reduce((n, u) => n + scope.reduce((m, y) => m + countForYear(u, y), 0), 0);
       const label = yearFilter || 'All Years';
 
       const cards = [
         { label: 'Schools Reporting (' + label + ')', num: schoolsReporting.size + ' / ' + schools.size, color: 'var(--navy)' },
-        { label: 'Departments Reporting', num: reporting.length + ' / ' + allUnits.length, color: 'var(--b)' },
+        { label: 'Departments Reporting', num: reporting.length + ' / ' + pool.length, color: 'var(--b)' },
         { label: 'Total Entries Recorded', num: entries, color: 'var(--gold)' },
         { label: 'Academic Years In View', num: scope.length, color: 'var(--c)' },
       ];
       SECTIONS.slice(0, 2).forEach(s => {
-        const n = allUnits.reduce((acc, u) => acc + scope.reduce((m, y) => m + IEACards.entriesIn(u, y, s.key).length, 0), 0);
+        const n = pool.reduce((acc, u) => acc + scope.reduce((m, y) => m + IEACards.entriesIn(u, y, s.key).length, 0), 0);
         cards.push({ label: s.key + ' — ' + s.title, num: n, color: s.color });
       });
 
@@ -278,6 +287,50 @@
       });
     }
 
+    /* ── Cascading pickers: All Schools → its departments ── */
+    let SCHOOL_INDEX = [];
+
+    function populateSchoolPicker() {
+      SCHOOL_INDEX = IEACards.schoolIndex();
+      const sel = document.getElementById('schoolPicker');
+      if (!sel || sel.options.length > 1) return;
+      SCHOOL_INDEX.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.school;
+        opt.textContent = IEACards.niceName(s.school) +
+          '  (' + s.departments.length + ' dept' + (s.departments.length === 1 ? '' : 's') + ')';
+        sel.appendChild(opt);
+      });
+    }
+
+    function onSchoolPicked() {
+      const school = document.getElementById('schoolPicker').value;
+      const dsel = document.getElementById('deptPicker');
+      dsel.innerHTML = '<option value="">All Departments</option>';
+      if (!school) {
+        dsel.disabled = true;
+      } else {
+        dsel.disabled = false;
+        const row = SCHOOL_INDEX.find(s => s.school === school);
+        (row ? row.departments : []).forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = IEACards.niceName(d);
+          dsel.appendChild(opt);
+        });
+      }
+      IEACards.setScope(school, '');
+      renderKPIs();
+    }
+
+    function onDeptPicked() {
+      IEACards.setScope(
+        document.getElementById('schoolPicker').value,
+        document.getElementById('deptPicker').value
+      );
+      renderKPIs();
+    }
+
     function renderDownloadGroup() {
       const el = document.getElementById('downloadGroup');
       const yearBtn = yearFilter
@@ -300,6 +353,8 @@
       canExport: true,
       onChange: renderKPIs
     });
+
+    populateSchoolPicker();
   </script>
 </body>
 
