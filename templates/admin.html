@@ -1168,9 +1168,10 @@
         <div style="flex: 1; min-width: 250px;">
           <label style="font-size: 11px; font-weight: 700; color: #4338ca; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">1. Select Recipient Group</label>
           <select id="reminder_target_type" onchange="toggleReminderDeptSelect()" style="width: 100%; padding: 10px 12px; border: 1.5px solid #c7d2fe; border-radius: 8px; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--navy); background: #ffffff; outline: none;">
-            <option value="all_pending">⚠️ All Pending (Readiness or Closure)</option>
+            <option value="all_pending">⚠️ All Pending (Readiness, Closure or IEA)</option>
             <option value="pending_readiness">📋 Pending in Semester Readiness</option>
             <option value="pending_closure">🔒 Pending in Semester Closure</option>
+            <option value="pending_iea">💡 Pending in Innovation &amp; Emerging Areas</option>
             <option value="specific_dept">🏢 Select Specific Department</option>
           </select>
         </div>
@@ -1839,7 +1840,7 @@
                 <td>
                   {% if req.status == 'approved' %}
                    <button class="btn btn-ghost btn-sm"
-                    onclick="revokeAccess('{{ req.user_email }}', '{{ 'readiness' if 'Readiness' in req.module else 'closure' }}', this)"
+                    onclick="revokeAccess('{{ req.user_email }}', '{{ req.module_key }}', this)"
                     style="border-color: #ef4444; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; cursor: pointer;">Revoke
                     Access</button>
                   {% else %}
@@ -2768,9 +2769,10 @@
       const dept = document.getElementById('reminder_department').value;
       
       let confirmMsg = 'Are you sure you want to send email reminders to ';
-      if (type === 'all_pending') confirmMsg += 'all HODs with any pending readiness or closure submissions?';
+      if (type === 'all_pending') confirmMsg += 'all HODs with any pending readiness, closure or IEA submissions?';
       else if (type === 'pending_readiness') confirmMsg += 'all HODs with pending Semester Readiness checklists?';
       else if (type === 'pending_closure') confirmMsg += 'all HODs with pending Semester Closure reports?';
+      else if (type === 'pending_iea') confirmMsg += 'all HODs with pending Innovation & Emerging Areas submissions?';
       else confirmMsg += `the HOD of "${dept}"?`;
       
       if (!confirm(confirmMsg)) return;

@@ -645,96 +645,42 @@ def send_final_hour_deadline_email(to_email, name, module_name, deadline_str):
 def check_and_send_deadline_reminders():
     settings = get_global_settings()
     now = datetime.now()
-    
-    # Check Readiness
-    r_deadline = settings.get('readiness_deadline')
-    if r_deadline:
-        try:
-            r_dt = datetime.strptime(r_deadline, "%Y-%m-%dT%H:%M")
-            diff_hours = (r_dt - now).total_seconds() / 3600.0
-            r_date_str = r_dt.strftime("%d %B %Y")
-            
-            # Send 2-day warning
-            if 0 < diff_hours <= 48:
-                for user in users_col.find():
-                    email = user.get('email')
-                    name = user.get('name')
-                    has_sub = submissions_col.find_one({
-                        'identity.submitterEmail': email,
-                        'form_type': 'readiness',
-                        '_draft': False
-                    })
-                    if not has_sub:
-                        reminder_key = f"reminder_readiness_2day_{r_deadline}_{email}"
-                        if not db['sent_reminders'].find_one({'_id': reminder_key}):
-                            print(f"Sending 2-day deadline warning to HOD {name} ({email}) for Readiness...")
-                            send_deadline_reminder_email(email, name, "Semester Readiness", r_date_str)
-                            db['sent_reminders'].insert_one({'_id': reminder_key, 'sent_at': datetime.utcnow().isoformat()})
-            
-            # Send 1-hour warning
-            if 0 < diff_hours <= 1.0:
-                for user in users_col.find():
-                    email = user.get('email')
-                    name = user.get('name')
-                    has_sub = submissions_col.find_one({
-                        'identity.submitterEmail': email,
-                        'form_type': 'readiness',
-                        '_draft': False
-                    })
-                    if not has_sub:
-                        reminder_key = f"reminder_readiness_1hour_{r_deadline}_{email}"
-                        if not db['sent_reminders'].find_one({'_id': reminder_key}):
-                            print(f"Sending 1-hour deadline warning to HOD {name} ({email}) for Readiness...")
-                            send_final_hour_deadline_email(email, name, "Semester Readiness", r_date_str)
-                            db['sent_reminders'].insert_one({'_id': reminder_key, 'sent_at': datetime.utcnow().isoformat()})
-                            
-        except Exception as e:
-            print(f"Error checking readiness deadline reminders: {e}")
 
-    # Check Closure
-    c_deadline = settings.get('closure_deadline')
-    if c_deadline:
+    # Same 2-day / 1-hour warning cycle for every module (readiness, closure, IEA)
+    for module_key in MODULE_ORDER:
+        mod = MODULES[module_key]
+        deadline = settings.get(mod['deadline_key'])
+        if not deadline:
+            continue
         try:
-            c_dt = datetime.strptime(c_deadline, "%Y-%m-%dT%H:%M")
-            diff_hours = (c_dt - now).total_seconds() / 3600.0
-            c_date_str = c_dt.strftime("%d %B %Y")
-            
-            # Send 2-day warning
-            if 0 < diff_hours <= 48:
+            dt = datetime.strptime(deadline, "%Y-%m-%dT%H:%M")
+            diff_hours = (dt - now).total_seconds() / 3600.0
+            date_str = dt.strftime("%d %B %Y")
+
+            if diff_hours <= 0:
+                continue
+
+            for window, sender in (('2day', send_deadline_reminder_email),
+                                   ('1hour', send_final_hour_deadline_email)):
+                limit = 48 if window == '2day' else 1.0
+                if diff_hours > limit:
+                    continue
                 for user in users_col.find():
                     email = user.get('email')
-                    name = user.get('name')
-                    has_sub = submissions_col.find_one({
-                        'identity.submitterEmail': email,
-                        'form_type': 'closure',
-                        '_draft': False
-                    })
-                    if not has_sub:
-                        reminder_key = f"reminder_closure_2day_{c_deadline}_{email}"
-                        if not db['sent_reminders'].find_one({'_id': reminder_key}):
-                            print(f"Sending 2-day deadline warning to HOD {name} ({email}) for Closure...")
-                            send_deadline_reminder_email(email, name, "Semester Closure", c_date_str)
-                            db['sent_reminders'].insert_one({'_id': reminder_key, 'sent_at': datetime.utcnow().isoformat()})
-            
-            # Send 1-hour warning
-            if 0 < diff_hours <= 1.0:
-                for user in users_col.find():
-                    email = user.get('email')
-                    name = user.get('name')
-                    has_sub = submissions_col.find_one({
-                        'identity.submitterEmail': email,
-                        'form_type': 'closure',
-                        '_draft': False
-                    })
-                    if not has_sub:
-                        reminder_key = f"reminder_closure_1hour_{c_deadline}_{email}"
-                        if not db['sent_reminders'].find_one({'_id': reminder_key}):
-                            print(f"Sending 1-hour deadline warning to HOD {name} ({email}) for Closure...")
-                            send_final_hour_deadline_email(email, name, "Semester Closure", c_date_str)
-                            db['sent_reminders'].insert_one({'_id': reminder_key, 'sent_at': datetime.utcnow().isoformat()})
-                            
+                    if not email:
+                        continue
+                    name = user.get('name') or 'HOD'
+                    if has_module_submission(module_key, email):
+                        continue
+                    reminder_key = f"reminder_{module_key}_{window}_{deadline}_{email}"
+                    if db['sent_reminders'].find_one({'_id': reminder_key}):
+                        continue
+                    print(f"Sending {window} deadline warning to HOD {name} ({email}) for {mod['label']}...")
+                    sender(email, name, mod['label'], date_str)
+                    db['sent_reminders'].insert_one({'_id': reminder_key,
+                                                     'sent_at': datetime.utcnow().isoformat()})
         except Exception as e:
-            print(f"Error checking closure deadline reminders: {e}")
+            print(f"Error checking {module_key} deadline reminders: {e}")
 
 def start_deadline_scheduler():
     import threading
@@ -747,9 +693,6 @@ def start_deadline_scheduler():
             except Exception as ex:
                 print(f"Scheduler check error: {ex}")
             time.sleep(60)  # check every 60 seconds
-
-    t = threading.Thread(target=run_scheduler, daemon=True)
-    t.start()
 
     t = threading.Thread(target=run_scheduler, daemon=True)
     t.start()
@@ -777,6 +720,89 @@ def get_global_settings():
     settings.setdefault('enabled_years', ['2024-25', '2025-26', '2026-27', '2027-28'])
     settings.setdefault('enabled_semesters', ['Even', 'Odd'])
     return settings
+
+# ── Module registry ───────────────────────────────────────
+# Semester Readiness, Semester Closure and Innovation & Emerging Areas are the
+# three HOD-facing modules. Everything that varies between them lives here so
+# settings, deadlines, reminders and late-access all treat the three the same
+# way instead of special-casing IEA.
+MODULE_ORDER = ['readiness', 'closure', 'iea']
+
+MODULES = {
+    'readiness': {
+        'key': 'readiness',
+        'label': 'Semester Readiness',
+        'enabled_key': 'readiness_enabled',
+        'deadline_key': 'readiness_deadline',
+        'override_field': 'readiness_access_override',
+        'permission_field': 'can_readiness',
+        'aliases': ['readiness'],
+    },
+    'closure': {
+        'key': 'closure',
+        'label': 'Semester Closure',
+        'enabled_key': 'closure_enabled',
+        'deadline_key': 'closure_deadline',
+        'override_field': 'closure_access_override',
+        'permission_field': 'can_closure',
+        'aliases': ['closure'],
+    },
+    'iea': {
+        'key': 'iea',
+        'label': 'Innovation & Emerging Areas',
+        'enabled_key': 'iea_enabled',
+        'deadline_key': 'iea_deadline',
+        'override_field': 'iea_access_override',
+        'permission_field': 'can_iea',
+        'aliases': ['iea', 'innovation', 'emerging'],
+    },
+}
+
+def get_module(module_key):
+    """Look up a module by its key ('readiness' / 'closure' / 'iea')."""
+    return MODULES.get((module_key or '').strip().lower())
+
+def module_from_label(label):
+    """Map a stored access-request module label back to its registry entry."""
+    text = (label or '').strip().lower()
+    if not text:
+        return None
+    for key in MODULE_ORDER:
+        mod = MODULES[key]
+        if text == mod['label'].lower():
+            return mod
+    for key in MODULE_ORDER:
+        mod = MODULES[key]
+        if any(alias in text for alias in mod['aliases']):
+            return mod
+    return None
+
+def has_module_submission(module_key, email):
+    """True when this HOD has a finalised (non-draft) submission for the module."""
+    if not email:
+        return False
+    if module_key == 'iea':
+        return bool(iea_col.find_one({'submitterEmail': email, 'submitted': True}))
+    return bool(submissions_col.find_one({
+        'identity.submitterEmail': email,
+        'form_type': module_key,
+        '_draft': False
+    }))
+
+def get_module_deadline(settings, module_key):
+    """Return (raw_deadline, 'DD Month YYYY') for a module; date is 'N/A' if unset/bad."""
+    mod = get_module(module_key)
+    if not mod:
+        return '', 'N/A'
+    raw = settings.get(mod['deadline_key']) or ''
+    if not raw:
+        return '', 'N/A'
+    try:
+        return raw, datetime.strptime(raw, "%Y-%m-%dT%H:%M").strftime("%d %B %Y")
+    except Exception as ex:
+        print(f"Error parsing {module_key} deadline {raw}: {ex}")
+        return raw, 'N/A'
+
 def _sections_for(form_type):
     """Return (hod_sections_or_report, faculty_sections) for the given form type."""
     if form_type == 'closure':
@@ -806,7 +832,7 @@ def index():
 
     iea_sub = iea_col.find_one({
         '$or': [{'department': dept}, {'submitterEmail': user_email}]
-    }, sort=[('updatedAt', -1)])
+    }, sort=[('lastUpdated', -1)])
 
     dept_status = {
         'readiness': {
@@ -820,8 +846,8 @@ def index():
             'id': str(closure_sub['_id']) if closure_sub else ''
         },
         'iea': {
-            'submitted': bool(iea_sub and iea_sub.get('status') == 'submitted'),
-            'date': iea_sub.get('updatedAt', '')[:10] if iea_sub else '',
+            'submitted': bool(iea_sub and iea_sub.get('submitted')),
+            'date': (iea_sub.get('submittedAt') or iea_sub.get('lastUpdated', ''))[:10] if iea_sub else '',
             'id': str(iea_sub['_id']) if iea_sub else ''
         }
     }
@@ -891,13 +917,13 @@ def hod_analysis_api():
     return jsonify({'ok': True, 'data': results})
 
 def has_access_override(email, module_type):
+    mod = get_module(module_type)
+    if not mod:
+        return False
     user = users_col.find_one({'email': email})
-    if user:
-        if module_type == 'readiness':
-            return user.get('readiness_access_override', False)
-        elif module_type == 'closure':
-            return user.get('closure_access_override', False)
-    return False
+    if not user:
+        return False
+    return bool(user.get(mod['override_field'], False))
 
 def get_user_context(user_email):
     if not user_email:
@@ -1038,8 +1064,16 @@ def iea():
     settings = get_global_settings()
     if not session.get('admin') and (not settings.get('iea_enabled', True) or not user.get('can_iea', True)):
         return redirect('/')
+    is_passed = is_deadline_passed(settings.get('iea_deadline'))
+    override = has_access_override(session['user_email'], 'iea')
+    req = db['access_requests'].find_one({'user_email': session['user_email'],
+                                          'module': MODULES['iea']['label']})
     return render_template('iea.html',
                            user=user,
+                           settings=settings,
+                           is_deadline_passed=is_passed,
+                           has_override=override,
+                           extension_request=req,
                            iea_schools=IEA_SCHOOLS,
                            iea_years=IEA_YEARS,
                            iea_sections=IEA_SECTIONS,
@@ -1090,10 +1124,30 @@ def iea_load():
     doc['_id'] = str(doc['_id'])
     return jsonify({'ok': True, 'submission': doc})
 
+def iea_write_blocked():
+    """Module-disabled / deadline check for IEA writes.
+
+    The readiness and closure forms are blocked at page level, but IEA is a
+    single-page app — so the same rules have to be enforced on the API.
+    Returns an error message when the write must be refused, else None.
+    """
+    if session.get('admin'):
+        return None
+    settings = get_global_settings()
+    if not settings.get('iea_enabled', True):
+        return 'The Innovation & Emerging Areas module is currently closed by the administrator.'
+    if is_deadline_passed(settings.get('iea_deadline')) \
+            and not has_access_override(session.get('user_email'), 'iea'):
+        return 'The submission deadline for Innovation & Emerging Areas has passed. Please request late submission access.'
+    return None
+
 @app.route('/api/iea/save', methods=['POST'])
 def iea_save():
     if 'user_email' not in session and not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Not logged in'})
+    blocked = iea_write_blocked()
+    if blocked:
+        return jsonify({'ok': False, 'error': blocked})
     data = request.json or {}
     school = (data.get('school') or '').strip()
     dept = (data.get('department') or '').strip()
@@ -1124,6 +1178,9 @@ def iea_save():
 def iea_submit():
     if 'user_email' not in session and not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Not logged in'})
+    blocked = iea_write_blocked()
+    if blocked:
+        return jsonify({'ok': False, 'error': blocked})
     data = request.json or {}
     school = (data.get('school') or '').strip()
     dept = (data.get('department') or '').strip()
@@ -2183,17 +2240,53 @@ def admin_impersonate(email):
 def admin_dashboard():
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
+
+    # Shared defaults, so the IEA panel is populated exactly like readiness/closure
+    settings = get_global_settings()
+    dynamic_admins = set(e.strip().lower() for e in settings.get('admin_emails', []) if e)
+
     submissions = list(submissions_col.find().sort('timestamp', -1))
+
+    # Count faculty responses for every submission in one grouped query instead of
+    # one count_documents per row — that N+1 was what pushed this page past the
+    # gunicorn worker timeout on large datasets.
+    faculty_counts = {}
+    for row in faculty_submissions_col.aggregate([
+        {'$group': {'_id': '$parent_submission_id', 'count': {'$sum': 1}}}
+    ]):
+        faculty_counts[row['_id']] = row['count']
+
     for s in submissions:
         s['_id'] = str(s['_id'])
-        s['faculty_submission_count'] = faculty_submissions_col.count_documents({'parent_submission_id': s['_id']})
+        s['faculty_submission_count'] = faculty_counts.get(s['_id'], 0)
+        # The dashboard (and its JS) reads s.identity.* everywhere — one legacy row
+        # without an identity block would otherwise take down the whole page.
+        if not isinstance(s.get('identity'), dict):
+            s['identity'] = {}
+
+    # Latest department per submitter, derived from the submissions already loaded
+    # (they are sorted newest-first, so the first hit for an email is the latest).
+    latest_dept_by_email = {}
+    for s in submissions:
+        identity = s.get('identity') or {}
+        email = (identity.get('submitterEmail') or '').strip()
+        if email and email not in latest_dept_by_email and identity.get('dept'):
+            latest_dept_by_email[email] = identity['dept']
 
     today_str = datetime.utcnow().strftime('%Y-%m-%d')
     logged_in_today_count = 0
     users = list(users_col.find().sort('created_at', -1))
     for u in users:
         u['_id'] = str(u['_id'])
-        u['is_admin'] = is_admin_email(u.get('email'))
+        email = (u.get('email') or '').strip()
+        # Resolved from data already in hand — is_admin_email() would fire two extra
+        # queries per user, which is the other half of the old page-load cost.
+        u['is_admin'] = bool(email) and (
+            email.lower() in ADMIN_EMAILS
+            or email.lower() in dynamic_admins
+            or u.get('is_admin') is True
+            or u.get('role') == 'admin'
+        )
         u['can_readiness'] = u.get('can_readiness', True)
         u['can_closure'] = u.get('can_closure', True)
         u['can_iea'] = u.get('can_iea', True)
@@ -2202,8 +2295,7 @@ def admin_dashboard():
         u['logged_in_today'] = is_today
         if is_today:
             logged_in_today_count += 1
-        latest_sub = submissions_col.find_one({'identity.submitterEmail': u['email']}, sort=[('timestamp', -1)])
-        u['latest_dept'] = u.get('department') or (latest_sub['identity']['dept'] if latest_sub and 'identity' in latest_sub else 'N/A')
+        u['latest_dept'] = u.get('department') or latest_dept_by_email.get(email) or 'N/A'
 
     iea_subs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
     for s in iea_subs:
@@ -2213,15 +2305,10 @@ def admin_dashboard():
     access_requests = list(db['access_requests'].find().sort('timestamp', -1))
     for r in access_requests:
         r['_id'] = str(r['_id'])
+        mod = module_from_label(r.get('module'))
+        r['module_key'] = mod['key'] if mod else ''
 
-    settings = settings_col.find_one({'_id': 'global'}) or {}
-    settings.setdefault('readiness_enabled', True)
-    settings.setdefault('readiness_deadline', '')
-    settings.setdefault('closure_enabled', True)
-    settings.setdefault('closure_deadline', '')
-    settings.setdefault('enabled_years', ['2024-25', '2025-26', '2026-27', '2027-28'])
-    settings.setdefault('enabled_semesters', ['Even', 'Odd'])
-    
+
     pwa_stats = db['pwa_analytics'].find_one({'_id': 'pwa_stats'}) or {'installs': 0, 'launches': 0}
     
     notifications = list(db['notifications'].find().sort('created_at', -1).limit(10))
@@ -2237,6 +2324,7 @@ def admin_dashboard():
                            pwa_stats=pwa_stats,
                            notifications=notifications,
                            logged_in_today_count=logged_in_today_count,
+                           modules=[MODULES[k] for k in MODULE_ORDER],
                            iea_submissions=iea_subs,
                            iea_years=IEA_YEARS,
                            iea_sections=IEA_SECTIONS)
@@ -2269,46 +2357,45 @@ def update_user_permissions():
 def save_settings():
     if not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Unauthorized'})
-    data = request.json
-    
-    prev_settings = settings_col.find_one({'_id': 'global'}) or {}
-    
-    settings_col.update_one(
-        {'_id': 'global'},
-        {'$set': {
-            'readiness_enabled': data.get('readiness_enabled', True),
-            'readiness_deadline': data.get('readiness_deadline', ''),
-            'closure_enabled': data.get('closure_enabled', True),
-            'closure_deadline': data.get('closure_deadline', ''),
-            'iea_enabled': data.get('iea_enabled', True),
-            'iea_deadline': data.get('iea_deadline', ''),
-            'enabled_years': data.get('enabled_years', ['2024-25', '2025-26', '2026-27', '2027-28']),
-            'enabled_semesters': data.get('enabled_semesters', ['Even', 'Odd'])
-        }},
-        upsert=True
-    )
-    
-    was_closure_enabled = prev_settings.get('closure_enabled', False)
-    is_closure_enabled = data.get('closure_enabled', True)
-    
-    prev_readiness_dl = prev_settings.get('readiness_deadline', '')
-    new_readiness_dl = data.get('readiness_deadline', '')
-    prev_closure_dl = prev_settings.get('closure_deadline', '')
-    new_closure_dl = data.get('closure_deadline', '')
-    
-    notif_body = ""
+    data = request.json or {}
+
+    prev_settings = get_global_settings()
+
+    update = {
+        'enabled_years': data.get('enabled_years', ['2024-25', '2025-26', '2026-27', '2027-28']),
+        'enabled_semesters': data.get('enabled_semesters', ['Even', 'Odd'])
+    }
+    # Keep the previous value when the panel does not send a module's field, so a
+    # partial save can never silently switch a module off.
+    for module_key in MODULE_ORDER:
+        mod = MODULES[module_key]
+        update[mod['enabled_key']] = bool(data.get(mod['enabled_key'],
+                                                   prev_settings.get(mod['enabled_key'], True)))
+        update[mod['deadline_key']] = data.get(mod['deadline_key'],
+                                               prev_settings.get(mod['deadline_key'], ''))
+
+    settings_col.update_one({'_id': 'global'}, {'$set': update}, upsert=True)
+
+    # Broadcast a notification when a module is opened or its deadline moves —
+    # identical treatment for readiness, closure and IEA.
     notif_title = ""
-    
-    if not was_closure_enabled and is_closure_enabled:
-        notif_title = "Semester Closure Added"
-        notif_body = "Semester Closure has been added! Please check your portal."
-    elif new_closure_dl != prev_closure_dl and new_closure_dl:
-        notif_title = "Closure Deadline Extended"
-        notif_body = f"Semester Closure last date has been updated/extended to {new_closure_dl}!"
-    elif new_readiness_dl != prev_readiness_dl and new_readiness_dl:
-        notif_title = "Readiness Deadline Extended"
-        notif_body = f"Semester Readiness last date has been updated/extended to {new_readiness_dl}!"
-        
+    notif_body = ""
+    for module_key in MODULE_ORDER:
+        mod = MODULES[module_key]
+        was_enabled = bool(prev_settings.get(mod['enabled_key'], False))
+        is_enabled = update[mod['enabled_key']]
+        prev_dl = prev_settings.get(mod['deadline_key'], '')
+        new_dl = update[mod['deadline_key']]
+
+        if not was_enabled and is_enabled:
+            notif_title = f"{mod['label']} Added"
+            notif_body = f"{mod['label']} has been added! Please check your portal."
+            break
+        if new_dl and new_dl != prev_dl:
+            notif_title = f"{mod['label']} Deadline Extended"
+            notif_body = f"{mod['label']} last date has been updated/extended to {new_dl}!"
+            break
+
     if notif_title:
         db['notifications'].insert_one({
             'title': notif_title,
@@ -2316,7 +2403,7 @@ def save_settings():
             'created_at': datetime.utcnow().isoformat(),
             'type': 'broadcast'
         })
-        
+
     return jsonify({'ok': True})
 
 @app.route('/admin/toggle-admin-access', methods=['POST'])
@@ -2451,8 +2538,11 @@ def request_extension():
         return jsonify({'ok': False, 'error': 'Not logged in'})
     data = request.json or {}
     comment = data.get('comment', '').strip()
-    module = data.get('module', '')
-    
+    mod = module_from_label(data.get('module', ''))
+    if not mod:
+        return jsonify({'ok': False, 'error': 'Unknown module for this request'})
+    module = mod['label']  # store the canonical label so admin approval can map it back
+
     db['access_requests'].update_one(
         {
             'user_email': session['user_email'],
@@ -2510,10 +2600,12 @@ def approve_access(request_id):
     admin_comment = data.get('admin_comment', '').strip()
     
     email = req['user_email']
-    module = req['module']
-    field = 'readiness_access_override' if 'Readiness' in module else 'closure_access_override'
-    
-    users_col.update_one({'email': email}, {'$set': {field: True}})
+    module = req.get('module', '')
+    mod = module_from_label(module)
+    if not mod:
+        return jsonify({'ok': False, 'error': f'Unrecognised module "{module}" on this request'})
+
+    users_col.update_one({'email': email}, {'$set': {mod['override_field']: True}})
     db['access_requests'].update_one(
         {'_id': ObjectId(request_id)}, 
         {'$set': {'status': 'approved', 'admin_comment': admin_comment}}
@@ -2528,167 +2620,111 @@ def approve_access(request_id):
 def revoke_access(email, module_type):
     if not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Unauthorized'})
-    field = 'readiness_access_override' if module_type == 'readiness' else 'closure_access_override'
-    users_col.update_one({'email': email}, {'$set': {field: False}})
-    m_name = 'Semester Readiness' if module_type == 'readiness' else 'Semester Closure'
-    db['access_requests'].delete_many({'user_email': email, 'module': m_name})
+    mod = get_module(module_type) or module_from_label(module_type)
+    if not mod:
+        return jsonify({'ok': False, 'error': f'Unknown module "{module_type}"'})
+    users_col.update_one({'email': email}, {'$set': {mod['override_field']: False}})
+    db['access_requests'].delete_many({'user_email': email, 'module': mod['label']})
     return jsonify({'ok': True})
 
 @app.route('/admin/send-manual-reminders', methods=['POST'])
 def send_manual_reminders():
     if not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Unauthorized'})
-    
+
     settings = get_global_settings()
     sent_count = 0
-    
-    # Readiness manual send
-    r_deadline = settings.get('readiness_deadline')
-    r_date_str = "N/A"
-    if r_deadline:
-        try:
-            r_dt = datetime.strptime(r_deadline, "%Y-%m-%dT%H:%M")
-            r_date_str = r_dt.strftime("%d %B %Y")
-        except Exception as ex:
-            print(f"Error parsing manual readiness deadline: {ex}")
-        
+
+    # One pass per module — readiness, closure and IEA are all handled the same
+    for module_key in MODULE_ORDER:
+        mod = MODULES[module_key]
+        deadline, date_str = get_module_deadline(settings, module_key)
+        if not deadline:
+            continue
         for user in users_col.find():
             email = user.get('email')
-            name = user.get('name')
-            has_sub = submissions_col.find_one({
-                'identity.submitterEmail': email,
-                'form_type': 'readiness',
-                '_draft': False
-            })
-            if not has_sub:
-                print(f"Manual reminder: Sending readiness to {name} ({email})...")
-                send_deadline_reminder_email(email, name, "Semester Readiness", r_date_str)
+            if not email:
+                continue
+            name = user.get('name') or 'HOD'
+            if has_module_submission(module_key, email):
+                continue
+            print(f"Manual reminder: Sending {module_key} to {name} ({email})...")
+            if send_deadline_reminder_email(email, name, mod['label'], date_str):
                 sent_count += 1
-                
-    # Closure manual send
-    c_deadline = settings.get('closure_deadline')
-    c_date_str = "N/A"
-    if c_deadline:
-        try:
-            c_dt = datetime.strptime(c_deadline, "%Y-%m-%dT%H:%M")
-            c_date_str = c_dt.strftime("%d %B %Y")
-        except Exception as ex:
-            print(f"Error parsing manual closure deadline: {ex}")
-        
-        for user in users_col.find():
-            email = user.get('email')
-            name = user.get('name')
-            has_sub = submissions_col.find_one({
-                'identity.submitterEmail': email,
-                'form_type': 'closure',
-                '_draft': False
-            })
-            if not has_sub:
-                print(f"Manual reminder: Sending closure to {name} ({email})...")
-                send_deadline_reminder_email(email, name, "Semester Closure", c_date_str)
-                sent_count += 1
-                
+
     return jsonify({'ok': True, 'sent_count': sent_count})
 
 @app.route('/admin/send-targeted-reminders', methods=['POST'])
 def send_targeted_reminders():
     if not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Unauthorized'})
-    
+
     data = request.json or {}
     target_type = data.get('target_type')
     department = data.get('department')
-    
+
     if not target_type:
         return jsonify({'ok': False, 'error': 'Missing target_type'})
-        
+
     settings = get_global_settings()
     sent_count = 0
-    
-    r_deadline = settings.get('readiness_deadline')
-    r_date_str = "N/A"
-    if r_deadline:
-        try:
-            r_dt = datetime.strptime(r_deadline, "%Y-%m-%dT%H:%M")
-            r_date_str = r_dt.strftime("%d %B %Y")
-        except Exception as ex:
-            print(f"Error parsing targeted readiness deadline: {ex}")
-            
-    c_deadline = settings.get('closure_deadline')
-    c_date_str = "N/A"
-    if c_deadline:
-        try:
-            c_dt = datetime.strptime(c_deadline, "%Y-%m-%dT%H:%M")
-            c_date_str = c_dt.strftime("%d %B %Y")
-        except Exception as ex:
-            print(f"Error parsing targeted closure deadline: {ex}")
-            
-    # Helper to send readiness reminder if pending
-    def check_and_send_readiness(user):
-        nonlocal sent_count
-        email = user.get('email')
-        name = user.get('name')
-        has_sub = submissions_col.find_one({
-            'identity.submitterEmail': email,
-            'form_type': 'readiness',
-            '_draft': False
-        })
-        if not has_sub:
-            print(f"Targeted reminder: Sending readiness to {name} ({email})...")
-            if send_deadline_reminder_email(email, name, "Semester Readiness", r_date_str):
-                sent_count += 1
-                
-    # Helper to send closure reminder if pending
-    def check_and_send_closure(user):
-        nonlocal sent_count
-        email = user.get('email')
-        name = user.get('name')
-        has_sub = submissions_col.find_one({
-            'identity.submitterEmail': email,
-            'form_type': 'closure',
-            '_draft': False
-        })
-        if not has_sub:
-            print(f"Targeted reminder: Sending closure to {name} ({email})...")
-            if send_deadline_reminder_email(email, name, "Semester Closure", c_date_str):
-                sent_count += 1
 
-    if target_type == 'all_pending':
+    date_strs = {k: get_module_deadline(settings, k)[1] for k in MODULE_ORDER}
+
+    def remind(user, module_key):
+        """Email this HOD about the module if their submission is still pending."""
+        nonlocal sent_count
+        email = user.get('email')
+        if not email:
+            return
+        name = user.get('name') or 'HOD'
+        if has_module_submission(module_key, email):
+            return
+        mod = MODULES[module_key]
+        print(f"Targeted reminder: Sending {module_key} to {name} ({email})...")
+        if send_deadline_reminder_email(email, name, mod['label'], date_strs[module_key]):
+            sent_count += 1
+
+    # 'pending_readiness' / 'pending_closure' / 'pending_iea' target one module
+    single_module = None
+    if target_type.startswith('pending_'):
+        single_module = get_module(target_type[len('pending_'):])
+        if not single_module:
+            return jsonify({'ok': False, 'error': f'Unknown target type "{target_type}"'})
+
+    if single_module:
         for user in users_col.find():
-            check_and_send_readiness(user)
-            check_and_send_closure(user)
-            
-    elif target_type == 'pending_readiness':
+            remind(user, single_module['key'])
+
+    elif target_type == 'all_pending':
         for user in users_col.find():
-            check_and_send_readiness(user)
-            
-    elif target_type == 'pending_closure':
-        for user in users_col.find():
-            check_and_send_closure(user)
-            
+            for module_key in MODULE_ORDER:
+                remind(user, module_key)
+
     elif target_type == 'specific_dept':
         if not department:
             return jsonify({'ok': False, 'error': 'Missing department for specific_dept target group'})
-            
+
         found_any = False
         for user in users_col.find():
             user_dept = user.get('department')
             if not user_dept:
-                latest_sub = submissions_col.find_one({'identity.submitterEmail': user.get('email')}, sort=[('timestamp', -1)])
-                if latest_sub and 'identity' in latest_sub:
-                    user_dept = latest_sub['identity'].get('dept')
-                    
+                latest_sub = submissions_col.find_one({'identity.submitterEmail': user.get('email')},
+                                                      sort=[('timestamp', -1)])
+                if latest_sub:
+                    user_dept = (latest_sub.get('identity') or {}).get('dept')
+
             if user_dept == department:
                 found_any = True
-                check_and_send_readiness(user)
-                check_and_send_closure(user)
-                
+                for module_key in MODULE_ORDER:
+                    remind(user, module_key)
+
         if not found_any:
             return jsonify({'ok': False, 'error': f'No registered HOD account found for department "{department}"'})
-            
+
     else:
         return jsonify({'ok': False, 'error': f'Unknown target type "{target_type}"'})
-        
+
     return jsonify({'ok': True, 'sent_count': sent_count})
 
 @app.route('/admin/approve-edit/<sub_id>', methods=['POST'])
