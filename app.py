@@ -1206,6 +1206,11 @@ def iea_submit():
     else:
         version = 1
 
+    # Track which academic years have actually been submitted. The form reads this
+    # back per year, so without persisting it every year but the last looked unsent.
+    submitted_years = dict((existing or {}).get('submittedYears') or {})
+    submitted_years[_iea_norm_year(ac_year)] = now
+
     doc = {
         'school': school,
         'department': dept,
@@ -1215,6 +1220,7 @@ def iea_submit():
         'years': _iea_merge_years(data.get('years')),
         'lastUpdated': now,
         'submitted': True,
+        'submittedYears': submitted_years,
         'version': version,
         'submittedAt': now,
         'history': history[-20:],
@@ -1413,55 +1419,88 @@ def admin_iea_export():
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 def build_iea_workbook(docs, year=None):
-    """Excel report for IEA submissions — one sheet per section (A-F)."""
+    """Excel report for IEA submissions — one tab per academic year, sections A-F
+    stacked inside each tab."""
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     hdr_fill, hdr_font, gold_fill, gold_font, thin, center = _styles()
     years = [year] if year else IEA_YEARS
 
-    for sec in IEA_SECTIONS:
-        title = f"{sec['key']} - {sec['title']}"[:31]
-        ws = wb.create_sheet(title)
-        heads = ['School', 'Department', 'Programme Level', 'Academic Year'] + \
-                [f['l'] for f in sec['fields']] + \
-                ['Evidence Types', 'Evidence Drive Link', 'Evidence Missing / Remarks']
-        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(heads))
+    merged_docs = [(d, _iea_merge_years(d.get('years'))) for d in docs]
+
+    for y in years:
+        ws = wb.create_sheet(str(y).replace('/', '-')[:31])
+        # Widest section decides the merge width for the banner rows
+        max_cols = max(4 + len(sec['fields']) + 3 for sec in IEA_SECTIONS)
+
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_cols)
         t = ws.cell(row=1, column=1,
-                    value=f"JAIN University — IEA Section {sec['key']}: {sec['title']}" +
-                          (f" ({year})" if year else " (All Years)"))
-        t.font = Font(color="FFFFFF", bold=True, size=12, name="Calibri")
+                    value=f"JAIN University — Innovation & Emerging Areas — {y}")
+        t.font = Font(color="FFFFFF", bold=True, size=13, name="Calibri")
         t.fill = hdr_fill
         t.alignment = center
-        ws.row_dimensions[1].height = 26
-        for c, h in enumerate(heads, 1):
-            cell = ws.cell(row=2, column=c, value=h)
-            cell.font = hdr_font
-            cell.fill = hdr_fill
-            cell.alignment = center
-            cell.border = thin
-        ws.row_dimensions[2].height = 32
+        ws.row_dimensions[1].height = 28
 
         r = 3
-        for d in docs:
-            merged = _iea_merge_years(d.get('years'))
-            for y in years:
+        year_total = 0
+        for sec in IEA_SECTIONS:
+            rows = []
+            for d, merged in merged_docs:
                 for e in merged[y][sec['key']]:
-                    vals = [d.get('school', ''), d.get('department', ''), d.get('level', ''), y] + \
-                           [e.get(f['k'], '') for f in sec['fields']] + \
-                           ['; '.join(e.get('evidenceTypes', []) or []),
-                            e.get('evidenceLink', ''), e.get('evidenceMissing', '')]
-                    for c, v in enumerate(vals, 1):
-                        cell = ws.cell(row=r, column=c, value=v)
-                        cell.border = thin
-                        cell.font = Font(name="Calibri", size=10)
-                        cell.alignment = Alignment(wrap_text=True, vertical='top')
-                    r += 1
-        if r == 3:
-            ws.cell(row=3, column=1, value='No entries submitted for this section.').font = \
-                Font(name="Calibri", size=10, italic=True)
-        widths = [26, 32, 14, 12] + [30] * len(sec['fields']) + [30, 34, 30]
+                    rows.append((d, e))
+            year_total += len(rows)
+
+            # Section banner, tinted with the section's own colour
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=max_cols)
+            band = ws.cell(row=r, column=1,
+                           value=f"Section {sec['key']} — {sec['title']}  ({len(rows)} "
+                                 f"{'entry' if len(rows) == 1 else 'entries'})")
+            band.font = Font(color="FFFFFF", bold=True, size=11, name="Calibri")
+            band.fill = PatternFill("solid", fgColor=sec['color'].lstrip('#').upper())
+            band.alignment = Alignment(horizontal='left', vertical='center')
+            ws.row_dimensions[r].height = 22
+            r += 1
+
+            heads = ['School', 'Department', 'Programme Level', 'Academic Year'] + \
+                    [f['l'] for f in sec['fields']] + \
+                    ['Evidence Types', 'Evidence Drive Link', 'Evidence Missing / Remarks']
+            for c, h in enumerate(heads, 1):
+                cell = ws.cell(row=r, column=c, value=h)
+                cell.font = hdr_font
+                cell.fill = hdr_fill
+                cell.alignment = center
+                cell.border = thin
+            ws.row_dimensions[r].height = 30
+            r += 1
+
+            if not rows:
+                cell = ws.cell(row=r, column=1, value='No entries submitted for this section.')
+                cell.font = Font(name="Calibri", size=10, italic=True, color="94A3B8")
+                r += 2
+                continue
+
+            for d, e in rows:
+                vals = [d.get('school', ''), d.get('department', ''), d.get('level', ''), y] + \
+                       [e.get(f['k'], '') for f in sec['fields']] + \
+                       ['; '.join(e.get('evidenceTypes', []) or []),
+                        e.get('evidenceLink', ''), e.get('evidenceMissing', '')]
+                for c, v in enumerate(vals, 1):
+                    cell = ws.cell(row=r, column=c, value=v)
+                    cell.border = thin
+                    cell.font = Font(name="Calibri", size=10)
+                    cell.alignment = Alignment(wrap_text=True, vertical='top')
+                r += 1
+            r += 1  # blank spacer row between sections
+
+        if year_total == 0:
+            note = ws.cell(row=2, column=1, value='No submissions recorded for this academic year.')
+            note.font = Font(name="Calibri", size=10, italic=True, color="94A3B8")
+
+        widths = [26, 32, 16, 14] + [30] * (max_cols - 7) + [26, 34, 30]
         for i, w in enumerate(widths, 1):
             ws.column_dimensions[get_column_letter(i)].width = w
+        ws.freeze_panes = 'A2'
+
     return wb
 
 @app.route('/login')
