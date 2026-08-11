@@ -452,6 +452,7 @@
     .entry-card.flash { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent) }
     .entry-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px }
     .entry-idx { font-size: 11.5px; font-weight: 800; color: var(--accent); letter-spacing: .05em }
+    .entry-blank-tag { margin-right: auto; margin-left: 10px; font-size: 11px; font-weight: 700; color: #b45309; background: #fff3e0; border: 1px solid #ffe0b2; padding: 3px 10px; border-radius: 999px }
     .remove-btn { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; font-family: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: all .15s }
     .remove-btn:hover { background: #fef2f2; color: #b91c1c }
     .remove-btn svg { width: 14px; height: 14px }
@@ -1215,6 +1216,31 @@
     function genId() { return 'e' + Math.random().toString(36).slice(2, 9); }
     function escapeHtml(str) { return String(str == null ? '' : str).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
 
+    /* ── What counts as an entry ──
+       Opening a section, or adding an entry card and typing nothing into it,
+       must never count. An entry counts only once it holds real content. */
+    function entryHasContent(e) {
+      if (!e) return false;
+      for (const k of Object.keys(e)) {
+        if (k === 'id' || k === 'evidenceTypes' || k === 'evidenceDetails') continue;
+        const v = e[k];
+        if (typeof v === 'number' && v) return true;
+        if (typeof v === 'string' && v.trim()) return true;
+      }
+      if (Array.isArray(e.evidenceTypes) && e.evidenceTypes.some(t => String(t || '').trim())) return true;
+      const det = e.evidenceDetails || {};
+      return Object.keys(det).some(t => {
+        const d = det[t] || {};
+        return Object.keys(d).some(k => String(d[k] || '').trim());
+      });
+    }
+    function filledCount(arr) { return (arr || []).filter(entryHasContent).length; }
+    function sectionEntries(yearKey, sectionKey) {
+      return (state && state.years && state.years[yearKey] && state.years[yearKey][sectionKey])
+        ? state.years[yearKey][sectionKey] : [];
+    }
+    function sectionFilled(yearKey, sectionKey) { return filledCount(sectionEntries(yearKey, sectionKey)); }
+
     function emptyEntry(sectionKey) {
       const s = SECTIONS.find(x => x.key === sectionKey);
       const obj = { id: genId(), evidenceTypes: [], evidenceLink: '', evidenceMissing: '', evidenceDetails: {} };
@@ -1245,7 +1271,7 @@
       }
       return base;
     }
-    function totalEntries(st) { let n = 0; if (!st || !st.years) return 0; YEARS.forEach(y => { const yKey = ensureStateYear(y); SECTIONS.forEach(s => n += (st.years[yKey] && st.years[yKey][s.key]) ? st.years[yKey][s.key].length : 0); }); return n; }
+    function totalEntries(st) { let n = 0; if (!st || !st.years) return 0; YEARS.forEach(y => { const yKey = ensureStateYear(y); SECTIONS.forEach(s => n += filledCount(st.years[yKey] && st.years[yKey][s.key])); }); return n; }
     function unitLabel(st) { return st.school + ' — ' + st.department + ' (' + st.level + ')'; }
 
     async function loadUnit(school, dept, level, acYear) {
@@ -1306,9 +1332,7 @@
         const yKey = ensureStateYear(y);
         let count = 0;
         if (state.years && state.years[yKey]) {
-          SECTIONS.forEach(s => {
-            count += (state.years[yKey][s.key] || []).length;
-          });
+          SECTIONS.forEach(s => { count += sectionFilled(yKey, s.key); });
         }
         const isSubmittedForY = (state.submitted || (state.submittedYears && (state.submittedYears[y] || state.submittedYears[yKey]))) && count > 0;
         if (isAct) {
@@ -1384,7 +1408,7 @@
       const activeSecObjs = SECTIONS.filter(s => selectedSections.includes(s.key));
       if (activeSecObjs.length >= 1) {
         const s = activeSecObjs[0];
-        const c = (state.years[curKey] && state.years[curKey][s.key]) ? state.years[curKey][s.key].length : 0;
+        const c = sectionFilled(curKey, s.key);
         activeLabelHtml = '<span class="nav-active-tag" style="background:' + s.color + ';color:#fff;">Section ' + s.key + ': ' + escapeHtml(s.title) + ' (' + c + ' ' + (c === 1 ? 'entry' : 'entries') + ')</span>';
       }
 
@@ -1408,7 +1432,7 @@
 
         // Sections A to F Round Buttons
         SECTIONS.forEach(s => {
-          const c = (state.years[curKey] && state.years[curKey][s.key]) ? state.years[curKey][s.key].length : 0;
+          const c = sectionFilled(curKey, s.key);
           const isAct = !isAll && selectedSections.includes(s.key);
           html += '<button class="round-sec-btn ' + (isAct ? 'active' : '') + '" onclick="selectSection(\'' + s.key + '\')" style="--sec-color:' + s.color + ';" title="Section ' + s.key + ': ' + escapeHtml(s.title) + '">' +
             '<span class="btn-sec-letter">' + s.key + '</span>' +
@@ -1424,12 +1448,17 @@
         html += '<div class="section-boxes-grid">';
 
         SECTIONS.forEach(s => {
-          const c = (state.years[curKey] && state.years[curKey][s.key]) ? state.years[curKey][s.key].length : 0;
+          const all = sectionEntries(curKey, s.key).length;
+          const c = sectionFilled(curKey, s.key);
           const isAct = !isAll && selectedSections.includes(s.key);
+          // "Done" means filled in — not merely opened.
+          const sub = c > 0
+            ? ICON.check + ' Section ' + s.key + ' done · ' + c + ' filled'
+            : (all > 0 ? 'Opened — nothing filled in yet' : 'Not started · click to add entries');
           html += '<div class="section-box-btn ' + (isAct ? 'active' : '') + '" onclick="selectSection(\'' + s.key + '\')" style="--sec-color:' + s.color + ';" title="' + escapeHtml(s.title) + '">' +
             '<div class="sb-header"><span class="sb-badge">' + s.key + '</span><span class="sb-count">' + c + ' ' + (c===1?'entry':'entries') + '</span></div>' +
             '<div class="sb-title">Section ' + s.key + ': ' + escapeHtml(s.title) + '</div>' +
-            '<div class="sb-sub">' + (c > 0 ? ICON.check + ' ' + c + ' saved' : 'Click to view/edit') + '</div>' +
+            '<div class="sb-sub">' + sub + '</div>' +
           '</div>';
         });
 
@@ -1466,8 +1495,13 @@
       }
       workflowFooter += '</div></div>';
 
+      const filled = filledCount(entries);
+      const blanks = entries.length - filled;
+      const countLabel = filled + ' ' + (filled === 1 ? 'entry' : 'entries') +
+        (blanks > 0 ? ' · ' + blanks + ' blank' : '');
+
       return '<div class="section-panel" id="sec-panel-' + s.key + '" style="--accent:' + s.color + '">' +
-        '<div class="section-banner"><div class="section-num">' + s.key + '</div><div class="section-title-wrap"><h3>' + s.title + '</h3><p class="section-sub">' + s.sub + '</p></div><div class="entry-count">' + entries.length + ' ' + (entries.length === 1 ? 'entry' : 'entries') + '</div></div>' +
+        '<div class="section-banner"><div class="section-num">' + s.key + '</div><div class="section-title-wrap"><h3>' + s.title + '</h3><p class="section-sub">' + s.sub + '</p></div><div class="entry-count">' + countLabel + '</div></div>' +
         '<div class="entries">' + (entries.length === 0 ? '<p class="empty-hint">No entries yet for ' + activeYear + ' in Section ' + s.key + '.</p>' : entries.map((e, i) => renderEntryCard(s, e, i)).join('')) + '</div>' +
         '<div style="padding:0 20px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
           '<button class="add-entry-btn" data-action="add" data-section="' + s.key + '" style="margin:0;">' + ICON.plus + ' Add Entry to Section ' + s.key + '</button>' +
@@ -1477,7 +1511,9 @@
     }
 
     function renderEntryCard(s, e, idx) {
-      return '<div class="entry-card" data-entry="' + e.id + '"><div class="entry-head"><span class="entry-idx">ENTRY #' + (idx + 1) + '</span><button class="remove-btn" data-action="remove" data-section="' + s.key + '" data-entry="' + e.id + '">' + ICON.x + ' Remove</button></div><div class="entry-fields">' + s.fields.map(f => renderField(s, e, f)).join('') + renderEvidenceBlock(s, e) + '</div></div>';
+      const blankTag = entryHasContent(e) ? ''
+        : '<span class="entry-blank-tag">Blank — not counted until you fill it</span>';
+      return '<div class="entry-card" data-entry="' + e.id + '"><div class="entry-head"><span class="entry-idx">ENTRY #' + (idx + 1) + '</span>' + blankTag + '<button class="remove-btn" data-action="remove" data-section="' + s.key + '" data-entry="' + e.id + '">' + ICON.x + ' Remove</button></div><div class="entry-fields">' + s.fields.map(f => renderField(s, e, f)).join('') + renderEvidenceBlock(s, e) + '</div></div>';
     }
 
     function renderField(s, e, f) {
@@ -1536,7 +1572,7 @@
       const el = document.getElementById('submitSection');
       const count = totalEntries(state);
       const sectionCounts = SECTIONS.map(s => {
-        let c = 0; YEARS.forEach(y => { const yk = ensureStateYear(y); c += (state.years[yk] && state.years[yk][s.key]) ? state.years[yk][s.key].length : 0; });
+        let c = 0; YEARS.forEach(y => { const yk = ensureStateYear(y); c += sectionFilled(yk, s.key); });
         return '<div class="stat-chip"><span style="width:22px;height:22px;border-radius:6px;background:' + s.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">' + s.key + '</span> ' + c + ' entries</div>';
       }).join('');
       el.innerHTML = '<div class="submit-section"><h3>' + ICON.send + ' Ready to Submit?</h3><p>Review your entries across all sections and academic years before submitting.</p><div class="submit-stats">' + sectionCounts + '</div><div class="submit-actions"><button class="btn btn-ghost" onclick="downloadBackup()">' + ICON.download + ' Download Backup</button><button class="btn btn-success" onclick="submitFinal()" ' + (count === 0 ? 'disabled style="opacity:.5;cursor:not-allowed;"' : '') + '>' + ICON.send + ' Submit (' + count + ' entries)</button></div></div>';
@@ -1549,7 +1585,9 @@
     }
 
     async function doAutoSave() {
-      if (!state || totalEntries(state) === 0) return;
+      // Nothing filled in and nothing saved before — a blank card is not data.
+      if (!state) return;
+      if (totalEntries(state) === 0 && !state.lastUpdated) return;
       showAutosave('saving');
       try {
         const payload = {

@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 from bson import ObjectId
 from dotenv import load_dotenv
 import json, os, io, openpyxl, random, secrets, base64, re
-from datetime import datetime
+from datetime import datetime, timedelta
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -1034,8 +1034,39 @@ def _iea_empty_years():
 def _iea_norm_year(y):
     return str(y or '').replace('–', '-').replace('—', '-').strip()
 
+def _iea_entry_is_filled(entry):
+    """True only when an entry actually carries content.
+
+    Opening a section — or adding an entry card and typing nothing into it —
+    must never register as a submission. An entry counts once any field, any
+    evidence type, link or remark has been filled in.
+    """
+    if not isinstance(entry, dict):
+        return False
+    skip = {'id', 'evidenceTypes', 'evidenceDetails'}
+    for k, v in entry.items():
+        if k in skip:
+            continue
+        if isinstance(v, str) and v.strip():
+            return True
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and v:
+            return True
+    types = entry.get('evidenceTypes')
+    if isinstance(types, list) and any(str(t or '').strip() for t in types):
+        return True
+    details = entry.get('evidenceDetails')
+    if isinstance(details, dict):
+        for d in details.values():
+            if isinstance(d, dict) and any(str(v or '').strip() for v in d.values()):
+                return True
+    return False
+
 def _iea_merge_years(parsed_years):
-    """Normalise a submitted/stored years object against the master shape."""
+    """Normalise a submitted/stored years object against the master shape.
+
+    Blank entries are dropped here, so every count, card, chart and export
+    downstream sees only entries somebody genuinely filled in.
+    """
     base = _iea_empty_years()
     if isinstance(parsed_years, dict):
         norm_map = {_iea_norm_year(k): v for k, v in parsed_years.items()}
@@ -1052,6 +1083,8 @@ def _iea_merge_years(parsed_years):
                             continue
                         entry = {'evidenceTypes': [], 'evidenceLink': '', 'evidenceMissing': ''}
                         entry.update(e)
+                        if not _iea_entry_is_filled(entry):
+                            continue
                         clean.append(entry)
                     base[y][s['key']] = clean
     return base
@@ -1064,7 +1097,7 @@ def _iea_count_entries(years):
             if isinstance(secs, dict):
                 for _k, lst in secs.items():
                     if isinstance(lst, list):
-                        n += len(lst)
+                        n += sum(1 for e in lst if _iea_entry_is_filled(e))
     return n
 
 def _iea_version_timeline(doc):
@@ -1108,6 +1141,124 @@ def _iea_public_doc(doc):
         doc['createdAtEstimated'] = True
     doc.pop('history', None)
     return doc
+
+IEA_IST_OFFSET = timedelta(hours=5, minutes=30)   # stored timestamps are UTC
+
+def _iea_parse_dt(value):
+    """Parse a stored ISO timestamp (UTC, with or without a trailing Z)."""
+    raw = str(value or '').strip().replace('Z', '')
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw)
+    except ValueError:
+        try:
+            return datetime.strptime(raw[:19], '%Y-%m-%dT%H:%M:%S')
+        except ValueError:
+            return None
+
+def _iea_recent_activity(docs):
+    """Who filed an IEA submission today or yesterday (India time), newest first.
+
+    One row per department: the department, the person who filed it, when, how
+    many entries it holds, and whether it is a final submission or a draft save.
+    """
+    now_ist = datetime.utcnow() + IEA_IST_OFFSET
+    today, yesterday = now_ist.date(), (now_ist - timedelta(days=1)).date()
+    rows = []
+    for d in docs:
+        # Whichever happened last: the final submission, or a later draft save.
+        sub_dt = _iea_parse_dt(d.get('submittedAt')) if d.get('submitted') else None
+        edit_dt = _iea_parse_dt(d.get('lastUpdated'))
+        dt = max([x for x in (sub_dt, edit_dt) if x], default=None)
+        if not dt:
+            continue
+        submitted = bool(sub_dt and dt == sub_dt)
+        stamp = (d.get('submittedAt') if submitted else d.get('lastUpdated')) or ''
+        local = dt + IEA_IST_OFFSET
+        if local.date() == today:
+            day = 'today'
+        elif local.date() == yesterday:
+            day = 'yesterday'
+        else:
+            continue
+        version = d.get('version', 1)
+        if submitted:
+            status = '✓ Submitted' + (f' · v{version}' if version and version > 1 else '')
+        elif d.get('submitted'):
+            status = 'Edited after submitting'
+        else:
+            status = 'Draft saved'
+        rows.append({
+            'day': day,
+            'school': d.get('school', ''),
+            'department': d.get('department', ''),
+            'level': d.get('level', ''),
+            'person': d.get('submitterName') or d.get('submitterEmail') or 'Not recorded',
+            'email': d.get('submitterEmail', ''),
+            'entries': _iea_count_entries(d.get('years')),
+            'submitted': bool(d.get('submitted')),
+            'status': status,
+            'version': version if d.get('submitted') else 0,
+            'at': stamp,
+            'time': local.strftime('%d %b, %I:%M %p').lstrip('0'),
+            'sortKey': local.isoformat(),
+        })
+    rows.sort(key=lambda r: r['sortKey'], reverse=True)
+    return rows
+
+def _iea_calendar_events(docs):
+    """Every dated IEA action, indexed by calendar day (India time).
+
+    Feeds the date picker on the analysis page: pick a day and see which
+    departments started filling, saved a draft, or submitted a version on it.
+    """
+    days = {}
+
+    def add(stamp, dept_doc, kind, label, entries, person):
+        dt = _iea_parse_dt(stamp)
+        if not dt:
+            return
+        local = dt + IEA_IST_OFFSET
+        key = local.strftime('%Y-%m-%d')
+        days.setdefault(key, []).append({
+            'kind': kind,                      # submitted | draft | started
+            'label': label,
+            'school': dept_doc.get('school', ''),
+            'department': dept_doc.get('department', ''),
+            'level': dept_doc.get('level', ''),
+            'person': person or 'Not recorded',
+            'entries': entries,
+            'time': local.strftime('%I:%M %p').lstrip('0'),
+            'sortKey': local.isoformat(),
+        })
+
+    for d in docs:
+        who = d.get('submitterName') or d.get('submitterEmail') or ''
+        versions = d.get('versions') or []
+        for v in versions:
+            num = v.get('version') or 1
+            label = 'Submitted' if num == 1 else f'Re-submitted · version {num}'
+            add(v.get('at'), d, 'submitted', label, v.get('entries', 0), v.get('by') or who)
+
+        # A draft save that is not itself one of the submitted versions.
+        last_edit = _iea_parse_dt(d.get('lastUpdated'))
+        newest_version = max(
+            [x for x in (_iea_parse_dt(v.get('at')) for v in versions) if x], default=None)
+        if last_edit and (not newest_version or last_edit > newest_version):
+            add(d.get('lastUpdated'), d, 'draft',
+                'Edited after submitting' if versions else 'Draft saved',
+                _iea_count_entries(d.get('years')), who)
+
+        started = _iea_parse_dt(d.get('createdAt'))
+        if started:
+            add(d.get('createdAt'), d, 'started',
+                'Started filling' + (' (estimated)' if d.get('createdAtEstimated') else ''),
+                0, who)
+
+    for key in days:
+        days[key].sort(key=lambda r: r['sortKey'], reverse=True)
+    return days
 
 @app.route('/iea')
 def iea():
@@ -1175,6 +1326,9 @@ def iea_load():
     if not doc:
         return jsonify({'ok': True, 'submission': None})
     doc['_id'] = str(doc['_id'])
+    # Blank entries left behind by simply opening a section are not real data.
+    doc['years'] = _iea_merge_years(doc.get('years'))
+    doc.pop('history', None)
     return jsonify({'ok': True, 'submission': doc})
 
 def iea_write_blocked():
@@ -1394,12 +1548,17 @@ def iea_analysis_page():
     for f in feedback:
         f['_id'] = str(f['_id'])
     is_admin = bool(session.get('admin'))
+    recent = _iea_recent_activity(subs)
     return render_template('iea_analysis.html',
                            submissions=subs,
                            feedback=feedback,
                            iea_years=IEA_YEARS,
                            iea_sections=IEA_SECTIONS,
                            departments=DEPARTMENTS,
+                           recent_today=[r for r in recent if r['day'] == 'today'],
+                           recent_yesterday=[r for r in recent if r['day'] == 'yesterday'],
+                           calendar_events=_iea_calendar_events(subs),
+                           today_key=(datetime.utcnow() + IEA_IST_OFFSET).strftime('%Y-%m-%d'),
                            is_admin=is_admin)
 
 @app.route('/api/iea/analysis-data')

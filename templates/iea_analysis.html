@@ -84,6 +84,71 @@
     .kpi-num { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--ink); }
     .kpi-label { font-size: 11.5px; color: var(--ink3); margin-top: 6px; line-height: 1.35; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
 
+    /* ── Who submitted today / yesterday ── */
+    .activity-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 20px; box-shadow: var(--sh); animation: rise .35s ease backwards; }
+    .activity-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .activity-head h3 { font-size: 17px; color: var(--navy); font-weight: 700; }
+    .activity-head p { font-size: 12.5px; color: var(--ink3); margin-top: 2px; }
+    .activity-total { font-size: 13px; font-weight: 800; color: var(--navy); background: #eef2ff; padding: 6px 14px; border-radius: 99px; }
+    .activity-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .act-col-head { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--ink3); margin-bottom: 10px; }
+    .act-col-head .act-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gold); }
+    .act-col.yesterday .act-col-head .act-dot { background: #94a3b8; }
+    .act-list { display: flex; flex-direction: column; gap: 8px; }
+    .act-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; background: #f8fafc; border: 1px solid var(--border); border-left: 4px solid var(--gold); border-radius: 10px; padding: 11px 14px; }
+    .act-col.yesterday .act-row { border-left-color: #94a3b8; }
+    .act-dept { font-size: 14px; font-weight: 700; color: var(--navy); text-decoration: none; }
+    .act-dept:hover { text-decoration: underline; }
+    .act-meta { font-size: 12px; color: var(--ink3); margin-top: 3px; line-height: 1.5; }
+    .act-person { font-size: 12.5px; color: var(--ink2); margin-top: 4px; font-weight: 600; }
+    .act-person span { font-weight: 500; color: var(--ink3); }
+    .act-right { text-align: right; flex-shrink: 0; }
+    .act-status { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .act-status.done { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .act-status.draft { background: #fff3e0; color: #b45309; border: 1px solid #ffe0b2; }
+    .act-time { font-size: 11.5px; color: var(--ink3); margin-top: 5px; font-weight: 600; white-space: nowrap; }
+    .act-empty { font-size: 12.5px; color: var(--ink3); font-style: italic; background: #f8fafc; border: 1px dashed var(--border); border-radius: 10px; padding: 14px; }
+    @media (max-width: 760px) { .activity-cols { grid-template-columns: 1fr; } }
+
+    /* ── Date picker: pick a day, see who filed on it ── */
+    .cal-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--sh); }
+    .cal-wrap { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+    .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    .cal-month { font-size: 14px; font-weight: 800; color: var(--navy); }
+    .cal-nav { background: #f1f5f9; border: 1.5px solid var(--border); color: var(--navy); width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-weight: 800; font-family: inherit; line-height: 1; transition: all .15s; }
+    .cal-nav:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-dow { font-size: 10px; font-weight: 800; color: var(--ink3); text-align: center; text-transform: uppercase; letter-spacing: .04em; padding-bottom: 4px; }
+    .cal-day { position: relative; aspect-ratio: 1; border: 1.5px solid transparent; border-radius: 8px; background: #f8fafc; color: var(--ink2); font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: default; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .cal-day.blank { background: transparent; }
+    .cal-day.has { background: #eef2ff; color: var(--navy); cursor: pointer; }
+    .cal-day.has:hover { background: var(--navy); color: #fff; }
+    .cal-day.today { border-color: var(--gold); }
+    .cal-day.selected { background: var(--navy); color: #fff; box-shadow: 0 4px 10px rgba(10, 37, 88, .25); }
+    .cal-day .cal-dot { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
+    .cal-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; font-weight: 700; color: var(--ink3); }
+    .cal-legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+    .cal-day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px; }
+    .cal-day-head h4 { font-size: 15px; color: var(--navy); font-weight: 800; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .cal-day-head span { font-size: 12px; color: var(--ink3); font-weight: 700; }
+    .cal-events { display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto; }
+    .cal-ev { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; background: #f8fafc; border: 1px solid var(--border); border-left: 4px solid #94a3b8; border-radius: 10px; padding: 10px 14px; }
+    .cal-ev.submitted { border-left-color: #15803d; }
+    .cal-ev.draft { border-left-color: #b45309; }
+    .cal-ev.started { border-left-color: #2C5F8A; }
+    .cal-ev-dept { font-size: 13.5px; font-weight: 700; color: var(--navy); text-decoration: none; }
+    .cal-ev-dept:hover { text-decoration: underline; }
+    .cal-ev-meta { font-size: 11.5px; color: var(--ink3); margin-top: 3px; line-height: 1.5; }
+    .cal-ev-person { font-size: 12px; color: var(--ink2); font-weight: 600; margin-top: 3px; }
+    .cal-ev-right { text-align: right; flex-shrink: 0; }
+    .cal-tag { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 800; white-space: nowrap; }
+    .cal-tag.submitted { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .cal-tag.draft { background: #fff3e0; color: #b45309; border: 1px solid #ffe0b2; }
+    .cal-tag.started { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+    .cal-ev-time { font-size: 11px; color: var(--ink3); font-weight: 600; margin-top: 5px; white-space: nowrap; }
+    @media (max-width: 860px) { .cal-wrap { grid-template-columns: 1fr; } }
+
     .analysis-summary-card {
       background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--sh);
     }
@@ -196,6 +261,84 @@
   </div>
 
   <div class="wrap">
+    <!-- WHO SUBMITTED TODAY / YESTERDAY -->
+    {% macro activity_list(rows, empty_text) %}
+      {% if rows %}
+      <div class="act-list">
+        {% for r in rows %}
+        <div class="act-row">
+          <div>
+            <a class="act-dept"
+               href="/iea-analysis?school={{ r.school|urlencode }}&amp;dept={{ r.department|urlencode }}&amp;level={{ r.level|urlencode }}">
+              {{ r.department|replace('&', 'and') }}
+            </a>
+            <div class="act-meta">{{ r.school|replace('&', 'and') }} · {{ r.level }}</div>
+            <div class="act-person">{{ r.person }}{% if r.email and r.email != r.person %} <span>· {{ r.email }}</span>{% endif %}</div>
+          </div>
+          <div class="act-right">
+            <span class="act-status {{ 'done' if r.submitted else 'draft' }}">
+              {{ r.status }}
+            </span>
+            <div class="act-time">{{ r.entries }} {{ 'entry' if r.entries == 1 else 'entries' }}</div>
+            <div class="act-time">{{ r.time }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="act-empty">{{ empty_text }}</div>
+      {% endif %}
+    {% endmacro %}
+
+    <div class="activity-card">
+      <div class="activity-head">
+        <div>
+          <h3>Submission Activity — Today &amp; Yesterday</h3>
+          <p>Departments that submitted or saved their IEA data, with the person who filed it.</p>
+        </div>
+        <div class="activity-total">
+          {{ recent_today|length }} today · {{ recent_yesterday|length }} yesterday
+        </div>
+      </div>
+      <div class="activity-cols">
+        <div class="act-col today">
+          <div class="act-col-head"><span class="act-dot"></span> Today ({{ recent_today|length }})</div>
+          {{ activity_list(recent_today, 'No department has submitted today yet.') }}
+        </div>
+        <div class="act-col yesterday">
+          <div class="act-col-head"><span class="act-dot"></span> Yesterday ({{ recent_yesterday|length }})</div>
+          {{ activity_list(recent_yesterday, 'Nothing was submitted yesterday.') }}
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR — PICK A DATE, SEE WHO FILED ON IT -->
+    <div class="cal-card">
+      <div class="activity-head" style="margin-bottom:14px;">
+        <div>
+          <h3 style="font-size:17px; color:var(--navy); font-weight:700;">Submissions by Date</h3>
+          <p style="font-size:12.5px; color:var(--ink3); margin-top:2px;">Click any highlighted date to see every department that submitted, re-submitted or saved a draft that day.</p>
+        </div>
+        <div class="activity-total" id="calTotalPill">0 dated activities</div>
+      </div>
+      <div class="cal-wrap">
+        <div>
+          <div class="cal-head">
+            <button class="cal-nav" id="calPrev" title="Previous month">‹</button>
+            <span class="cal-month" id="calMonth"></span>
+            <button class="cal-nav" id="calNext" title="Next month">›</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-legend">
+            <span><i style="background:#15803d;"></i>Submitted</span>
+            <span><i style="background:#b45309;"></i>Draft saved</span>
+            <span><i style="background:#2C5F8A;"></i>Started filling</span>
+          </div>
+        </div>
+        <div id="calDayPanel"></div>
+      </div>
+    </div>
+
     <!-- KPI SUMMARY GRID -->
     <div class="kpi-grid" id="kpiGrid"></div>
 
@@ -429,6 +572,113 @@
       renderYearTabs();
     });
 
+    /* ── Calendar: pick a date, see who filed on it ────────────────
+       CAL_EVENTS is keyed by YYYY-MM-DD (India time), newest first. */
+    const CAL_EVENTS = {{ calendar_events|tojson }};
+    const TODAY_KEY = {{ today_key|tojson }};
+    const CAL_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+    const CAL_DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    const calDates = Object.keys(CAL_EVENTS).sort();
+    // Open on today when something happened, otherwise on the latest active day.
+    let calSelected = CAL_EVENTS[TODAY_KEY] ? TODAY_KEY : (calDates[calDates.length - 1] || TODAY_KEY);
+    let calCursor = { y: +calSelected.slice(0, 4), m: +calSelected.slice(5, 7) - 1 };
+
+    function calKey(y, m, d) {
+      return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    }
+    function niceLabel(str) { return window.IEACards ? IEACards.niceName(str) : String(str || ''); }
+
+    function renderCalendar() {
+      const totalEvents = calDates.reduce((n, k) => n + CAL_EVENTS[k].length, 0);
+      document.getElementById('calTotalPill').textContent =
+        totalEvents + ' dated ' + (totalEvents === 1 ? 'activity' : 'activities') +
+        ' across ' + calDates.length + ' ' + (calDates.length === 1 ? 'day' : 'days');
+
+      document.getElementById('calMonth').textContent = CAL_MONTHS[calCursor.m] + ' ' + calCursor.y;
+
+      const first = new Date(calCursor.y, calCursor.m, 1).getDay();
+      const daysInMonth = new Date(calCursor.y, calCursor.m + 1, 0).getDate();
+
+      let html = CAL_DOW.map(d => '<div class="cal-dow">' + d + '</div>').join('');
+      for (let i = 0; i < first; i++) html += '<div class="cal-day blank"></div>';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const key = calKey(calCursor.y, calCursor.m, d);
+        const events = CAL_EVENTS[key];
+        const cls = ['cal-day'];
+        if (events) cls.push('has');
+        if (key === TODAY_KEY) cls.push('today');
+        if (key === calSelected) cls.push('selected');
+        html += '<' + (events ? 'button' : 'div') + ' class="' + cls.join(' ') + '"' +
+          (events ? ' data-day="' + key + '" title="' + events.length + ' ' +
+            (events.length === 1 ? 'activity' : 'activities') + '"' : '') + '>' + d +
+          (events ? '<span class="cal-dot"></span>' : '') +
+          '</' + (events ? 'button' : 'div') + '>';
+      }
+
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = html;
+      grid.querySelectorAll('[data-day]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          calSelected = btn.dataset.day;
+          renderCalendar();
+        });
+      });
+
+      renderCalDay(calSelected);
+    }
+
+    function renderCalDay(key) {
+      const panel = document.getElementById('calDayPanel');
+      const events = CAL_EVENTS[key] || [];
+      const parts = key.split('-');
+      const label = new Date(+parts[0], +parts[1] - 1, +parts[2]).toLocaleDateString(undefined,
+        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      const submitted = events.filter(e => e.kind === 'submitted').length;
+      const drafts = events.filter(e => e.kind === 'draft').length;
+      const started = events.filter(e => e.kind === 'started').length;
+
+      const head = '<div class="cal-day-head"><h4>' + escapeHtml(label) + '</h4>' +
+        '<span>' + submitted + ' submitted · ' + drafts + ' draft ' +
+        (drafts === 1 ? 'save' : 'saves') + ' · ' + started + ' started</span></div>';
+
+      if (!events.length) {
+        panel.innerHTML = head +
+          '<div class="act-empty">No IEA activity was recorded on this date.</div>';
+        return;
+      }
+
+      panel.innerHTML = head + '<div class="cal-events">' + events.map(e => {
+        const link = '/iea-analysis?school=' + encodeURIComponent(e.school) +
+          '&dept=' + encodeURIComponent(e.department) + '&level=' + encodeURIComponent(e.level);
+        return '<div class="cal-ev ' + e.kind + '">' +
+          '<div>' +
+            '<a class="cal-ev-dept" href="' + link + '">' + escapeHtml(niceLabel(e.department)) + '</a>' +
+            '<div class="cal-ev-meta">' + escapeHtml(niceLabel(e.school)) + ' · ' + escapeHtml(e.level) + '</div>' +
+            '<div class="cal-ev-person">' + escapeHtml(e.person) + '</div>' +
+          '</div>' +
+          '<div class="cal-ev-right">' +
+            '<span class="cal-tag ' + e.kind + '">' + escapeHtml(e.label) + '</span>' +
+            (e.kind === 'started' ? '' :
+              '<div class="cal-ev-time">' + e.entries + ' ' + (e.entries === 1 ? 'entry' : 'entries') + '</div>') +
+            '<div class="cal-ev-time">' + escapeHtml(e.time) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    document.getElementById('calPrev').addEventListener('click', () => {
+      calCursor.m -= 1;
+      if (calCursor.m < 0) { calCursor.m = 11; calCursor.y -= 1; }
+      renderCalendar();
+    });
+    document.getElementById('calNext').addEventListener('click', () => {
+      calCursor.m += 1;
+      if (calCursor.m > 11) { calCursor.m = 0; calCursor.y += 1; }
+      renderCalendar();
+    });
+
     renderYearTabs();
 
     // mount first — its onChange callback renders the KPIs
@@ -444,11 +694,16 @@
     });
 
     populateSchoolPicker();
+    renderCalendar();
 
     if (FOCUS) {
       // A shared link is about one department — hide the browse-everything controls.
       const tb = document.querySelector('.toolbar');
       if (tb) tb.style.display = 'none';
+      ['.activity-card', '.cal-card'].forEach(sel => {
+        const el = document.querySelector(sel);
+        if (el) el.style.display = 'none';
+      });
     }
   </script>
 </body>
