@@ -1594,6 +1594,114 @@ def admin_iea_delete(sid):
     iea_col.delete_one({'_id': ObjectId(sid)})
     return jsonify({'ok': True})
 
+def _iea_fmt_ist(value):
+    """Stored UTC timestamp → readable India-time stamp for a spreadsheet."""
+    dt = _iea_parse_dt(value)
+    if not dt:
+        return ''
+    return (dt + IEA_IST_OFFSET).strftime('%d-%b-%Y %I:%M %p').replace(' 0', ' ')
+
+def _iea_year_submitted_on(doc, year, has_entries):
+    """When this department submitted this academic year, or '' if it hasn't."""
+    stamps = doc.get('submittedYears') or {}
+    raw = stamps.get(year) or stamps.get(_iea_norm_year(year))
+    if isinstance(raw, str) and raw.strip():
+        return _iea_fmt_ist(raw)
+    # Submitted before per-year stamps were tracked: the whole document went in
+    # at once, so every year holding data went in with it.
+    if raw or (doc.get('submitted') and has_entries):
+        return _iea_fmt_ist(doc.get('submittedAt') or doc.get('lastUpdated'))
+    return ''
+
+def build_iea_status_workbook(docs, years):
+    """Section-by-section status tracker — one sheet per academic year.
+
+    Columns follow the Office of Academics tracker: a Yes against every section
+    a department has filled, a completion percentage and status derived from
+    those, then when it was last edited and when it was submitted.
+    """
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    hdr_fill, hdr_font, _gold_fill, _gold_font, thin, center = _styles()
+
+    by_key = {}
+    for d in docs:
+        key = (str(d.get('school', '')).strip().lower(),
+               str(d.get('department', '')).strip().lower(),
+               str(d.get('level', '')).strip().lower())
+        by_key[key] = d
+
+    sec_keys = [s['key'] for s in IEA_SECTIONS]
+    heads = ['Sl. No.', 'School', 'Department', 'Programme Level'] + sec_keys + \
+            ['Completion %', 'Status', 'Last Updated', 'Submitted On', 'Submitted By']
+    first_sec_col = 5                                   # column E
+    last_sec_col = first_sec_col + len(sec_keys) - 1
+    pct_col = last_sec_col + 1
+    fills = {
+        'Completed': PatternFill("solid", fgColor="DCFCE7"),
+        'In Progress': PatternFill("solid", fgColor="FFF3E0"),
+        'Pending': PatternFill("solid", fgColor="F1F5F9"),
+    }
+
+    for y in years:
+        ws = wb.create_sheet(str(y).replace('AY ', '').replace('/', '-')[:31])
+        for c, h in enumerate(heads, 1):
+            cell = ws.cell(row=1, column=c, value=h)
+            cell.font = hdr_font
+            cell.fill = hdr_fill
+            cell.alignment = center
+            cell.border = thin
+        ws.row_dimensions[1].height = 28
+
+        r = 2
+        for school in sorted(IEA_SCHOOLS):
+            for dept in sorted(IEA_SCHOOLS[school]):
+                for level in IEA_SCHOOLS[school][dept]:
+                    doc = by_key.get((school.strip().lower(), dept.strip().lower(),
+                                      level.strip().lower()))
+                    merged = _iea_merge_years(doc.get('years')) if doc else _iea_empty_years()
+                    filled = {k: len(merged[y][k]) > 0 for k in sec_keys}
+                    has_entries = any(filled.values())
+
+                    ws.cell(row=r, column=1, value=r - 1)
+                    ws.cell(row=r, column=2, value=school)
+                    ws.cell(row=r, column=3, value=dept)
+                    ws.cell(row=r, column=4, value=level)
+                    for i, k in enumerate(sec_keys):
+                        ws.cell(row=r, column=first_sec_col + i, value='Yes' if filled[k] else '')
+
+                    # Snapshot values, not formulas — the file must read correctly
+                    # in any viewer, without waiting on a recalculation.
+                    done = sum(1 for k in sec_keys if filled[k])
+                    pct = ws.cell(row=r, column=pct_col, value=done / len(sec_keys))
+                    pct.number_format = '0%'
+
+                    state = 'Completed' if done == len(sec_keys) else ('Pending' if done == 0 else 'In Progress')
+                    status = ws.cell(row=r, column=pct_col + 1, value=state)
+                    status.fill = fills[state]
+
+                    ws.cell(row=r, column=pct_col + 2,
+                            value=(_iea_fmt_ist(doc.get('lastUpdated')) if doc else '') or 'Not started')
+                    ws.cell(row=r, column=pct_col + 3,
+                            value=(_iea_year_submitted_on(doc, y, has_entries) if doc else '') or 'Pending')
+                    ws.cell(row=r, column=pct_col + 4,
+                            value=(doc.get('submitterName') or doc.get('submitterEmail') or '') if doc else '')
+
+                    for c in range(1, len(heads) + 1):
+                        cell = ws.cell(row=r, column=c)
+                        cell.border = thin
+                        if c == 1 or first_sec_col <= c <= pct_col + 1:
+                            cell.alignment = center
+                    r += 1
+
+        widths = [7, 34, 34, 16] + [6] * len(sec_keys) + [13, 14, 21, 21, 26]
+        for c, w in enumerate(widths, 1):
+            ws.column_dimensions[get_column_letter(c)].width = w
+        ws.freeze_panes = 'E2'
+        ws.auto_filter.ref = f"A1:{get_column_letter(len(heads))}{max(r - 1, 1)}"
+
+    return wb
+
 def _iea_send_workbook(docs, year, name_hint):
     """Render docs to a workbook and hand it back as a download."""
     if not docs:
@@ -1606,6 +1714,26 @@ def _iea_send_workbook(docs, year, name_hint):
     year_suffix = f"_{year.replace(' ', '_')}" if year else '_AllYears'
     filename = f"IEA_Report{('_' + safe) if safe else ''}{year_suffix}.xlsx"
     return send_file(buf, as_attachment=True, download_name=filename,
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+@app.route('/iea-status-export')
+def iea_status_export():
+    """Status tracker for every department — Yes per section, completion, dates.
+
+    Carries no entry content, only the same status the analysis page already
+    shows publicly, so it follows /iea-analysis rather than the admin dump.
+    """
+    year = request.args.get('year')
+    if year and year not in IEA_YEARS:
+        return "Invalid year", 400
+    docs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
+    wb = build_iea_status_workbook(docs, [year] if year else IEA_YEARS)
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    suffix = f"_{year.replace(' ', '_')}" if year else '_AllYears'
+    return send_file(buf, as_attachment=True,
+                     download_name=f"IEA_Submission_Status{suffix}.xlsx",
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 @app.route('/iea-export')

@@ -106,6 +106,17 @@
     .kpi-num { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--ink); }
     .kpi-label { font-size: 11.5px; color: var(--ink3); margin-top: 6px; line-height: 1.35; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
 
+    /* ── Downloads card ── */
+    .dl-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 20px; box-shadow: var(--sh); }
+    .dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .dl-block { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+    .dl-title { font-size: 13.5px; font-weight: 800; color: var(--navy); }
+    .dl-sub { font-size: 12px; color: var(--ink3); margin: 4px 0 12px; line-height: 1.5; }
+    .dl-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .dl-row .select-input { flex: 1 1 240px; min-width: 0; }
+    .dl-disabled { opacity: .45; pointer-events: none; }
+    @media (max-width: 860px) { .dl-grid { grid-template-columns: 1fr; } }
+
     /* ── Who submitted today / yesterday ── */
     .activity-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 20px; box-shadow: var(--sh); animation: rise .35s ease backwards; }
     .activity-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
@@ -303,6 +314,41 @@
 
     <!-- ════ PANE 1 — SUBMISSION ACTIVITY ════ -->
     <div class="pane" id="pane-activity">
+    <!-- DOWNLOADS -->
+    <div class="dl-card">
+      <div class="activity-head" style="margin-bottom:14px;">
+        <div>
+          <h3 style="font-size:17px; color:var(--navy); font-weight:700;">Downloads</h3>
+          <p style="font-size:12.5px; color:var(--ink3); margin-top:2px;">Status of every department, or one department's full entries — for the academic year you choose.</p>
+        </div>
+        <select id="dlYear" class="select-input">
+          <option value="">📁 All Academic Years</option>
+          {% for y in iea_years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="dl-grid">
+        <div class="dl-block">
+          <div class="dl-title">All departments — submission status</div>
+          <div class="dl-sub">One sheet per year: a Yes against every section filled, completion %, status, last updated and submitted date.</div>
+          <a id="dlStatusBtn" class="btn btn-navy" href="/iea-status-export">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download status (.xlsx)
+          </a>
+        </div>
+        <div class="dl-block">
+          <div class="dl-title">One department — all entries</div>
+          <div class="dl-sub">Every entry that department filed, section by section, for the selected year.</div>
+          <div class="dl-row">
+            <select id="dlDept" class="select-input"><option value="">Choose a department…</option></select>
+            <a id="dlDeptBtn" class="btn btn-gold dl-disabled" href="#">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download entries (.xlsx)
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- WHO SUBMITTED TODAY / YESTERDAY -->
     {% macro activity_list(rows, empty_text) %}
       {% if rows %}
@@ -735,6 +781,42 @@
       }).join('') + '</div>';
     }
 
+    /* ── Downloads: status for everyone, or one department's entries ── */
+    function populateDownloadPickers() {
+      const sel = document.getElementById('dlDept');
+      const bySchool = {};
+      allUnits.forEach(u => { (bySchool[u.school] = bySchool[u.school] || []).push(u); });
+      Object.keys(bySchool).sort().forEach(school => {
+        const group = document.createElement('optgroup');
+        group.label = IEACards.niceName(school);
+        bySchool[school]
+          .sort((a, b) => (a.department + a.level).localeCompare(b.department + b.level))
+          .forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u._id;
+            opt.textContent = IEACards.niceName(u.department) + ' · ' + u.level;
+            group.appendChild(opt);
+          });
+        sel.appendChild(group);
+      });
+    }
+
+    function syncDownloadLinks() {
+      const year = document.getElementById('dlYear').value;
+      const suffix = year ? '?year=' + encodeURIComponent(year) : '';
+      document.getElementById('dlStatusBtn').href = '/iea-status-export' + suffix;
+
+      const sid = document.getElementById('dlDept').value;
+      const btn = document.getElementById('dlDeptBtn');
+      btn.classList.toggle('dl-disabled', !sid);
+      btn.href = sid
+        ? '/iea-export?sid=' + encodeURIComponent(sid) + (year ? '&year=' + encodeURIComponent(year) : '')
+        : '#';
+    }
+
+    document.getElementById('dlYear').addEventListener('change', syncDownloadLinks);
+    document.getElementById('dlDept').addEventListener('change', syncDownloadLinks);
+
     /* ── All departments roster (Submission Activity tab) ── */
     function unitStatus(u) {
       const entries = YEARS.reduce((n, y) => n + IEACards.countForYear(u, y), 0);
@@ -852,6 +934,8 @@
     });
 
     populateSchoolPicker();
+    populateDownloadPickers();
+    syncDownloadLinks();
     renderCalendar();
     renderRoster();
 
