@@ -1207,6 +1207,59 @@ def _iea_recent_activity(docs):
     rows.sort(key=lambda r: r['sortKey'], reverse=True)
     return rows
 
+def _iea_calendar_events(docs):
+    """Every dated IEA action, indexed by calendar day (India time).
+
+    Feeds the date picker on the analysis page: pick a day and see which
+    departments started filling, saved a draft, or submitted a version on it.
+    """
+    days = {}
+
+    def add(stamp, dept_doc, kind, label, entries, person):
+        dt = _iea_parse_dt(stamp)
+        if not dt:
+            return
+        local = dt + IEA_IST_OFFSET
+        key = local.strftime('%Y-%m-%d')
+        days.setdefault(key, []).append({
+            'kind': kind,                      # submitted | draft | started
+            'label': label,
+            'school': dept_doc.get('school', ''),
+            'department': dept_doc.get('department', ''),
+            'level': dept_doc.get('level', ''),
+            'person': person or 'Not recorded',
+            'entries': entries,
+            'time': local.strftime('%I:%M %p').lstrip('0'),
+            'sortKey': local.isoformat(),
+        })
+
+    for d in docs:
+        who = d.get('submitterName') or d.get('submitterEmail') or ''
+        versions = d.get('versions') or []
+        for v in versions:
+            num = v.get('version') or 1
+            label = 'Submitted' if num == 1 else f'Re-submitted · version {num}'
+            add(v.get('at'), d, 'submitted', label, v.get('entries', 0), v.get('by') or who)
+
+        # A draft save that is not itself one of the submitted versions.
+        last_edit = _iea_parse_dt(d.get('lastUpdated'))
+        newest_version = max(
+            [x for x in (_iea_parse_dt(v.get('at')) for v in versions) if x], default=None)
+        if last_edit and (not newest_version or last_edit > newest_version):
+            add(d.get('lastUpdated'), d, 'draft',
+                'Edited after submitting' if versions else 'Draft saved',
+                _iea_count_entries(d.get('years')), who)
+
+        started = _iea_parse_dt(d.get('createdAt'))
+        if started:
+            add(d.get('createdAt'), d, 'started',
+                'Started filling' + (' (estimated)' if d.get('createdAtEstimated') else ''),
+                0, who)
+
+    for key in days:
+        days[key].sort(key=lambda r: r['sortKey'], reverse=True)
+    return days
+
 @app.route('/iea')
 def iea():
     if 'user_email' not in session:
@@ -1504,6 +1557,8 @@ def iea_analysis_page():
                            departments=DEPARTMENTS,
                            recent_today=[r for r in recent if r['day'] == 'today'],
                            recent_yesterday=[r for r in recent if r['day'] == 'yesterday'],
+                           calendar_events=_iea_calendar_events(subs),
+                           today_key=(datetime.utcnow() + IEA_IST_OFFSET).strftime('%Y-%m-%d'),
                            is_admin=is_admin)
 
 @app.route('/api/iea/analysis-data')
