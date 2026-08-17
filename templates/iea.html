@@ -124,6 +124,24 @@
     .status-badge svg { width: 13px; height: 13px }
     .status-submitted { background: #e8f7ee; color: #0f5a2a; border: 1px solid #c8e6c9 }
     .status-draft { background: #fff3e0; color: #b45309; border: 1px solid #ffe0b2 }
+    .status-locked { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1 }
+    .status-open { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe }
+
+    /* ── Locked (already submitted) ── */
+    .lock-banner { display: flex; align-items: flex-start; gap: 12px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-left: 5px solid #64748b; border-radius: 12px; padding: 16px 18px; margin-bottom: 18px }
+    .lock-banner.open { background: #f0fdf4; border-color: #86efac; border-left-color: #15803d }
+    .lock-banner h4 { font-size: 14.5px; font-weight: 800; color: var(--navy); margin-bottom: 4px }
+    .lock-banner p { font-size: 12.5px; color: var(--ink2); line-height: 1.55; margin: 0 }
+    .lock-banner a { color: var(--navy); font-weight: 700 }
+    .lock-banner .lock-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap }
+    .lock-modal-body { padding: 22px 24px; overflow-y: auto }
+    .lock-modal-body p { font-size: 13.5px; color: var(--ink2); line-height: 1.6; margin-bottom: 14px }
+    .lock-mail { display: block; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px 14px; font-size: 14px; font-weight: 800; color: var(--navy); text-align: center; margin-bottom: 16px; text-decoration: none }
+    .lock-mail:hover { background: #eef2ff }
+    .lock-state { border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.55; margin-bottom: 16px }
+    .lock-state.pending { background: #fffbeb; border: 1px solid #fde68a; color: #92400e }
+    .lock-state.open { background: #f0fdf4; border: 1px solid #86efac; color: #14532d }
+    .lock-state.declined { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b }
 
     /* ── Cards ── */
     .card { background: var(--bg2); border: 1px solid #dde3f0; border-radius: var(--r); padding: 26px; margin-bottom: 22px; box-shadow: var(--sh); animation: rise .4s ease }
@@ -795,6 +813,7 @@
     </div>
 
     <div id="mainArea" style="display:none;">
+      <div id="lockBanner"></div>
       <div id="yearTabsContainer"></div>
       <div class="section-nav-wrapper" id="sectionNavWrapper"></div>
       <div id="sectionsContainer"></div>
@@ -852,6 +871,39 @@
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           Submit Feedback
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════ LOCKED SUBMISSION MODAL (shown when editing a submitted unit) ═════════ -->
+  <div class="terms-overlay" id="lockOverlay" onclick="if(event.target===this)closeLockModal()">
+    <div class="terms-modal" role="dialog" aria-modal="true" aria-labelledby="lockTitle" style="max-width:620px;">
+      <div class="terms-head">
+        <div>
+          <div class="terms-eyebrow">Office of Academic Affairs · JAIN (Deemed-to-be University)</div>
+          <h2 id="lockTitle">🔒 This Submission Is Final</h2>
+        </div>
+        <button class="terms-close" onclick="closeLockModal()" aria-label="Close" title="Close">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="lock-modal-body">
+        <p id="lockUnitLine" style="font-weight:700; color:var(--navy);"></p>
+        <p>Once submitted, IEA data can no longer be edited by the department. To change anything, write to the Office of Academic Affairs:</p>
+        <a class="lock-mail" id="lockMailLink" href="#"></a>
+        <div id="lockStateBox"></div>
+        <div id="lockRequestForm">
+          <p style="margin-bottom:8px;">Or request edit access here — the Office of Academic Affairs will reopen your submission until a date and time they set:</p>
+          <textarea id="lockReason" rows="3" placeholder="Why does this submission need to be reopened? e.g. AY 2025-26 Section B entries were left out." style="width:100%; padding:10px 12px; border:1.5px solid #dde3f0; border-radius:8px; font-size:13.5px; font-family:inherit; resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div class="terms-foot" style="justify-content:flex-end;">
+        <div class="terms-actions">
+          <button class="btn btn-ghost" onclick="closeLockModal()" style="text-decoration:none;">Close</button>
+          <button class="btn btn-primary" id="lockRequestBtn" onclick="submitEditAccessRequest()" style="text-decoration:none;">
+            Request Edit Access
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -999,6 +1051,190 @@
       });
     }
 
+    /* ── Locked submissions ───────────────────────────────────────
+       A submitted unit is final. Editing reopens only when the Office of
+       Academic Affairs approves a window, which runs until a date/time
+       they choose. Everything below keeps that rule visible in the UI —
+       the API enforces it regardless. */
+    const OFFICE_EMAIL = {{ office_email|tojson }};
+    let lockContext = null;   // {school, department, level, request} of the modal's unit
+
+    function isFormLocked() { return !!(state && state.locked); }
+
+    function lockMailto(unit) {
+      const subject = 'IEA edit access request — ' + unit.department + ' (' + unit.level + ')';
+      const body = 'Dear Office of Academic Affairs,\n\n' +
+        'We request edit access to our submitted Innovation & Emerging Areas data for ' +
+        unit.department + ' (' + unit.level + '), ' + unit.school + '.\n\nReason:\n\n';
+      return 'mailto:' + OFFICE_EMAIL + '?subject=' + encodeURIComponent(subject) +
+        '&body=' + encodeURIComponent(body);
+    }
+
+    function openLockModal(unit, req) {
+      lockContext = Object.assign({}, unit, { request: req || null });
+      document.getElementById('lockUnitLine').textContent =
+        unit.department + ' (' + unit.level + ') · ' + unit.school;
+      const mail = document.getElementById('lockMailLink');
+      mail.href = lockMailto(unit);
+      mail.textContent = '✉ ' + OFFICE_EMAIL;
+
+      const box = document.getElementById('lockStateBox');
+      const form = document.getElementById('lockRequestForm');
+      const btn = document.getElementById('lockRequestBtn');
+      box.innerHTML = ''; form.style.display = 'block';
+      btn.style.display = 'inline-flex'; btn.disabled = false;
+      btn.textContent = 'Request Edit Access';
+
+      const state_ = req ? req.state : '';
+      if (state_ === 'pending') {
+        box.innerHTML = '<div class="lock-state pending"><strong>Request already sent.</strong> ' +
+          'The Office of Academic Affairs received your request on ' + escapeHtml(req.requestedAtText) +
+          ' and is reviewing it. You will be emailed once it is approved.' +
+          (req.reason ? '<br><em>Your reason: “' + escapeHtml(req.reason) + '”</em>' : '') + '</div>';
+        form.style.display = 'none';
+        btn.style.display = 'none';
+      } else if (state_ === 'open') {
+        box.innerHTML = '<div class="lock-state open"><strong>Editing is open.</strong> ' +
+          'Your submission can be edited until <strong>' + escapeHtml(req.openUntilText) +
+          ' IST</strong> (' + req.hoursLeft + ' hours left). Please re-submit before then.</div>';
+        form.style.display = 'none';
+        btn.style.display = 'none';
+      } else if (state_ === 'declined') {
+        box.innerHTML = '<div class="lock-state declined"><strong>Your last request was declined.</strong>' +
+          (req.adminComment ? '<br>Office remark: “' + escapeHtml(req.adminComment) + '”' : '') +
+          '<br>You may send a fresh request below.</div>';
+      } else if (state_ === 'expired') {
+        box.innerHTML = '<div class="lock-state declined"><strong>Your last editing window has closed</strong>' +
+          (req.openUntilText ? ' (' + escapeHtml(req.openUntilText) + ' IST)' : '') +
+          '.<br>You may request access again below.</div>';
+      }
+
+      document.getElementById('lockReason').value = '';
+      document.getElementById('lockOverlay').classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLockModal() {
+      document.getElementById('lockOverlay').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    /* Entry points that keep unit details out of inline onclick markup. */
+    function openLockModalFor(sid) {
+      const s = (submissionsCache || []).find(x => x.id === sid);
+      if (!s) return;
+      openLockModal({ school: s.school, department: s.department, level: s.level },
+                    s.editRequest || null);
+    }
+
+    function openLockModalForState() {
+      if (!state) return;
+      openLockModal({ school: state.school, department: state.department, level: state.level },
+                    state.editRequest || null);
+    }
+
+    async function submitEditAccessRequest() {
+      if (!lockContext) return;
+      const reason = document.getElementById('lockReason').value.trim();
+      if (!reason) { showToast('Please describe why the submission needs to be reopened.', true); return; }
+      const btn = document.getElementById('lockRequestBtn');
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try {
+        const res = await fetch('/api/iea/request-edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            school: lockContext.school, department: lockContext.department,
+            level: lockContext.level, reason: reason
+          })
+        });
+        const json = await res.json();
+        if (json.ok) {
+          closeLockModal();
+          showToast('Request sent to the Office of Academic Affairs.');
+          loadDashboard();
+        } else {
+          btn.disabled = false; btn.textContent = 'Request Edit Access';
+          showToast(json.error || 'Could not send the request.', true);
+        }
+      } catch (err) {
+        btn.disabled = false; btn.textContent = 'Request Edit Access';
+        showToast('Network error: ' + err.message, true);
+      }
+    }
+
+    /* A write the server refused because the unit is locked. */
+    function handleLockedResponse(json) {
+      if (!json || !json.locked) return false;
+      if (state) state.locked = true;
+      showToast(json.error || 'This submission is locked for editing.', true);
+      refreshLockState().then(() => {
+        openLockModal({ school: state.school, department: state.department, level: state.level },
+                      state.editRequest);
+      });
+      return true;
+    }
+
+    async function refreshLockState() {
+      if (!state) return;
+      try {
+        const res = await fetch('/api/iea/edit-status?school=' + encodeURIComponent(state.school) +
+          '&dept=' + encodeURIComponent(state.department) + '&level=' + encodeURIComponent(state.level));
+        const json = await res.json();
+        if (json.ok) {
+          state.locked = !!json.locked;
+          state.windowOpen = !!json.windowOpen;
+          state.editRequest = json.request;
+        }
+      } catch (err) { /* keep whatever the dashboard already told us */ }
+    }
+
+    /* Read-only mode for the form itself, so a locked unit can still be read.
+       Section navigation stays live — only the controls that change data go. */
+    function applyLockToForm() {
+      const wrap = document.getElementById('sectionsContainer');
+      if (!wrap) return;
+      const off = isFormLocked();
+      wrap.querySelectorAll('input, textarea, select').forEach(el => { el.disabled = off; });
+      wrap.querySelectorAll('[data-action], .btn-file-upload').forEach(el => {
+        el.disabled = off;
+        el.style.display = off ? 'none' : '';
+      });
+      wrap.querySelectorAll('.btn-remove-file').forEach(el => { el.style.display = off ? 'none' : ''; });
+    }
+
+    function renderLockBanner() {
+      const el = document.getElementById('lockBanner');
+      if (el) el.innerHTML = lockBannerHtml();
+    }
+
+    function lockBannerHtml() {
+      if (!state) return '';
+      if (isFormLocked()) {
+        const req = state.editRequest;
+        const extra = (req && req.state === 'pending')
+          ? ' Your request from ' + escapeHtml(req.requestedAtText) + ' is awaiting approval.' : '';
+        return '<div class="lock-banner">' +
+          '<div style="font-size:24px; line-height:1;">🔒</div>' +
+          '<div><h4>Submitted — locked for editing</h4>' +
+          '<p>This submission has been finalised, so it is now read-only.' + extra +
+          ' To change it, write to <a href="mailto:' + OFFICE_EMAIL + '">' + OFFICE_EMAIL +
+          '</a> or request edit access.</p>' +
+          '<div class="lock-actions"><button class="btn btn-primary" style="font-size:12px; padding:8px 16px;" ' +
+          'onclick="openLockModalForState()">Request Edit Access</button></div>' +
+          '</div></div>';
+      }
+      if (state.windowOpen && state.editRequest) {
+        return '<div class="lock-banner open">' +
+          '<div style="font-size:24px; line-height:1;">✅</div>' +
+          '<div><h4>Editing reopened by the Office of Academic Affairs</h4>' +
+          '<p>You can edit and re-submit until <strong>' + escapeHtml(state.editRequest.openUntilText) +
+          ' IST</strong> (' + state.editRequest.hoursLeft + ' hours left). After that this submission locks again.</p>' +
+          '</div></div>';
+      }
+      return '';
+    }
+
     /* ── Terms & Conditions gate (shown before every new submission) ── */
     function startNewSubmission() {
       if (IEA_DEADLINE_PASSED) {
@@ -1141,10 +1377,19 @@
         const badge = isDraft
           ? '<span class="status-badge status-draft">' + ICON.edit + ' Draft</span>'
           : '<span class="status-badge status-submitted">' + ICON.check + ' Submitted' + (s.version > 1 ? ' · v' + s.version : '') + '</span>';
-        const openLabel = isDraft ? ' Open IEA Form' : ' Edit Submission';
+        // Submitted units are final: the open button becomes a view, and editing
+        // runs through the Office of Academic Affairs.
+        const req = s.editRequest || null;
+        const lockBadge = s.locked
+          ? '<span class="status-badge status-locked">🔒 Locked' +
+              (req && req.state === 'pending' ? ' · access requested' : '') + '</span>'
+          : (s.windowOpen && req
+              ? '<span class="status-badge status-open">🔓 Editing open till ' + escapeHtml(req.openUntilText) + '</span>'
+              : '');
+        const openLabel = isDraft ? ' Open IEA Form' : (s.locked ? ' View Submission' : ' Edit Submission');
         const ayVal = s.acYear || 'AY 2025-26';
         const headerTags = '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px;">' +
-          badge +
+          badge + lockBadge +
           '<span class="semester-tag" style="font-size:11px; background:var(--navy); color:#fff; font-weight:800; padding:2px 10px; border-radius:99px;">AY: ' + escapeHtml(ayVal) + '</span>' +
         '</div>';
         return '<div class="dash-card">' +
@@ -1153,8 +1398,12 @@
           '<div class="dc-sub">Last saved: ' + when + ' · ' + escapeHtml(s.school) + ' · ' + escapeHtml(s.level) + '</div>' +
           '<div><span class="dc-tag">' + ICON.layers + ' ' + entryLabel + ' across ' + YEARS.length + ' years</span></div></div>' +
           '<div class="dc-right">' +
-          '<button class="btn btn-gold" onclick="openSubmission(\'' + escapeHtml(s.school) + '\', \'' + escapeHtml(s.department) + '\', \'' + escapeHtml(s.level) + '\', \'' + escapeHtml(s.acYear || '') + '\')">' + ICON.edit + openLabel + '</button>' +
-          '<button class="btn btn-ghost" onclick="deleteSubmission(\'' + s.id + '\', \'' + escapeHtml(s.department) + '\')" style="color:var(--danger);border-color:#f5b8b8">' + ICON.trash + ' Delete</button>' +
+          (s.locked
+            ? '<button class="btn btn-primary" onclick="openLockModalFor(\'' + s.id + '\')">🔒 Request Edit Access</button>'
+            : '') +
+          '<button class="btn ' + (s.locked ? 'btn-ghost' : 'btn-gold') + '" onclick="openSubmission(\'' + escapeHtml(s.school) + '\', \'' + escapeHtml(s.department) + '\', \'' + escapeHtml(s.level) + '\', \'' + escapeHtml(s.acYear || '') + '\')">' + ICON.edit + openLabel + '</button>' +
+          (s.locked ? ''
+            : '<button class="btn btn-ghost" onclick="deleteSubmission(\'' + s.id + '\', \'' + escapeHtml(s.department) + '\')" style="color:var(--danger);border-color:#f5b8b8">' + ICON.trash + ' Delete</button>') +
           '</div></div>';
       }).join('');
     }
@@ -1288,7 +1537,9 @@
       activeYear = normYear(acYear || (parsed && parsed.acYear) || YEARS[0]);
       ensureStateYear(activeYear);
       selectedSections = [SECTIONS[0].key]; dirty = false;
+      await refreshLockState();     // a submitted unit opens read-only
       document.getElementById('mainArea').style.display = 'block';
+      renderLockBanner();
       renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); updateStatusPill();
     }
 
@@ -1471,6 +1722,7 @@
     function renderSections() {
       const visible = SECTIONS.filter(s => selectedSections.includes('All') || selectedSections.includes(s.key));
       document.getElementById('sectionsContainer').innerHTML = visible.map(renderSectionPanel).join('');
+      applyLockToForm();
     }
 
     function renderSectionPanel(s) {
@@ -1571,6 +1823,19 @@
     function renderSubmitSection() {
       const el = document.getElementById('submitSection');
       const count = totalEntries(state);
+      if (isFormLocked()) {
+        // Final submission: nothing to submit again until the office reopens it.
+        el.innerHTML = '<div class="submit-section"><h3>🔒 Submission Finalised</h3>' +
+          '<p>This submission holds ' + count + ' ' + (count === 1 ? 'entry' : 'entries') +
+          ' and is locked for editing. To change anything, write to ' +
+          '<a href="mailto:' + OFFICE_EMAIL + '" style="color:inherit;font-weight:800;">' + OFFICE_EMAIL +
+          '</a> or request edit access.</p>' +
+          '<div class="submit-actions">' +
+          '<button class="btn btn-ghost" onclick="downloadBackup()">' + ICON.download + ' Download Backup</button>' +
+          '<button class="btn btn-primary" onclick="openLockModalForState()">🔒 Request Edit Access</button>' +
+          '</div></div>';
+        return;
+      }
       const sectionCounts = SECTIONS.map(s => {
         let c = 0; YEARS.forEach(y => { const yk = ensureStateYear(y); c += sectionFilled(yk, s.key); });
         return '<div class="stat-chip"><span style="width:22px;height:22px;border-radius:6px;background:' + s.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">' + s.key + '</span> ' + c + ' entries</div>';
@@ -1587,6 +1852,7 @@
     async function doAutoSave() {
       // Nothing filled in and nothing saved before — a blank card is not data.
       if (!state) return;
+      if (isFormLocked()) return;   // finalised: the server would refuse anyway
       if (totalEntries(state) === 0 && !state.lastUpdated) return;
       showAutosave('saving');
       try {
@@ -1600,6 +1866,7 @@
         const res = await fetch('/api/iea/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const json = await res.json();
         if (json.ok) { state.lastUpdated = json.lastUpdated; dirty = false; updateStatusPill(); showAutosave('saved'); }
+        else if (handleLockedResponse(json)) { showAutosave('error'); renderLockBanner(); renderSections(); renderSubmitSection(); }
         else showAutosave('error');
       } catch (err) { showAutosave('error'); }
     }
@@ -1616,7 +1883,11 @@
     /* ── Final submit ── (nothing is mandatory; any entries can be submitted) */
     async function submitFinal() {
       if (!state) { showToast('Select a reporting unit first.', true); return; }
+      if (isFormLocked()) { openLockModalForState(); return; }
       if (totalEntries(state) === 0) { showToast('Add at least one entry before submitting.', true); return; }
+      if (!confirm('Submit this data to the Office of Academic Affairs?\n\n' +
+                   'Once submitted it becomes final — you will not be able to edit it again ' +
+                   'unless the Office of Academic Affairs reopens it for you.')) return;
       try {
         const payload = {
           school: state.school,
@@ -1635,12 +1906,13 @@
           renderYearTabs();
           showToast(json.version > 1 ? ('Submitted — saved as edited Version ' + json.version + '.') : 'Submitted successfully!');
           backToDashboard();
-        } else showToast('Submit failed: ' + (json.error || 'Error'), true);
+        } else if (!handleLockedResponse(json)) showToast('Submit failed: ' + (json.error || 'Error'), true);
       } catch (err) { showToast('Submit failed: ' + err.message, true); }
     }
 
     /* ── Evidence file upload ── */
     function triggerFileUpload(sk, eid, type) {
+      if (isFormLocked()) { openLockModalForState(); return; }
       const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.zip';
       inp.onchange = async (e) => {
         const file = e.target.files[0]; if (!file) return;
@@ -1656,6 +1928,7 @@
     }
     function removeEvidenceFile(sk, eid, type) { updateEvidenceDetail(sk, eid, type, 'fileUrl', ''); updateEvidenceDetail(sk, eid, type, 'fileName', ''); renderSections(); }
     function updateEvidenceDetail(sk, eid, type, key, val) {
+      if (isFormLocked()) { openLockModalForState(); return; }
       const curKey = ensureStateYear(activeYear);
       const entry = (state.years[curKey] && state.years[curKey][sk]) ? state.years[curKey][sk].find(e => e.id === eid) : null;
       if (!entry) return;
@@ -1667,6 +1940,7 @@
     }
 
     function addEntry(sk) {
+      if (isFormLocked()) { openLockModalForState(); return; }
       const curKey = ensureStateYear(activeYear);
       const newEntry = emptyEntry(sk);
       if (!Array.isArray(state.years[curKey][sk])) state.years[curKey][sk] = [];
@@ -1688,6 +1962,7 @@
       }, 50);
     }
     function removeEntry(sk, eid) {
+      if (isFormLocked()) { openLockModalForState(); return; }
       if (!confirm('Remove this entry?')) return;
       const curKey = ensureStateYear(activeYear);
       if (state.years[curKey] && state.years[curKey][sk]) {
@@ -1696,11 +1971,13 @@
       dirty = true; renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); scheduleAutoSave();
     }
     function updateField(sk, eid, fk, val) {
+      if (isFormLocked()) { openLockModalForState(); return; }
       const curKey = ensureStateYear(activeYear);
       const entry = (state.years[curKey] && state.years[curKey][sk]) ? state.years[curKey][sk].find(e => e.id === eid) : null;
       if (entry) { entry[fk] = val; dirty = true; scheduleAutoSave(); }
     }
     function toggleEvidenceType(sk, eid, val, checked) {
+      if (isFormLocked()) { openLockModalForState(); return; }
       const curKey = ensureStateYear(activeYear);
       const entry = (state.years[curKey] && state.years[curKey][sk]) ? state.years[curKey][sk].find(e => e.id === eid) : null;
       if (!entry) return;
