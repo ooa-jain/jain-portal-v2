@@ -113,6 +113,7 @@ except Exception as mongo_err:
 submissions_col = db['submissions']
 faculty_submissions_col = db['faculty_submissions']  # Faculty's individual checklist submissions (for both readiness & closure)
 iea_col = db['iea_submissions']  # Innovation & Emerging Areas programme/course submissions
+iea_edit_requests_col = db['iea_edit_requests']  # Requests to reopen a finalised IEA submission
 users_col = db['users']
 settings_col = db['settings']
 
@@ -468,6 +469,10 @@ IEA_DEFINITION = (
     "innovative pedagogical approaches that prepare learners for future opportunities, "
     "challenges, and lifelong learning."
 )
+
+# Office that owns the IEA report — a finalised submission can only be reopened
+# by this office, so every lock message points the department here.
+IEA_OFFICE_EMAIL = 'officeofacademicaffairs@jainuniversity.ac.in'
 
 # ── Mail Helper ──────────────────────────────────────────
 
@@ -1260,6 +1265,88 @@ def _iea_calendar_events(docs):
         days[key].sort(key=lambda r: r['sortKey'], reverse=True)
     return days
 
+# ── Editing a finalised submission ────────────────────────
+# A department may fill and re-save freely until it submits. Once submitted the
+# unit is final: further edits need the Office of Academic Affairs to approve a
+# reopening window, which stays open until a date/time the office chooses.
+
+def _iea_ist(dt):
+    """UTC datetime → India time."""
+    return dt + IEA_IST_OFFSET if dt else None
+
+def _iea_ist_text(value):
+    """Stored UTC timestamp → '18 Aug 2026, 5:30 PM' in India time."""
+    dt = _iea_parse_dt(value)
+    return _iea_ist(dt).strftime('%d %b %Y, %I:%M %p').replace(' 0', ' ') if dt else ''
+
+def _iea_edit_request(school, dept, level):
+    return iea_edit_requests_col.find_one({'school': school, 'department': dept, 'level': level})
+
+def _iea_window_open(req, now=None):
+    """True while an approved reopening window is still running."""
+    if not req or req.get('status') != 'approved':
+        return False
+    until = _iea_parse_dt(req.get('openUntil'))
+    return bool(until and (now or datetime.utcnow()) < until)
+
+def _iea_public_request(req, now=None):
+    """Shape one edit-access request for the analysis page / API."""
+    if not req:
+        return None
+    now = now or datetime.utcnow()
+    until = _iea_parse_dt(req.get('openUntil'))
+    is_open = _iea_window_open(req, now)
+    hours_left = round((until - now).total_seconds() / 3600, 1) if (until and is_open) else 0
+    status = req.get('status', 'pending')
+    return {
+        'id': str(req['_id']),
+        'school': req.get('school', ''),
+        'department': req.get('department', ''),
+        'level': req.get('level', ''),
+        'requesterName': req.get('requesterName', ''),
+        'requesterEmail': req.get('requesterEmail', ''),
+        'reason': req.get('reason', ''),
+        'status': status,
+        # 'open' and 'expired' are display states derived from an approved window.
+        'state': ('open' if is_open else 'expired') if status == 'approved' else status,
+        'requestedAt': req.get('requestedAt', ''),
+        'requestedAtText': _iea_ist_text(req.get('requestedAt')),
+        'decidedAt': req.get('decidedAt', ''),
+        'decidedAtText': _iea_ist_text(req.get('decidedAt')),
+        'decidedBy': req.get('decidedBy', ''),
+        'adminComment': req.get('adminComment', ''),
+        'openUntil': req.get('openUntil', ''),
+        'openUntilText': _iea_ist_text(req.get('openUntil')),
+        'isOpen': is_open,
+        'hoursLeft': hours_left,
+    }
+
+def _iea_edit_requests_public():
+    """Every edit-access request, most actionable first: pending, then live
+    windows, then everything already closed."""
+    now = datetime.utcnow()
+    rows = [_iea_public_request(r, now) for r in
+            iea_edit_requests_col.find().sort('requestedAt', -1)]
+    rank = {'pending': 0, 'open': 1, 'expired': 2, 'declined': 3}
+    rows.sort(key=lambda r: (rank.get(r['state'], 4), r['requestedAt'] or ''), reverse=False)
+    return rows
+
+def iea_unit_locked(school, dept, level):
+    """Why this unit cannot be written to, or None when editing is allowed.
+
+    Drafts are always editable. A submitted unit is locked unless the Office of
+    Academic Affairs has an approved reopening window still running.
+    """
+    if session.get('admin'):
+        return None
+    doc = iea_col.find_one({'school': school, 'department': dept, 'level': level})
+    if not doc or not doc.get('submitted'):
+        return None
+    if _iea_window_open(_iea_edit_request(school, dept, level)):
+        return None
+    return ('This submission has already been finalised and is locked for editing. '
+            f'To reopen it, request edit access below or write to {IEA_OFFICE_EMAIL}.')
+
 @app.route('/iea')
 def iea():
     if 'user_email' not in session:
@@ -1282,7 +1369,8 @@ def iea():
                            iea_years=IEA_YEARS,
                            iea_sections=IEA_SECTIONS,
                            iea_evidence_types=IEA_EVIDENCE_TYPES,
-                           iea_definition=IEA_DEFINITION)
+                           iea_definition=IEA_DEFINITION,
+                           office_email=IEA_OFFICE_EMAIL)
 
 @app.route('/api/iea/feedback', methods=['POST'])
 def iea_feedback():
@@ -1363,6 +1451,11 @@ def iea_save():
             or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
         return jsonify({'ok': False, 'error': 'Invalid School / Department / Programme Level'})
 
+    locked = iea_unit_locked(school, dept, level)
+    if locked:
+        return jsonify({'ok': False, 'locked': True, 'error': locked,
+                        'officeEmail': IEA_OFFICE_EMAIL})
+
     ac_year = (data.get('acYear') or data.get('ac_year') or 'AY 2025-26').strip()
     semester = (data.get('semester') or data.get('sem') or 'Odd Semester').strip()
 
@@ -1396,6 +1489,11 @@ def iea_submit():
     if school not in IEA_SCHOOLS or dept not in IEA_SCHOOLS.get(school, {}) \
             or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
         return jsonify({'ok': False, 'error': 'Invalid School / Department / Programme Level'})
+
+    locked = iea_unit_locked(school, dept, level)
+    if locked:
+        return jsonify({'ok': False, 'locked': True, 'error': locked,
+                        'officeEmail': IEA_OFFICE_EMAIL})
 
     ac_year = (data.get('acYear') or data.get('ac_year') or 'AY 2025-26').strip()
     semester = (data.get('semester') or data.get('sem') or 'Odd Semester').strip()
@@ -1471,6 +1569,7 @@ def iea_submissions():
 
     subs = list(iea_col.find(query).sort([('school', 1), ('department', 1), ('level', 1)]))
     results = []
+    is_admin = bool(session.get('admin'))
     for s in subs:
         sid = str(s['_id'])
         merged_years = _iea_merge_years(s.get('years'))
@@ -1481,11 +1580,17 @@ def iea_submissions():
             year_counts[y] = count
             total_entries += count
         
+        # A finalised submission is read-only unless a reopening window is live.
+        edit_req = _iea_edit_request(s.get('school', ''), s.get('department', ''), s.get('level', ''))
+        window_open = _iea_window_open(edit_req)
         results.append({
             'id': sid,
             'school': s.get('school', ''),
             'department': s.get('department', ''),
             'level': s.get('level', ''),
+            'locked': bool(s.get('submitted')) and not window_open and not is_admin,
+            'windowOpen': window_open,
+            'editRequest': _iea_public_request(edit_req),
             'acYear': s.get('acYear') or s.get('ac_year') or 'AY 2025-26',
             'semester': s.get('semester') or s.get('sem') or 'Odd Semester',
             'lastUpdated': s.get('lastUpdated', ''),
@@ -1540,6 +1645,219 @@ def iea_user_delete(sid):
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)})
 
+def send_iea_edit_request_email(req):
+    """Tell the Office of Academic Affairs that a department wants to reopen."""
+    unit = f"{req.get('department', '')} ({req.get('level', '')}) — {req.get('school', '')}"
+    link = get_base_url() + "iea-analysis"
+    html_content = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; background-color: #f8fafc; padding: 20px;">
+        <div style="max-width: 560px; margin: 0 auto; background: #ffffff; padding: 28px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 6px solid #f2a900;">
+          <h2 style="color: #0a2558; margin-bottom: 6px;">🔓 IEA Edit Access Requested</h2>
+          <p style="color: #64748b; font-size: 13px; margin-bottom: 20px;">A department has asked to reopen its finalised Innovation &amp; Emerging Areas submission.</p>
+          <table style="width: 100%; font-size: 14px; color: #334155; border-collapse: collapse;">
+            <tr><td style="padding: 6px 0; font-weight: bold; width: 140px;">Unit</td><td style="padding: 6px 0;">{unit}</td></tr>
+            <tr><td style="padding: 6px 0; font-weight: bold;">Requested by</td><td style="padding: 6px 0;">{req.get('requesterName', '')} ({req.get('requesterEmail', '')})</td></tr>
+            <tr><td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Reason</td><td style="padding: 6px 0;">{req.get('reason', '') or 'No reason provided.'}</td></tr>
+          </table>
+          <div style="margin: 26px 0 10px;">
+            <a href="{link}" style="background-color: #0a2558; color: #ffffff; padding: 12px 24px; border-radius: 6px; font-weight: bold; text-decoration: none; display: inline-block;">Review &amp; Approve on the IEA Analysis Page</a>
+          </div>
+          <p style="color: #94a3b8; font-size: 12px;">Approving opens the submission for editing until a date and time you choose.</p>
+        </div>
+      </body>
+    </html>
+    """
+    return _send_email(IEA_OFFICE_EMAIL, f'🔓 IEA Edit Access Requested — {unit}', html_content)
+
+def send_iea_edit_approved_email(req, until_text):
+    """Tell the department its reopening window is live, and when it closes."""
+    unit = f"{req.get('department', '')} ({req.get('level', '')})"
+    link = get_base_url() + "iea"
+    html_content = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; background-color: #ecfdf5; padding: 20px; text-align: center;">
+        <div style="max-width: 520px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 6px solid #10b981;">
+          <h2 style="color: #065f46; margin-bottom: 18px;">✅ IEA Edit Access Approved</h2>
+          <p style="color: #3d4460; font-size: 15px; margin-bottom: 10px;">Dear {req.get('requesterName', 'HOD')},</p>
+          <p style="color: #3d4460; font-size: 15px; margin-bottom: 22px;">Your finalised IEA submission for <strong>{unit}</strong> has been reopened for editing by the Office of Academic Affairs.</p>
+          <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 12px 15px; border-radius: 6px; text-align: left; margin-bottom: 22px;">
+            <strong style="color: #065f46; font-size: 13px; display: block; margin-bottom: 6px;">Editing is open until</strong>
+            <span style="color: #14532d; font-size: 15px; font-weight: bold;">{until_text} (IST)</span>
+          </div>
+          {'<div style="background: #f8fafc; border-left: 4px solid #94a3b8; padding: 12px 15px; border-radius: 6px; text-align: left; margin-bottom: 22px; color: #374151; font-size: 13px; font-style: italic;">"' + req.get('adminComment', '') + '"</div>' if req.get('adminComment') else ''}
+          <p style="color: #3d4460; font-size: 14px; margin-bottom: 24px;">Please re-submit before the window closes. After that the submission locks again.</p>
+          <a href="{link}" style="background-color: #10b981; color: #ffffff; padding: 12px 24px; border-radius: 6px; font-weight: bold; text-decoration: none; display: inline-block;">Open the IEA Portal</a>
+          <p style="color: #8892aa; font-size: 12px; margin-top: 26px;">This is an automated notification. Please do not reply directly to this email.</p>
+        </div>
+      </body>
+    </html>
+    """
+    return _send_email(req.get('requesterEmail', ''),
+                       f'✅ IEA Edit Access Approved — {unit}', html_content)
+
+@app.route('/api/iea/edit-status')
+def iea_edit_status():
+    """Whether one unit is locked, plus any request already filed for it."""
+    if 'user_email' not in session and not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    school = (request.args.get('school') or '').strip()
+    dept = (request.args.get('dept') or request.args.get('department') or '').strip()
+    level = (request.args.get('level') or '').strip()
+    if not school or not dept or not level:
+        return jsonify({'ok': False, 'error': 'Missing school/department/level'})
+    doc = iea_col.find_one({'school': school, 'department': dept, 'level': level})
+    req = _iea_edit_request(school, dept, level)
+    return jsonify({
+        'ok': True,
+        'submitted': bool(doc and doc.get('submitted')),
+        'locked': bool(iea_unit_locked(school, dept, level)),
+        'windowOpen': _iea_window_open(req),
+        'request': _iea_public_request(req),
+        'officeEmail': IEA_OFFICE_EMAIL,
+    })
+
+@app.route('/api/iea/request-edit', methods=['POST'])
+def iea_request_edit():
+    """A department asks the Office of Academic Affairs to reopen its submission."""
+    if 'user_email' not in session and not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Not logged in'})
+    data = request.json or {}
+    school = (data.get('school') or '').strip()
+    dept = (data.get('department') or data.get('dept') or '').strip()
+    level = (data.get('level') or '').strip()
+    reason = (data.get('reason') or '').strip()
+    if school not in IEA_SCHOOLS or dept not in IEA_SCHOOLS.get(school, {}) \
+            or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
+        return jsonify({'ok': False, 'error': 'Invalid School / Department / Programme Level'})
+    if not reason:
+        return jsonify({'ok': False, 'error': 'Please describe why this submission needs to be reopened.'})
+
+    doc = iea_col.find_one({'school': school, 'department': dept, 'level': level})
+    if not doc or not doc.get('submitted'):
+        return jsonify({'ok': False, 'error': 'This submission is not finalised yet — you can still edit it directly.'})
+
+    now = datetime.utcnow().isoformat()
+    # One live request per unit: a fresh ask resets any earlier decision.
+    iea_edit_requests_col.update_one(
+        {'school': school, 'department': dept, 'level': level},
+        {'$set': {
+            'school': school, 'department': dept, 'level': level,
+            'requesterEmail': session.get('user_email', ''),
+            'requesterName': session.get('user_name', ''),
+            'reason': reason,
+            'status': 'pending',
+            'requestedAt': now,
+            'openUntil': '',
+            'adminComment': '',
+            'decidedAt': '',
+            'decidedBy': '',
+        }},
+        upsert=True)
+    req = _iea_edit_request(school, dept, level)
+    try:
+        send_iea_edit_request_email(req)
+    except Exception as ex:
+        print(f"IEA edit-request email failed: {ex}")
+    return jsonify({'ok': True, 'request': _iea_public_request(req),
+                    'officeEmail': IEA_OFFICE_EMAIL})
+
+@app.route('/api/iea/edit-requests')
+def iea_edit_requests_list():
+    """Every edit-access request — feeds the alert box on /iea-analysis."""
+    return jsonify({'ok': True, 'requests': _iea_edit_requests_public(),
+                    'is_admin': bool(session.get('admin')),
+                    'officeEmail': IEA_OFFICE_EMAIL})
+
+@app.route('/api/iea/edit-requests/<rid>/approve', methods=['POST'])
+def iea_approve_edit_request(rid):
+    """Open a submission for editing until a chosen date/time (India time).
+
+    Accepts either 'until' ('YYYY-MM-DDTHH:MM', read as IST) or 'hours' from now.
+    """
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'})
+    try:
+        req = iea_edit_requests_col.find_one({'_id': ObjectId(rid)})
+    except Exception:
+        return jsonify({'ok': False, 'error': 'Invalid request id'})
+    if not req:
+        return jsonify({'ok': False, 'error': 'Request not found'})
+
+    data = request.json or {}
+    now = datetime.utcnow()
+    until_raw = (data.get('until') or '').strip()
+    if until_raw:
+        try:
+            local = datetime.strptime(until_raw[:16], '%Y-%m-%dT%H:%M')
+        except ValueError:
+            return jsonify({'ok': False, 'error': 'Could not read that date and time.'})
+        until = local - IEA_IST_OFFSET          # the picker is filled in India time
+    else:
+        try:
+            hours = float(data.get('hours') or 0)
+        except (TypeError, ValueError):
+            hours = 0
+        if hours <= 0:
+            return jsonify({'ok': False, 'error': 'Give a closing date/time, or a number of hours.'})
+        until = now + timedelta(hours=min(hours, 24 * 365))
+    if until <= now:
+        return jsonify({'ok': False, 'error': 'That closing time has already passed.'})
+
+    iea_edit_requests_col.update_one(
+        {'_id': req['_id']},
+        {'$set': {
+            'status': 'approved',
+            'openUntil': until.isoformat(),
+            'adminComment': (data.get('comment') or '').strip(),
+            'decidedAt': now.isoformat(),
+            'decidedBy': session.get('user_email') or 'Office of Academic Affairs',
+        }})
+    updated = iea_edit_requests_col.find_one({'_id': req['_id']})
+    try:
+        send_iea_edit_approved_email(updated, _iea_ist_text(updated.get('openUntil')))
+    except Exception as ex:
+        print(f"IEA edit-approval email failed: {ex}")
+    return jsonify({'ok': True, 'request': _iea_public_request(updated)})
+
+@app.route('/api/iea/edit-requests/<rid>/decline', methods=['POST'])
+def iea_decline_edit_request(rid):
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'})
+    try:
+        req = iea_edit_requests_col.find_one({'_id': ObjectId(rid)})
+    except Exception:
+        return jsonify({'ok': False, 'error': 'Invalid request id'})
+    if not req:
+        return jsonify({'ok': False, 'error': 'Request not found'})
+    iea_edit_requests_col.update_one(
+        {'_id': req['_id']},
+        {'$set': {'status': 'declined', 'openUntil': '',
+                  'adminComment': ((request.json or {}).get('comment') or '').strip(),
+                  'decidedAt': datetime.utcnow().isoformat(),
+                  'decidedBy': session.get('user_email') or 'Office of Academic Affairs'}})
+    return jsonify({'ok': True,
+                    'request': _iea_public_request(iea_edit_requests_col.find_one({'_id': req['_id']}))})
+
+@app.route('/api/iea/edit-requests/<rid>/close', methods=['POST'])
+def iea_close_edit_window(rid):
+    """End a live reopening window now — the unit locks again immediately."""
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'})
+    try:
+        req = iea_edit_requests_col.find_one({'_id': ObjectId(rid)})
+    except Exception:
+        return jsonify({'ok': False, 'error': 'Invalid request id'})
+    if not req:
+        return jsonify({'ok': False, 'error': 'Request not found'})
+    iea_edit_requests_col.update_one(
+        {'_id': req['_id']},
+        {'$set': {'openUntil': datetime.utcnow().isoformat(),
+                  'decidedAt': datetime.utcnow().isoformat(),
+                  'decidedBy': session.get('user_email') or 'Office of Academic Affairs'}})
+    return jsonify({'ok': True,
+                    'request': _iea_public_request(iea_edit_requests_col.find_one({'_id': req['_id']}))})
+
 @app.route('/iea-analysis')
 def iea_analysis_page():
     subs = [_iea_public_doc(d) for d in
@@ -1559,6 +1877,8 @@ def iea_analysis_page():
                            recent_yesterday=[r for r in recent if r['day'] == 'yesterday'],
                            calendar_events=_iea_calendar_events(subs),
                            today_key=(datetime.utcnow() + IEA_IST_OFFSET).strftime('%Y-%m-%d'),
+                           edit_requests=_iea_edit_requests_public(),
+                           office_email=IEA_OFFICE_EMAIL,
                            is_admin=is_admin)
 
 @app.route('/api/iea/analysis-data')
@@ -1760,6 +2080,299 @@ def build_iea_workbook(docs, year=None):
         ws.freeze_panes = 'A2'
 
     return wb
+
+# ═════════════════════════════════════════════════════════════
+# IEA — "every department" workbook: a summary tab, then one tab
+# per department (submitted departments first, then drafts).
+# ═════════════════════════════════════════════════════════════
+
+# How each status reads in the workbook, and the colour it carries.
+IEA_STATUS_META = {
+    'submitted':      ('Submitted',                     '15803D'),
+    'draft':          ('Started filling — in draft',    'B45309'),
+    'registered':     ('Registered — nothing filled',   '2C5F8A'),
+    'not_registered': ('Not registered',                '94A3B8'),
+}
+IEA_STATUS_ORDER = ['submitted', 'draft', 'registered', 'not_registered']
+
+def _iea_norm_name(value):
+    """Loose key for matching names typed differently ('&' vs 'and', case, spacing)."""
+    text = str(value or '').replace('&', ' and ').lower()
+    return re.sub(r'[^a-z0-9]+', ' ', text).strip()
+
+def _iea_registered_departments():
+    """Departments that have at least one portal account behind them.
+
+    A department with an account but no data has *registered* without filling —
+    which the summary reports separately from departments never onboarded.
+    """
+    names = set()
+    for u in users_col.find({}, {'department': 1}):
+        key = _iea_norm_name(u.get('department'))
+        if key:
+            names.add(key)
+    return names
+
+def _iea_status_rows(docs):
+    """One row per department/programme level in the master list, with its status.
+
+    Rows carry the merged submission (when there is one) so the workbook can
+    render both the summary and the per-department tabs from a single pass.
+    """
+    registered = _iea_registered_departments()
+    by_key, rows, seen = {}, [], set()
+    for d in docs:
+        by_key[(_iea_norm_name(d.get('school')), _iea_norm_name(d.get('department')),
+                _iea_norm_name(d.get('level')))] = d
+
+    def build(school, dept, level, doc):
+        merged = _iea_merge_years(doc.get('years')) if doc else _iea_empty_years()
+        year_counts = {y: sum(len(merged[y][s['key']]) for s in IEA_SECTIONS) for y in IEA_YEARS}
+        total = sum(year_counts.values())
+        if doc and doc.get('submitted'):
+            status = 'submitted'
+        elif total > 0:
+            status = 'draft'
+        elif doc or _iea_norm_name(dept) in registered:
+            status = 'registered'
+        else:
+            status = 'not_registered'
+        return {
+            'school': school, 'department': dept, 'level': level,
+            'status': status, 'statusLabel': IEA_STATUS_META[status][0],
+            'doc': doc, 'years': merged, 'yearCounts': year_counts, 'entries': total,
+            'yearsFilled': [y for y in IEA_YEARS if year_counts[y] > 0],
+            'submittedAt': (doc or {}).get('submittedAt', '') if doc else '',
+            'lastUpdated': (doc or {}).get('lastUpdated', '') if doc else '',
+            'version': (doc or {}).get('version', 0) if doc else 0,
+            'person': ((doc or {}).get('submitterName') or (doc or {}).get('submitterEmail') or '') if doc else '',
+            'email': (doc or {}).get('submitterEmail', '') if doc else '',
+        }
+
+    for school, depts in IEA_SCHOOLS.items():
+        for dept, levels in depts.items():
+            for level in levels:
+                key = (_iea_norm_name(school), _iea_norm_name(dept), _iea_norm_name(level))
+                seen.add(key)
+                rows.append(build(school, dept, level, by_key.get(key)))
+
+    # Anything stored under a name the master list no longer carries still counts.
+    for key, doc in by_key.items():
+        if key in seen:
+            continue
+        rows.append(build(doc.get('school', ''), doc.get('department', ''),
+                          doc.get('level', ''), doc))
+
+    rows.sort(key=lambda r: (IEA_STATUS_ORDER.index(r['status']), r['school'], r['department'], r['level']))
+    return rows
+
+def _iea_sheet_name(index, dept, level, used):
+    """A unique, Excel-legal tab name: '03 Computer Science (UG)'."""
+    short = re.sub(r'^\s*(department|dept)\s+of\s+', '', str(dept or 'Unit'), flags=re.I)
+    short = re.sub(r'[\\/*?:\[\]]', '-', short).strip() or 'Unit'
+    prefix = f"{index:02d} "
+    suffix = f" ({level})" if level else ''
+    room = 31 - len(prefix) - len(suffix)
+    name = prefix + short[:max(room, 4)].strip() + suffix
+    base, n = name[:31], 2
+    while name[:31] in used:
+        tail = f"~{n}"
+        name = base[:31 - len(tail)] + tail
+        n += 1
+    used.add(name[:31])
+    return name[:31]
+
+def build_iea_all_departments_workbook(docs, year=None):
+    """Every department in one workbook.
+
+    Tab 1 is the summary — who submitted, who is still in draft, who registered
+    without filling anything, and who never registered. After it comes one tab
+    per department that has data: submitted departments first, then drafts, each
+    opening with a year-by-year count before the entries themselves.
+    """
+    hdr_fill, hdr_font, gold_fill, gold_font, thin, center = _styles()
+    years = [year] if year else IEA_YEARS
+    rows = _iea_status_rows(docs)
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+
+    left_top = Alignment(horizontal='left', vertical='top', wrap_text=True)
+    body_font = Font(name="Calibri", size=10)
+    muted = Font(name="Calibri", size=10, italic=True, color="94A3B8")
+
+    def banner(ws, row, text, cols, color, size=11):
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=cols)
+        cell = ws.cell(row=row, column=1, value=text)
+        cell.font = Font(color="FFFFFF", bold=True, size=size, name="Calibri")
+        cell.fill = PatternFill("solid", fgColor=color.lstrip('#').upper())
+        cell.alignment = Alignment(horizontal='left', vertical='center')
+        ws.row_dimensions[row].height = 26 if size <= 11 else 30
+        return row + 1
+
+    def head_row(ws, row, heads):
+        for c, h in enumerate(heads, 1):
+            cell = ws.cell(row=row, column=c, value=h)
+            cell.font = hdr_font
+            cell.fill = hdr_fill
+            cell.alignment = center
+            cell.border = thin
+        ws.row_dimensions[row].height = 30
+        return row + 1
+
+    def data_row(ws, row, vals, bold=False):
+        for c, v in enumerate(vals, 1):
+            cell = ws.cell(row=row, column=c, value=v)
+            cell.border = thin
+            cell.font = Font(name="Calibri", size=10, bold=bold)
+            cell.alignment = left_top
+        return row + 1
+
+    # ── Tab 1 — Summary ──────────────────────────────────
+    ws = wb.create_sheet('Summary')
+    scope = year or 'All Academic Years'
+    cols = 12 + len(years)
+    r = banner(ws, 1, f"JAIN University — Innovation & Emerging Areas — Department Status Summary ({scope})",
+               cols, "0A2558", size=13)
+    stamp = (datetime.utcnow() + IEA_IST_OFFSET).strftime('%d %b %Y, %I:%M %p').replace(' 0', ' ')
+    note = ws.cell(row=r, column=1, value=f"Generated {stamp} IST · {len(rows)} department/programme units tracked")
+    note.font = muted
+    r += 2
+
+    # Status tally, in the order the report reads
+    r = head_row(ws, r, ['Status', 'Units', 'Total entries', 'Departments'])
+    for status in IEA_STATUS_ORDER:
+        group = [x for x in rows if x['status'] == status]
+        listed = sorted({f"{x['department']} ({x['level']})" for x in group})
+        # Long groups would swamp the cell — the table below carries the full list.
+        names = '; '.join(listed[:15]) + (f"  …and {len(listed) - 15} more" if len(listed) > 15 else '')
+        r = data_row(ws, r, [IEA_STATUS_META[status][0], len(group),
+                             sum(x['entries'] for x in group), names or '—'], bold=True)
+        ws.cell(row=r - 1, column=1).font = Font(name="Calibri", size=10, bold=True,
+                                                 color=IEA_STATUS_META[status][1])
+    r = data_row(ws, r, ['TOTAL', len(rows), sum(x['entries'] for x in rows), ''], bold=True)
+    r += 1
+
+    # Unit-by-unit table
+    r = banner(ws, r, 'Department-wise status', cols, "143572")
+    heads = ['#', 'School', 'Department', 'Programme Level', 'Status', 'Total entries'] + \
+            [f"{y} entries" for y in years] + \
+            ['Years filled', 'Submitted on (IST)', 'Version', 'Last updated (IST)',
+             'Filled by', 'Email', 'Workbook tab']
+    r = head_row(ws, r, heads)
+
+    # The tab order below has to match the sheets we are about to create.
+    tabbed = [x for x in rows if x['status'] in ('submitted', 'draft')]
+    used_names, tab_names = set(), {}
+    for i, row in enumerate(tabbed, 1):
+        tab_names[id(row)] = _iea_sheet_name(i, row['department'], row['level'], used_names)
+
+    for i, row in enumerate(rows, 1):
+        scoped_total = sum(row['yearCounts'][y] for y in years)
+        filled = [y for y in years if row['yearCounts'][y] > 0]
+        vals = [i, row['school'], row['department'], row['level'], row['statusLabel'], scoped_total] + \
+               [row['yearCounts'][y] for y in years] + \
+               [f"{len(filled)} of {len(years)}" + (f" — {', '.join(filled)}" if filled else ''),
+                _iea_ist_text(row['submittedAt']) or '—',
+                row['version'] or '—',
+                _iea_ist_text(row['lastUpdated']) or '—',
+                row['person'] or '—', row['email'] or '—',
+                tab_names.get(id(row), '—')]
+        r = data_row(ws, r, vals)
+        ws.cell(row=r - 1, column=5).font = Font(name="Calibri", size=10, bold=True,
+                                                 color=IEA_STATUS_META[row['status']][1])
+
+    widths = [5, 30, 34, 16, 26, 12] + [13] * len(years) + [30, 22, 9, 22, 24, 30, 26]
+    for i, w in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = 'A3'
+
+    # ── One tab per department — submitted first, then drafts ──
+    max_cols = max(1 + len(sec['fields']) + 3 for sec in IEA_SECTIONS)
+    max_cols = max(max_cols, 2 + len(IEA_SECTIONS) + 1)
+
+    for row in tabbed:
+        ws = wb.create_sheet(tab_names[id(row)])
+        colour = IEA_STATUS_META[row['status']][1]
+        r = banner(ws, 1, f"{row['department']} — {row['level']}", max_cols, "0A2558", size=13)
+        r = banner(ws, r, f"{row['school']}  ·  {row['statusLabel']}" +
+                   (f"  ·  Version {row['version']}" if row['version'] else ''), max_cols, colour)
+
+        meta = ws.cell(row=r, column=1, value=(
+            'Submitted: ' + (_iea_ist_text(row['submittedAt']) or '—') +
+            '  ·  Last updated: ' + (_iea_ist_text(row['lastUpdated']) or '—') +
+            '  ·  Filled by: ' + (row['person'] or '—') +
+            (f" ({row['email']})" if row['email'] else '')))
+        meta.font = Font(name="Calibri", size=10, color="475569")
+        r += 2
+
+        # Year summary sits above the data, as an at-a-glance count per year.
+        r = banner(ws, r, 'Year-wise summary — entries filled', max_cols, "143572")
+        r = head_row(ws, r, ['Academic Year', 'Status'] +
+                     [f"Sec {s['key']}" for s in IEA_SECTIONS] + ['Entries'])
+        for y in years:
+            per_sec = [len(row['years'][y][s['key']]) for s in IEA_SECTIONS]
+            count = row['yearCounts'][y]
+            r = data_row(ws, r, [y, 'Filled' if count else 'Not filled'] + per_sec + [count])
+        totals = [sum(len(row['years'][y][s['key']]) for y in years) for s in IEA_SECTIONS]
+        r = data_row(ws, r, ['TOTAL — ' + str(len([y for y in years if row['yearCounts'][y]])) +
+                             ' of ' + str(len(years)) + ' years filled', ''] +
+                     totals + [sum(row['yearCounts'][y] for y in years)], bold=True)
+        r += 2
+
+        # Then the entries themselves, year by year, sections A–F inside each.
+        wrote_any = False
+        for y in years:
+            if not row['yearCounts'][y]:
+                continue
+            wrote_any = True
+            r = banner(ws, r, f"{y} — {row['yearCounts'][y]} "
+                              f"{'entry' if row['yearCounts'][y] == 1 else 'entries'}",
+                       max_cols, "0A2558")
+            for sec in IEA_SECTIONS:
+                entries = row['years'][y][sec['key']]
+                if not entries:
+                    continue
+                r = banner(ws, r, f"Section {sec['key']} — {sec['title']}  ({len(entries)} "
+                                  f"{'entry' if len(entries) == 1 else 'entries'})",
+                           max_cols, sec['color'])
+                r = head_row(ws, r, ['Academic Year'] + [f['l'] for f in sec['fields']] +
+                             ['Evidence Types', 'Evidence Drive Link', 'Evidence Missing / Remarks'])
+                for e in entries:
+                    r = data_row(ws, r, [y] + [e.get(f['k'], '') for f in sec['fields']] +
+                                 ['; '.join(e.get('evidenceTypes', []) or []),
+                                  e.get('evidenceLink', ''), e.get('evidenceMissing', '')])
+                r += 1
+        if not wrote_any:
+            cell = ws.cell(row=r, column=1,
+                           value='No entries have been filled in for the selected academic year(s).')
+            cell.font = muted
+
+        widths = [16] + [34] * (max_cols - 4) + [26, 34, 30]
+        for i, w in enumerate(widths, 1):
+            ws.column_dimensions[get_column_letter(i)].width = w
+        ws.freeze_panes = 'A3'
+
+    return wb
+
+@app.route('/iea-export-all')
+def iea_export_all_departments():
+    """Every department in one workbook — summary tab, then a tab per department.
+
+    Open to anyone, like /iea-analysis, which already shows exactly this data.
+    """
+    year = request.args.get('year')
+    if year and year not in IEA_YEARS:
+        return "Invalid year", 400
+    docs = list(iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)]))
+    wb = build_iea_all_departments_workbook(docs, year)
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    stamp = (datetime.utcnow() + IEA_IST_OFFSET).strftime('%Y%m%d')
+    year_suffix = year.replace(' ', '_') if year else 'AllYears'
+    return send_file(buf, as_attachment=True,
+                     download_name=f"IEA_All_Departments_{year_suffix}_{stamp}.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 @app.route('/login')
 def login():

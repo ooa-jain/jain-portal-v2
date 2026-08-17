@@ -84,6 +84,47 @@
     .kpi-num { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--ink); }
     .kpi-label { font-size: 11.5px; color: var(--ink3); margin-top: 6px; line-height: 1.35; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
 
+    /* ── Edit-access requests alert box ── */
+    .req-card { background: #fff; border: 1px solid #fde68a; border-left: 6px solid var(--gold); border-radius: 14px; padding: 18px 22px; margin-bottom: 20px; box-shadow: var(--sh); animation: rise .35s ease backwards; }
+    .req-card.calm { border-color: var(--border); border-left-color: #94a3b8; }
+    .req-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .req-head h3 { font-size: 17px; color: var(--navy); font-weight: 700; }
+    .req-head p { font-size: 12.5px; color: var(--ink3); margin-top: 2px; }
+    .req-count { font-size: 13px; font-weight: 800; color: #92400e; background: #fff7ed; border: 1px solid #fed7aa; padding: 6px 14px; border-radius: 99px; }
+    .req-list { display: flex; flex-direction: column; gap: 10px; }
+    .req-row { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 14px 16px; }
+    .req-row.open { background: #f0fdf4; border-color: #86efac; }
+    .req-row.expired, .req-row.declined { background: #f8fafc; border-color: var(--border); }
+    .req-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+    .req-dept { font-size: 14.5px; font-weight: 700; color: var(--navy); text-decoration: none; }
+    .req-dept:hover { text-decoration: underline; }
+    .req-meta { font-size: 12px; color: var(--ink3); margin-top: 3px; line-height: 1.5; }
+    .req-person { font-size: 12.5px; color: var(--ink2); font-weight: 600; margin-top: 4px; }
+    .req-reason { font-size: 12.5px; color: var(--ink2); background: #fff; border: 1px dashed #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-top: 9px; font-style: italic; line-height: 1.5; }
+    .req-tag { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .req-tag.pending { background: #fff3e0; color: #b45309; border: 1px solid #ffe0b2; }
+    .req-tag.open { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .req-tag.expired { background: #f1f5f9; color: #475569; border: 1px solid var(--border); }
+    .req-tag.declined { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+    .req-when { font-size: 11.5px; color: var(--ink3); font-weight: 600; margin-top: 5px; white-space: nowrap; text-align: right; }
+    .req-approve { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #fcd34d; }
+    .req-field { display: flex; flex-direction: column; gap: 4px; }
+    .req-field label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink3); }
+    .req-field input { padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--border); font-size: 13px; font-weight: 600; color: var(--navy); font-family: inherit; outline: none; }
+    .req-field input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(10, 37, 88, 0.1); }
+    .req-field input.comment { width: 230px; font-weight: 500; }
+    .req-quick { display: flex; gap: 5px; align-items: center; }
+    .req-quick button { background: #fff; border: 1.5px solid var(--border); color: var(--ink2); padding: 7px 11px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .req-quick button:hover { border-color: var(--navy); color: var(--navy); }
+    .btn-approve { background: #15803d; color: #fff; border: none; padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-approve:hover { background: #166534; }
+    .btn-decline { background: #fff; color: #b91c1c; border: 1.5px solid #fecaca; padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-decline:hover { background: #fee2e2; }
+    .btn-close-win { background: #fff; color: var(--ink2); border: 1.5px solid var(--border); padding: 7px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-close-win:hover { border-color: #b91c1c; color: #b91c1c; }
+    .req-note { font-size: 12px; color: var(--ink3); margin-top: 10px; line-height: 1.5; }
+    .req-note a { color: var(--navy); font-weight: 700; }
+
     /* ── Who submitted today / yesterday ── */
     .activity-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 20px; box-shadow: var(--sh); animation: rise .35s ease backwards; }
     .activity-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
@@ -240,14 +281,14 @@
         </div>
       </div>
       <div class="header-actions" style="margin-top:6px;">
-        {% if is_admin %}
-        <a href="/admin/iea-export" class="btn btn-gold">
+        <a id="allDeptDownloadBtn" href="/iea-export-all" class="btn btn-gold">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download All Years (.xlsx)
+          Download All Department Data (.xlsx)
         </a>
+        {% if is_admin %}
         <a id="heroYearDownloadBtn" href="/admin/iea-export" class="btn btn-ghost">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download Selected AY (.xlsx)
+          Year-wise Workbook (.xlsx)
         </a>
         {% endif %}
         {% if is_admin %}
@@ -261,6 +302,23 @@
   </div>
 
   <div class="wrap">
+    <!-- EDIT-ACCESS REQUESTS — a submitted department asking to be reopened -->
+    <div id="reqCard" class="req-card" style="display:none;">
+      <div class="req-head">
+        <div>
+          <h3>🔓 Requests for Edit Access</h3>
+          <p>Submitted IEA data is final. A department that needs to change it requests access here — approve it with a date and time, and the submission stays open for editing until then.</p>
+        </div>
+        <div class="req-count" id="reqCount">0 pending</div>
+      </div>
+      <div class="req-list" id="reqList"></div>
+      <div class="req-note">
+        Departments may also write to
+        <a href="mailto:{{ office_email }}">{{ office_email }}</a>.
+        {% if not is_admin %}<br>Sign in as an administrator to approve or decline these requests.{% endif %}
+      </div>
+    </div>
+
     <!-- WHO SUBMITTED TODAY / YESTERDAY -->
     {% macro activity_list(rows, empty_text) %}
       {% if rows %}
@@ -503,10 +561,20 @@
         return '<button class="year-tab ' + (y === activeYear ? 'active' : '') + '" data-year="' + y + '">' + label + '</button>';
       }).join('');
 
+      const allBtn = document.getElementById('allDeptDownloadBtn');
+      if (allBtn) {
+        allBtn.href = (activeYear === 'ALL')
+          ? '/iea-export-all' : '/iea-export-all?year=' + encodeURIComponent(activeYear);
+        allBtn.innerHTML = ICON.download + ' Download All Department Data' +
+          (activeYear === 'ALL' ? '' : ' — ' + activeYear) + ' (.xlsx)';
+      }
+
       const heroBtn = document.getElementById('heroYearDownloadBtn');
       if (heroBtn) {
+        // The older workbook shape: one tab per academic year, all departments inside.
         heroBtn.href = (activeYear === 'ALL') ? '/admin/iea-export' : '/admin/iea-export?year=' + encodeURIComponent(activeYear);
-        heroBtn.innerHTML = ICON.download + ' Download ' + (activeYear === 'ALL' ? 'All Years (.xlsx)' : activeYear + ' (.xlsx)');
+        heroBtn.innerHTML = ICON.download + ' Year-wise Workbook' +
+          (activeYear === 'ALL' ? '' : ' — ' + activeYear) + ' (.xlsx)';
       }
     }
 
@@ -571,6 +639,141 @@
       renderKPIs();
       renderYearTabs();
     });
+
+    /* ── Edit-access requests ──────────────────────────────────────
+       A finalised submission is locked. The department asks for it to be
+       reopened; the Office of Academic Affairs approves a window that runs
+       until a chosen date and time (India time). */
+    let EDIT_REQUESTS = {{ edit_requests|tojson }};
+    const OFFICE_EMAIL = {{ office_email|tojson }};
+    const IST_MS = 5.5 * 60 * 60 * 1000;
+
+    // datetime-local value for "now + hours", written in India time so the
+    // server reads back exactly what the admin sees.
+    function istInputValue(hoursFromNow) {
+      const d = new Date(Date.now() + IST_MS + (hoursFromNow || 0) * 3600 * 1000);
+      const p = n => String(n).padStart(2, '0');
+      return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) +
+        'T' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes());
+    }
+
+    function renderEditRequests() {
+      const card = document.getElementById('reqCard');
+      const list = document.getElementById('reqList');
+      const rows = EDIT_REQUESTS || [];
+      if (!rows.length) { card.style.display = 'none'; return; }
+
+      const pending = rows.filter(r => r.state === 'pending').length;
+      const open = rows.filter(r => r.state === 'open').length;
+      card.style.display = 'block';
+      card.className = 'req-card' + (pending || open ? '' : ' calm');
+      document.getElementById('reqCount').textContent =
+        pending + ' pending · ' + open + ' currently open';
+
+      list.innerHTML = rows.map(r => {
+        const link = '/iea-analysis?school=' + encodeURIComponent(r.school) +
+          '&dept=' + encodeURIComponent(r.department) + '&level=' + encodeURIComponent(r.level);
+        const tagText = { pending: 'Requested — awaiting approval',
+                          open: 'Open for editing',
+                          expired: 'Window closed',
+                          declined: 'Declined' }[r.state] || r.state;
+
+        let right = '<span class="req-tag ' + r.state + '">' + tagText + '</span>' +
+          '<div class="req-when">Requested ' + escapeHtml(r.requestedAtText || '—') + '</div>';
+        if (r.state === 'open') {
+          right += '<div class="req-when">Open until ' + escapeHtml(r.openUntilText) +
+            ' · ' + r.hoursLeft + ' h left</div>';
+        } else if (r.state === 'expired' && r.openUntilText) {
+          right += '<div class="req-when">Closed ' + escapeHtml(r.openUntilText) + '</div>';
+        }
+
+        let controls = '';
+        if (IS_ADMIN && (r.state === 'pending' || r.state === 'expired' || r.state === 'declined')) {
+          controls =
+            '<div class="req-approve">' +
+              '<div class="req-field"><label>Open for editing until (IST)</label>' +
+                '<input type="datetime-local" id="until-' + r.id + '" value="' + istInputValue(48) + '"></div>' +
+              '<div class="req-field"><label>Or open for</label><div class="req-quick">' +
+                [24, 48, 72, 168].map(h =>
+                  '<button type="button" onclick="setWindowHours(\'' + r.id + '\', ' + h + ')">' +
+                  (h < 168 ? h + ' h' : '1 week') + '</button>').join('') +
+              '</div></div>' +
+              '<div class="req-field"><label>Remark (optional)</label>' +
+                '<input type="text" class="comment" id="comment-' + r.id + '" placeholder="Shown to the department"></div>' +
+              '<button class="btn-approve" onclick="approveEditRequest(\'' + r.id + '\')">✓ Approve &amp; Open</button>' +
+              (r.state === 'pending'
+                ? '<button class="btn-decline" onclick="decideEditRequest(\'' + r.id + '\', \'decline\')">Decline</button>'
+                : '') +
+            '</div>';
+        } else if (IS_ADMIN && r.state === 'open') {
+          controls = '<div class="req-approve">' +
+            '<button class="btn-close-win" onclick="decideEditRequest(\'' + r.id + '\', \'close\')">Close this window now</button>' +
+            '</div>';
+        }
+
+        return '<div class="req-row ' + r.state + '">' +
+          '<div class="req-top">' +
+            '<div>' +
+              '<a class="req-dept" href="' + link + '">' + escapeHtml(niceLabel(r.department)) +
+                ' (' + escapeHtml(r.level) + ')</a>' +
+              '<div class="req-meta">' + escapeHtml(niceLabel(r.school)) + '</div>' +
+              '<div class="req-person">' + escapeHtml(r.requesterName || 'Not recorded') +
+                (r.requesterEmail ? ' · ' + escapeHtml(r.requesterEmail) : '') + '</div>' +
+            '</div>' +
+            '<div style="text-align:right;">' + right + '</div>' +
+          '</div>' +
+          (r.reason ? '<div class="req-reason">“' + escapeHtml(r.reason) + '”</div>' : '') +
+          (r.adminComment ? '<div class="req-reason">Office remark: “' + escapeHtml(r.adminComment) + '”</div>' : '') +
+          controls +
+        '</div>';
+      }).join('');
+    }
+
+    function setWindowHours(id, hours) {
+      const el = document.getElementById('until-' + id);
+      if (el) el.value = istInputValue(hours);
+    }
+
+    async function postEditRequest(id, action, body) {
+      const res = await fetch('/api/iea/edit-requests/' + id + '/' + action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {})
+      });
+      return res.json();
+    }
+
+    async function refreshEditRequests() {
+      try {
+        const res = await fetch('/api/iea/edit-requests');
+        const json = await res.json();
+        if (json.ok) { EDIT_REQUESTS = json.requests || []; renderEditRequests(); }
+      } catch (err) { /* leave the last known list on screen */ }
+    }
+
+    async function approveEditRequest(id) {
+      const until = (document.getElementById('until-' + id) || {}).value || '';
+      const comment = (document.getElementById('comment-' + id) || {}).value || '';
+      if (!until) { alert('Pick the date and time until which editing should stay open.'); return; }
+      try {
+        const json = await postEditRequest(id, 'approve', { until: until, comment: comment });
+        if (!json.ok) { alert('Could not approve: ' + (json.error || 'Unknown error')); return; }
+        alert('Approved. Editing is open until ' + json.request.openUntilText +
+              ' IST — the department has been emailed.');
+        refreshEditRequests();
+      } catch (err) { alert('Network error: ' + err.message); }
+    }
+
+    async function decideEditRequest(id, action) {
+      const label = action === 'close' ? 'Close this editing window now?'
+                                       : 'Decline this edit access request?';
+      if (!confirm(label)) return;
+      try {
+        const json = await postEditRequest(id, action, {});
+        if (!json.ok) { alert('Could not update: ' + (json.error || 'Unknown error')); return; }
+        refreshEditRequests();
+      } catch (err) { alert('Network error: ' + err.message); }
+    }
 
     /* ── Calendar: pick a date, see who filed on it ────────────────
        CAL_EVENTS is keyed by YYYY-MM-DD (India time), newest first. */
@@ -695,6 +898,15 @@
 
     populateSchoolPicker();
     renderCalendar();
+
+    // A shared department link should only carry that department's requests.
+    if (FOCUS && FOCUS.department) {
+      EDIT_REQUESTS = (EDIT_REQUESTS || []).filter(r =>
+        r.school === FOCUS.school && r.department === FOCUS.department && r.level === FOCUS.level);
+    } else if (FOCUS) {
+      EDIT_REQUESTS = (EDIT_REQUESTS || []).filter(r => r.school === FOCUS.school);
+    }
+    renderEditRequests();
 
     if (FOCUS) {
       // A shared link is about one department — hide the browse-everything controls.
