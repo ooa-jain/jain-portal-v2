@@ -375,7 +375,7 @@ IEA_SCHOOLS = {
     },
     "School of Sports Science & Research": {
         "Department of Physical Education & Sports": ["UG", "PG"],
-        "Department of Sports Science": ["PG"],
+        "Department of Sports Science": ["UG", "PG"],
     },
 }
 
