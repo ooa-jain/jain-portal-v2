@@ -374,7 +374,7 @@ IEA_SCHOOLS = {
         "Department of Aviation & Aerospace Management": ["UG", "PG", "Executive Programme", "Executive Postgraduate"],
     },
     "School of Sports Science & Research": {
-        "Department of Physical Education & Sports": ["UG"],
+        "Department of Physical Education & Sports": ["UG", "PG"],
         "Department of Sports Science": ["PG"],
     },
 }
