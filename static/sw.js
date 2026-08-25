@@ -1,4 +1,8 @@
-const CACHE_NAME = 'srp-v8';
+// Bump on every release that changes a file under /static/. The fetch handler
+// below serves static assets cache-first, and `activate` deletes every cache
+// whose name is not this one — so without a bump, returning users keep the old
+// iea-cards.js / iea-cards.css indefinitely.
+const CACHE_NAME = 'srp-v9';
 const urlsToCache = [
   '/static/images/jgi-logo.svg',
   '/static/images/jgi-icon-192.png',
