@@ -281,6 +281,13 @@
             </span>
             <div class="act-time">{{ r.entries }} {{ 'entry' if r.entries == 1 else 'entries' }}</div>
             <div class="act-time">{{ r.time }}</div>
+            {# A re-submission can be compared against the version before it. #}
+            {% if r.version and r.version > 1 %}
+            <div style="margin-top:6px">
+              <button class="ieah-chip" type="button"
+                data-ieah-diff="{{ r.id }}" data-ieah-version="{{ r.version }}">&#9998; What changed</button>
+            </div>
+            {% endif %}
           </div>
         </div>
         {% endfor %}
@@ -383,6 +390,7 @@
   </div>
 
   <script src="/static/js/iea-cards.js"></script>
+  <script src="/static/js/iea-history.js"></script>
   <script>
     const YEARS = {{ iea_years|tojson }};
     const SECTIONS = {{ iea_sections|tojson }};
@@ -663,6 +671,9 @@
             (e.kind === 'started' ? '' :
               '<div class="cal-ev-time">' + e.entries + ' ' + (e.entries === 1 ? 'entry' : 'entries') + '</div>') +
             '<div class="cal-ev-time">' + escapeHtml(e.time) + '</div>' +
+            // Re-submissions (v2 onwards) can show what this edit changed.
+            (e.version > 1 ? '<div style="margin-top:6px">' +
+              IEAHistory.buttonHtml(e.id, e.version) + '</div>' : '') +
           '</div>' +
         '</div>';
       }).join('') + '</div>';

@@ -1290,6 +1290,9 @@
       selectedSections = [SECTIONS[0].key]; dirty = false;
       document.getElementById('mainArea').style.display = 'block';
       renderYearTabs(); renderSectionNavBar(); renderSections(); renderSubmitSection(); updateStatusPill();
+      const lockBanner = document.getElementById('ieaLockBanner');
+      if (lockBanner) lockBanner.style.display = 'none';
+      checkIeaEditLock();
     }
 
     function updateStatusPill() {
@@ -1600,7 +1603,10 @@
         const res = await fetch('/api/iea/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const json = await res.json();
         if (json.ok) { state.lastUpdated = json.lastUpdated; dirty = false; updateStatusPill(); showAutosave('saved'); }
-        else showAutosave('error');
+        else {
+          showAutosave('error');
+          if (json.needsEditRequest) showEditLockBanner(json);
+        }
       } catch (err) { showAutosave('error'); }
     }
 
@@ -1635,8 +1641,105 @@
           renderYearTabs();
           showToast(json.version > 1 ? ('Submitted — saved as edited Version ' + json.version + '.') : 'Submitted successfully!');
           backToDashboard();
+        } else if (json.needsEditRequest) {
+          showEditLockBanner(json);
+          showToast(json.error, true);
         } else showToast('Submit failed: ' + (json.error || 'Error'), true);
       } catch (err) { showToast('Submit failed: ' + err.message, true); }
+    }
+
+    /* ── Stop-submission lock ────────────────────────────────────
+       When the admin has stopped submissions, an already-submitted unit is
+       read-only until an edit request is approved. The banner explains that
+       and carries the request button. */
+    function ieaLockBannerEl() {
+      let el = document.getElementById('ieaLockBanner');
+      if (el) return el;
+      el = document.createElement('div');
+      el.id = 'ieaLockBanner';
+      el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:99999;' +
+        'max-width:min(620px,calc(100vw - 32px));background:#fff;border:1.5px solid #fed7aa;' +
+        "border-left:5px solid #f59e0b;border-radius:12px;padding:16px 18px;box-shadow:0 18px 50px rgba(10,37,88,.22);" +
+        "font-family:'Plus Jakarta Sans',system-ui,sans-serif;display:none";
+      document.body.appendChild(el);
+      return el;
+    }
+
+    function showEditLockBanner(json) {
+      const el = ieaLockBannerEl();
+      const status = (json && json.requestStatus) || '';
+      let action;
+      if (status === 'pending') {
+        action = '<div style="font-size:12.5px;font-weight:700;color:#9a5b12">' +
+          '⏳ Your edit request is waiting for approval from the Office of Academics.</div>';
+      } else if (status === 'rejected') {
+        action = '<div style="font-size:12.5px;font-weight:700;color:#b91c1c;margin-bottom:8px">' +
+            '⛔ Your last edit request was rejected.</div>' +
+          '<button type="button" onclick="requestIeaEdit(this)" style="background:#0a2558;color:#fff;border:none;' +
+            'border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">' +
+            'Request again</button>';
+      } else {
+        action = '<button type="button" onclick="requestIeaEdit(this)" style="background:#f59e0b;color:#3a2600;' +
+          'border:none;border-radius:8px;padding:9px 16px;font-weight:800;font-size:13px;cursor:pointer;' +
+          'font-family:inherit">Request edit access</button>';
+      }
+      el.innerHTML =
+        '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">' +
+          '<div style="flex:1">' +
+            '<div style="font-weight:800;color:#0a2558;font-size:14px;margin-bottom:5px">🔒 Submissions have been stopped</div>' +
+            '<div style="font-size:12.5px;color:#475569;line-height:1.6;margin-bottom:10px">' +
+              'This department has already submitted, so the form is read-only. Request edit access — ' +
+              'once an administrator approves it, you can make changes and re-submit once.</div>' +
+            action +
+          '</div>' +
+          '<button type="button" onclick="document.getElementById(\'ieaLockBanner\').style.display=\'none\'" ' +
+            'style="background:#f1f4f9;border:1px solid #dde3ee;color:#475569;border-radius:8px;width:28px;' +
+            'height:28px;font-size:15px;cursor:pointer;flex-shrink:0;line-height:1">&times;</button>' +
+        '</div>';
+      el.style.display = 'block';
+    }
+
+    async function requestIeaEdit(btn) {
+      if (!state) return;
+      const reason = prompt('Why do you need to edit this submission? (optional)', '') || '';
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      try {
+        const res = await fetch('/api/iea/edit-request', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            school: state.school, department: state.department,
+            level: state.level, comment: reason
+          })
+        });
+        const json = await res.json();
+        if (!json.ok) { showToast(json.error || 'Could not send the request', true); return; }
+        showToast(json.message || 'Edit request sent to the Office of Academics.');
+        showEditLockBanner({ requestStatus: json.already === 'approved' ? '' : 'pending' });
+        if (json.already === 'approved') {
+          document.getElementById('ieaLockBanner').style.display = 'none';
+        }
+      } catch (err) {
+        showToast('Network error sending the request', true);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    /* Ask the server up front, so a locked unit says so before the user
+       spends time typing into a form that will refuse to save. */
+    async function checkIeaEditLock() {
+      if (!state || !state.school) return;
+      try {
+        const qs = new URLSearchParams({
+          school: state.school, dept: state.department, level: state.level
+        });
+        const res = await fetch('/api/iea/edit-request/status?' + qs.toString());
+        const json = await res.json();
+        if (json.ok && json.locked) {
+          showEditLockBanner({ requestStatus: (json.request || {}).status || '' });
+        }
+      } catch (err) { /* advisory only — the API still enforces the lock */ }
     }
 
     /* ── Evidence file upload ── */

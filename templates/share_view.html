@@ -572,7 +572,7 @@
         <div class="meta">
           <span class="meta-pill">🏛 {{ data.departments|length }} departments</span>
           {% for m in data.modules %}
-          <span class="meta-pill">{{ 'Semester Readiness' if m == 'readiness' else 'Semester Closure' }}</span>
+          <span class="meta-pill">{{ {'readiness': 'Semester Readiness', 'closure': 'Semester Closure', 'iea': 'Innovation & Emerging Areas'}[m] }}</span>
           {% endfor %}
           {% if data.campus and data.campus != 'All' %}<span class="meta-pill">📍 {{ data.campus }} campus</span>{% endif %}
           <span class="meta-pill" id="generatedPill">Updated just now</span>
@@ -614,7 +614,7 @@
         </select>
         <select id="moduleFilter" onchange="renderTable()">
           <option value="All">Status of: Either module</option>
-          {% for m in data.modules %}
+          {% for m in data.formModules %}
           <option value="{{ m }}">Status of: {{ 'Semester Readiness' if m == 'readiness' else 'Semester Closure' }}</option>
           {% endfor %}
         </select>
@@ -626,7 +626,7 @@
             <tr>
               <th style="min-width:260px">Department</th>
               <th>Campus</th>
-              {% for m in data.modules %}
+              {% for m in data.formModules %}
               <th style="min-width:230px">{{ 'Semester Readiness' if m == 'readiness' else 'Semester Closure' }}</th>
               {% endfor %}
             </tr>
@@ -636,6 +636,53 @@
       </div>
       <div class="empty" id="emptyState" style="display:none">No departments match the current filters.</div>
     </div>
+
+    {% if 'iea' in data.modules %}
+    <div class="card" id="ieaCard">
+      <div class="card-head">
+        <div>
+          <h3>Innovation &amp; Emerging Areas</h3>
+          <p>Per School / Department / Programme level — submitted, draft or not started, with the full
+            edit history behind every re-submission</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:var(--ink2)" id="ieaRowCount"></span>
+          {% if data.allow_download %}
+          <a class="btn btn-navy btn-sm" href="/share/{{ token }}/iea-export">⬇ All IEA (Excel)</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="controls">
+        <input type="text" id="ieaQ" placeholder="Search school, department or person…" oninput="renderIea()">
+        <select id="ieaStatusFilter" onchange="renderIea()">
+          <option value="All">All Statuses</option>
+          <option value="submitted">Submitted only</option>
+          <option value="draft">Draft only</option>
+          <option value="none">Not Started only</option>
+        </select>
+        <select id="ieaEditedFilter" onchange="renderIea()">
+          <option value="All">All submissions</option>
+          <option value="edited">Edited after submitting (v2+)</option>
+        </select>
+      </div>
+
+      <div class="t-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:250px">School / Department</th>
+              <th>Level</th>
+              <th style="min-width:230px">Status</th>
+              <th style="min-width:210px">Edit history</th>
+            </tr>
+          </thead>
+          <tbody id="ieaTbody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="ieaEmpty" style="display:none">No IEA units match the current filters.</div>
+    </div>
+    {% endif %}
 
     <footer>
       Shared by the Office of Academics, Jain (Deemed-to-be University) · This is a read-only view — no data can be
@@ -660,6 +707,7 @@
     </div>
   </div>
 
+  <script src="/static/js/iea-history.js"></script>
   <script>
     const TOKEN = {{ token | tojson }};
     const HOD_SECTIONS = {{ hod_sections | tojson }};
@@ -669,6 +717,12 @@
     let DATA = {{ data | tojson }};
 
     const MODULE_LABEL = { readiness: 'Semester Readiness', closure: 'Semester Closure' };
+
+    // The department matrix covers the two form-based modules only; IEA is
+    // keyed by school/department/level and gets its own table below.
+    function formModules() {
+      return DATA.formModules || DATA.modules.filter(m => m !== 'iea');
+    }
 
     function esc(v) {
       return String(v == null ? '' : v).replace(/[&<>"']/g, c => (
@@ -709,7 +763,7 @@
         const campuses = byDept[dept] ? [...byDept[dept]].sort() : [''];
         campuses.forEach(campus => {
           const cells = {};
-          DATA.modules.forEach(m => { cells[m] = findRow(dept, campus, m); });
+          formModules().forEach(m => { cells[m] = findRow(dept, campus, m); });
           out.push({ dept, campus, cells });
         });
       });
@@ -719,7 +773,7 @@
         if (DATA.departments.includes(dept)) return;
         [...byDept[dept]].sort().forEach(campus => {
           const cells = {};
-          DATA.modules.forEach(m => { cells[m] = findRow(dept, campus, m); });
+          formModules().forEach(m => { cells[m] = findRow(dept, campus, m); });
           out.push({ dept, campus, cells });
         });
       });
@@ -727,7 +781,7 @@
     }
 
     function renderSummary(matrix) {
-      document.getElementById('modGrid').innerHTML = DATA.modules.map(m => {
+      const formCards = formModules().map(m => {
         let sub = 0, draft = 0, none = 0;
         // Count once per department, not per campus line.
         const seen = {};
@@ -757,6 +811,9 @@
           </div>
         </div>`;
       }).join('');
+
+      document.getElementById('modGrid').innerHTML =
+        formCards + (DATA.modules.includes('iea') ? ieaCardHtml() : '');
     }
 
     function cellHtml(row) {
@@ -786,23 +843,188 @@
         </div>`;
     }
 
+    /* ── Innovation & Emerging Areas ──────────────────────────────
+       IEA is keyed by School / Department / Level rather than by the
+       campus-and-department matrix above, so it gets its own table. */
+    function ieaStatusCounts() {
+      const c = { submitted: 0, draft: 0, none: 0, edited: 0 };
+      (DATA.iea || []).forEach(r => {
+        c[r.status] = (c[r.status] || 0) + 1;
+        if (r.status === 'submitted' && (r.version || 0) > 1) c.edited++;
+      });
+      return c;
+    }
+
+    function ieaCardHtml() {
+      const c = ieaStatusCounts();
+      const total = c.submitted + c.draft + c.none || 1;
+      return `<div class="mod-card">
+        <h3>🚀 Innovation &amp; Emerging Areas</h3>
+        <div class="sub">${c.submitted} of ${c.submitted + c.draft + c.none} units submitted${c.edited ? ' · ' + c.edited + ' edited after submitting' : ''}</div>
+        <div class="bar">
+          <span class="s-sub" style="width:${(c.submitted / total * 100).toFixed(1)}%"></span>
+          <span class="s-draft" style="width:${(c.draft / total * 100).toFixed(1)}%"></span>
+        </div>
+        <div class="legend">
+          <div class="lg-sub"><div class="n">${c.submitted}</div><div class="l">Submitted</div></div>
+          <div class="lg-draft"><div class="n">${c.draft}</div><div class="l">Draft</div></div>
+          <div class="lg-none"><div class="n">${c.none}</div><div class="l">Not Started</div></div>
+        </div>
+      </div>`;
+    }
+
+    function renderIea() {
+      if (!DATA.modules.includes('iea')) return;
+      const q = document.getElementById('ieaQ').value.trim().toLowerCase();
+      const status = document.getElementById('ieaStatusFilter').value;
+      const edited = document.getElementById('ieaEditedFilter').value;
+
+      const rows = (DATA.iea || []).filter(r => {
+        if (status !== 'All' && r.status !== status) return false;
+        if (edited === 'edited' && !(r.status === 'submitted' && (r.version || 0) > 1)) return false;
+        if (q && ![r.school, r.department, r.level, r.by].join(' ').toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      document.getElementById('ieaRowCount').textContent =
+        `${rows.length} of ${(DATA.iea || []).length} units shown`;
+      document.getElementById('ieaEmpty').style.display = rows.length ? 'none' : 'block';
+
+      document.getElementById('ieaTbody').innerHTML = rows.map(r => {
+        const badge = r.status === 'submitted'
+          ? `<span class="badge b-sub">✅ Submitted${(r.version || 0) > 1 ? ' · v' + r.version : ''}</span>`
+          : r.status === 'draft'
+            ? `<span class="badge b-draft">📝 Draft</span>`
+            : `<span class="badge b-none">⏳ Not Started</span>`;
+
+        const meta = r.id
+          ? `<div class="cell-meta">${esc(fmtDate(r.at))}${r.by ? ' · ' + esc(r.by) : ''} · ${r.entries} ${r.entries === 1 ? 'entry' : 'entries'}</div>`
+          : '';
+
+        const actions = r.id ? `<div class="cell-actions">
+            <button class="btn btn-navy btn-xs" onclick="openIeaDetail('${esc(r.id)}')">👁 View</button>
+            ${DATA.allow_download ? `<a class="btn btn-white btn-xs" href="/share/${encodeURIComponent(TOKEN)}/iea-export/${encodeURIComponent(r.id)}">⬇ Excel</a>` : ''}
+          </div>` : '';
+
+        // Every re-submission can be opened as a before/after comparison.
+        let history = '<span style="font-size:11.5px;color:var(--ink3);font-weight:600">—</span>';
+        if (r.id && (r.versions || []).length) {
+          const vs = r.versions;
+          const latest = vs[vs.length - 1];
+          history = `<div style="font-size:11.5px;color:var(--ink2);font-weight:600;margin-bottom:6px">
+              ${vs.length} ${vs.length === 1 ? 'version' : 'versions'} · latest ${esc(fmtDate(latest.at))}
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="ieah-chip" data-ieah-timeline="${esc(r.id)}">🕐 All versions</button>
+              ${(latest.version || 0) > 1
+                ? `<button class="ieah-chip" data-ieah-diff="${esc(r.id)}" data-ieah-version="${latest.version}">✎ What changed in v${latest.version}</button>`
+                : ''}
+            </div>`;
+        }
+
+        return `<tr>
+          <td>
+            <div class="dept-name">${esc(r.department)}</div>
+            <div class="dept-sub">${esc(r.school)}</div>
+          </td>
+          <td style="font-weight:600;color:var(--ink2)">${esc(r.level)}</td>
+          <td>${badge}${meta}${actions}</td>
+          <td>${history}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function openIeaDetail(id) {
+      document.getElementById('dTitle').textContent = 'Loading…';
+      document.getElementById('dSub').textContent = '';
+      document.getElementById('dBody').innerHTML = '<div class="spinner">Loading department details…</div>';
+      document.getElementById('dFoot').innerHTML =
+        '<button class="btn btn-ghost btn-sm" onclick="closeDetail()">Close</button>';
+      document.getElementById('detailOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      fetch(`/api/share/${encodeURIComponent(TOKEN)}/iea/${encodeURIComponent(id)}`)
+        .then(r => r.json())
+        .then(res => {
+          if (!res.ok) throw new Error(res.error || 'Not available');
+          renderIeaDetail(res);
+        })
+        .catch(err => {
+          document.getElementById('dTitle').textContent = 'Unavailable';
+          document.getElementById('dBody').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+        });
+    }
+
+    function renderIeaDetail(res) {
+      const s = res.submission;
+      document.getElementById('dTitle').textContent = s.department || 'Department';
+      document.getElementById('dSub').textContent =
+        `Innovation & Emerging Areas · ${s.level} · ${s.school} · ` +
+        (s.submitted ? `Submitted (v${s.version}) on ${fmtDate(s.submittedAt)}` : `Draft — last edited ${fmtDate(s.lastUpdated)}`);
+
+      let html = `<div class="sec">
+        <h4>Unit</h4>
+        <div class="kv">
+          <div><div class="k">School</div><div class="v">${esc(s.school)}</div></div>
+          <div><div class="k">Department</div><div class="v">${esc(s.department)}</div></div>
+          <div><div class="k">Programme level</div><div class="v">${esc(s.level)}</div></div>
+          <div><div class="k">Filed by</div><div class="v">${esc(s.by || '—')}</div></div>
+          <div><div class="k">Total entries</div><div class="v">${s.entries}</div></div>
+          <div><div class="k">Version</div><div class="v">${s.submitted ? 'v' + s.version : 'Not submitted'}</div></div>
+        </div>
+      </div>`;
+
+      if ((s.versions || []).length) {
+        html += `<div class="sec"><h4>Edit history — ${s.versions.length} ${s.versions.length === 1 ? 'version' : 'versions'}</h4>
+          ${s.versions.slice().reverse().map(v => `<div class="chk-row">
+            <span class="chk-mark">v${v.version}</span>
+            <span><span class="chk-text">${v.version === 1 ? 'First submission' : 'Re-submitted'}${v.current ? ' · current' : ''}</span>
+              <div class="chk-remark">${esc(fmtDate(v.at))} · ${v.entries} ${v.entries === 1 ? 'entry' : 'entries'}${v.by ? ' · ' + esc(v.by) : ''}</div>
+            </span>
+            ${v.version > 1 ? `<button class="ieah-chip" style="margin-left:auto" data-ieah-diff="${esc(s.id)}" data-ieah-version="${v.version}">✎ What changed</button>` : ''}
+          </div>`).join('')}
+        </div>`;
+      }
+
+      // Entries, grouped by academic year then section
+      (res.iea_years || []).forEach(year => {
+        const secs = (s.years || {})[year] || {};
+        const filled = res.sections.filter(sec => (secs[sec.key] || []).length);
+        if (!filled.length) return;
+        html += `<div class="sec"><h4>${esc(year)}</h4>` + filled.map(sec => `
+          <div class="sec-title">${esc(sec.key)}. ${esc(sec.title)} — ${(secs[sec.key] || []).length}</div>
+          ${(secs[sec.key] || []).map(e => `<div class="chk-row">
+            <span><span class="chk-text">${esc(sec.fields.map(f => e[f.k]).find(v => v && String(v).trim()) || 'Entry')}</span>
+              ${sec.fields.filter(f => e[f.k] && String(e[f.k]).trim()).map(f =>
+                `<div class="chk-remark"><strong>${esc(f.l)}:</strong> ${esc(e[f.k])}</div>`).join('')}
+            </span>
+          </div>`).join('')}`).join('') + `</div>`;
+      });
+
+      document.getElementById('dBody').innerHTML = html;
+      document.getElementById('dFoot').innerHTML = `
+        ${res.allow_download ? `<a class="btn btn-gold btn-sm" href="/share/${encodeURIComponent(TOKEN)}/iea-export/${encodeURIComponent(s.id)}">⬇ Download this unit</a>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="closeDetail()">Close</button>`;
+    }
+
     function renderTable() {
       const matrix = buildMatrix();
       renderSummary(matrix);
+      renderIea();
 
       const q = document.getElementById('q').value.trim().toLowerCase();
       const campus = document.getElementById('campusFilter').value;
       const status = document.getElementById('statusFilter').value;
       const moduleSel = document.getElementById('moduleFilter').value;
-      const mods = moduleSel === 'All' ? DATA.modules : [moduleSel];
+      const mods = moduleSel === 'All' ? formModules() : [moduleSel];
 
       const rows = matrix.filter(r => {
         if (campus !== 'All' && (r.campus || '') !== campus) return false;
         if (status !== 'All' && !mods.some(m => statusOf(r.cells[m]) === status)) return false;
         if (q) {
           const hay = [r.dept, r.campus,
-            ...DATA.modules.map(m => (r.cells[m] || {}).hodName || ''),
-            ...DATA.modules.map(m => (r.cells[m] || {}).hodEmail || '')
+            ...formModules().map(m => (r.cells[m] || {}).hodName || ''),
+            ...formModules().map(m => (r.cells[m] || {}).hodEmail || '')
           ].join(' ').toLowerCase();
           if (!hay.includes(q)) return false;
         }
@@ -816,13 +1038,13 @@
       document.getElementById('tbody').innerHTML = rows.map(r => `<tr>
         <td>
           <div class="dept-name">${esc(r.dept)}</div>
-          <div class="dept-sub">${DATA.modules.map(m => {
+          <div class="dept-sub">${formModules().map(m => {
             const st = statusOf(r.cells[m]);
             return `${MODULE_LABEL[m]}: ${st === 'submitted' ? 'Submitted' : st === 'draft' ? 'Draft' : 'Not Started'}`;
           }).join(' · ')}</div>
         </td>
         <td style="font-weight:600;color:var(--ink2)">${esc(r.campus || '—')}</td>
-        ${DATA.modules.map(m => `<td>${cellHtml(r.cells[m])}</td>`).join('')}
+        ${formModules().map(m => `<td>${cellHtml(r.cells[m])}</td>`).join('')}
       </tr>`).join('');
     }
 

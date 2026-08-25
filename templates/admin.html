@@ -1233,6 +1233,17 @@
             <label style="font-size: 11px; font-weight: 700; color: var(--ink3);">Deadline Notice</label>
             <input type="datetime-local" id="set_iea_deadline" value="{{ settings.iea_deadline }}"
               style="width:100%;padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit;">
+            <label
+              style="display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; font-size: 13px; font-weight: 600; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 10px 12px; cursor: pointer;">
+              <input type="checkbox" id="set_iea_locked" {% if settings.iea_locked %}checked{% endif %} style="margin-top:2px;">
+              <span>
+                🔒 Stop submission
+                <span style="display:block; font-weight:600; color:#9a5b12; font-size:11.5px; margin-top:3px;">
+                  Once on, a department that has already submitted cannot edit. They must request
+                  edit access, and it opens for one re-submission after you approve it.
+                </span>
+              </span>
+            </label>
           </div>
         </div>
         <div
@@ -2711,6 +2722,7 @@
         closure_deadline: document.getElementById('set_closure_deadline').value,
         iea_enabled: document.getElementById('set_iea_enabled').checked,
         iea_deadline: document.getElementById('set_iea_deadline').value,
+        iea_locked: document.getElementById('set_iea_locked').checked,
         enabled_years: enabled_years,
         enabled_semesters: enabled_semesters
       };
@@ -2993,7 +3005,8 @@
           const state = !l.active ? '<span style="background:#fee;border:1px solid #f9c9c9;color:#b91c1c;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">REVOKED</span>'
             : l.expired ? '<span style="background:#fff5e6;border:1px solid #ffdda6;color:#b45309;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">EXPIRED</span>'
             : '<span style="background:#eafaef;border:1px solid #b6e7c6;color:#15803d;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">ACTIVE</span>';
-          const mods = (l.modules || []).map(m => m === 'readiness' ? 'Readiness' : 'Closure').join(' + ');
+          const mods = (l.modules || []).map(m =>
+            ({ readiness: 'Readiness', closure: 'Closure', iea: 'IEA' })[m] || m).join(' + ');
           return `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:${dead ? '#fafbfe' : '#fff'};${dead ? 'opacity:.72' : ''}">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
               <div style="font-weight:800;color:var(--navy);font-size:13px">${shEsc(l.label || 'Untitled share link')} ${state}</div>
@@ -3026,6 +3039,7 @@
       const modules = [];
       if (document.getElementById('sl_readiness').checked) modules.push('readiness');
       if (document.getElementById('sl_closure').checked) modules.push('closure');
+      if (document.getElementById('sl_iea').checked) modules.push('iea');
       if (!modules.length) { alert('Select at least one module to share.'); return; }
 
       btn.disabled = true;
@@ -3116,6 +3130,9 @@
           </label>
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
             <input type="checkbox" id="sl_closure" checked> Semester Closure
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="sl_iea" checked> Innovation &amp; Emerging Areas
           </label>
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
             <input type="checkbox" id="sl_download" checked> Allow Excel downloads
