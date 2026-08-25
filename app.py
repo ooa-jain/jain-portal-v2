@@ -79,6 +79,8 @@ def robots_txt():
     body = (
         "User-agent: *\n"
         "Allow: /\n"
+        # Tokenised read-only status links — keep them out of search results
+        "Disallow: /share/\n"
         "Sitemap: https://jain-sarathi.juooa.cloud/sitemap.xml\n"
     )
     return app.response_class(body, mimetype='text/plain')
@@ -115,6 +117,7 @@ faculty_submissions_col = db['faculty_submissions']  # Faculty's individual chec
 iea_col = db['iea_submissions']  # Innovation & Emerging Areas programme/course submissions
 users_col = db['users']
 settings_col = db['settings']
+share_links_col = db['share_links']  # Admin-generated read-only status share links
 
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin2023')
@@ -3048,6 +3051,352 @@ def export_all():
     return send_file(buf, as_attachment=True,
                      download_name=f"SemReadiness_ALL_{datetime.utcnow().strftime('%Y%m%d')}.xlsx",
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+# ═════════════════════════════════════════════════════════════════════
+# READ-ONLY SHARE LINK — admin generates one URL that anyone can open to
+# see every department's Readiness / Closure status (Submitted, Draft or
+# Not Started), drill into a single department, and download the Excel
+# for one department or for all of them at once.
+# ═════════════════════════════════════════════════════════════════════
+
+SHARE_MODULES = ['readiness', 'closure']
+
+
+def _share_now():
+    return datetime.utcnow().isoformat()
+
+
+def _share_public(link):
+    """Strip the Mongo id and hand back a JSON-safe copy of a share link."""
+    if not link:
+        return None
+    out = dict(link)
+    out['_id'] = str(link['_id'])
+    out['url'] = get_base_url().rstrip('/') + '/share/' + link['token']
+    out['expired'] = _share_is_expired(link)
+    return out
+
+
+def _share_is_expired(link):
+    expires = (link or {}).get('expires_at') or ''
+    if not expires:
+        return False
+    try:
+        return datetime.utcnow() > datetime.fromisoformat(expires)
+    except Exception:
+        return False
+
+
+def _get_valid_share(token):
+    """Return the share link for this token, or None when it is missing,
+    revoked or past its expiry."""
+    if not token:
+        return None
+    link = share_links_col.find_one({'token': token})
+    if not link or not link.get('active', True) or _share_is_expired(link):
+        return None
+    return link
+
+
+def _share_checklist_stats(doc):
+    """Yes / No / N-A / blank tallies for whichever checklist this doc carries."""
+    form_type = doc.get('form_type', 'readiness')
+    if form_type == 'closure':
+        report = doc.get('hodReport', {}) or {}
+        filled = sum(1 for v in report.values()
+                     if isinstance(v, dict) and (v.get('text') or v.get('remark') or v.get('status')))
+        return {'yes': filled, 'no': 0, 'na': 0,
+                'blank': max(len(HOD_CLOSURE_SECTIONS) - filled, 0),
+                'total': len(HOD_CLOSURE_SECTIONS)}
+
+    chk = doc.get('hodChecklist', {}) or {}
+    vals = [v for v in chk.values() if isinstance(v, dict)]
+    total = sum(len(sec['items']) for sec in HOD_SECTIONS)
+    yes = sum(1 for v in vals if v.get('status') == 'Yes')
+    no = sum(1 for v in vals if v.get('status') == 'No')
+    na = sum(1 for v in vals if v.get('status') == 'N/A')
+    return {'yes': yes, 'no': no, 'na': na,
+            'blank': max(total - (yes + no + na), 0), 'total': total}
+
+
+def _share_row(doc, faculty_counts):
+    """One lightweight row per submission — enough for the summary table
+    without shipping every checklist remark to the browser."""
+    idt = doc.get('identity', {}) or {}
+    sid = str(doc['_id'])
+    return {
+        'id': sid,
+        'dept': idt.get('dept', '') or '',
+        'campus': idt.get('campus', '') or '',
+        'hodName': idt.get('hodName', '') or idt.get('hod', '') or '',
+        'hodEmail': idt.get('hodEmail', '') or idt.get('email', '') or '',
+        'semester': idt.get('semester', '') or idt.get('sem', '') or '',
+        'acYear': idt.get('acYear', '') or idt.get('ac_year', '') or '',
+        'form_type': doc.get('form_type', 'readiness') or 'readiness',
+        'draft': bool(doc.get('_draft', False)),
+        'timestamp': doc.get('timestamp', '') or '',
+        'programs': len(doc.get('programs', []) or []),
+        'faculty_count': faculty_counts.get(sid, 0),
+        'checklist': _share_checklist_stats(doc),
+    }
+
+
+def _share_dataset(link):
+    """Everything the public share page needs in one payload."""
+    modules = [m for m in (link.get('modules') or SHARE_MODULES) if m in SHARE_MODULES] or SHARE_MODULES
+
+    # Filtered in Python rather than in the query: rows written before
+    # form_type existed carry no such field and must still count as readiness.
+    docs = [d for d in submissions_col.find().sort('timestamp', -1)
+            if (d.get('form_type') or 'readiness') in modules]
+
+    campus = (link.get('campus') or 'All').strip()
+    if campus and campus != 'All':
+        docs = [d for d in docs if (d.get('identity', {}) or {}).get('campus') == campus]
+
+    faculty_counts = {}
+    for row in faculty_submissions_col.aggregate([
+        {'$group': {'_id': '$parent_submission_id', 'count': {'$sum': 1}}}
+    ]):
+        faculty_counts[row['_id']] = row['count']
+
+    rows = [_share_row(d, faculty_counts) for d in docs]
+
+    settings = get_global_settings()
+    return {
+        'rows': rows,
+        'departments': DEPARTMENTS,
+        'modules': modules,
+        'campus': campus or 'All',
+        'label': link.get('label', '') or 'Semester Readiness & Closure — Status',
+        'allow_download': bool(link.get('allow_download', True)),
+        'generated_at': _share_now(),
+        'deadlines': {
+            'readiness': settings.get('readiness_deadline', ''),
+            'closure': settings.get('closure_deadline', ''),
+        },
+    }
+
+
+def _share_docs_for_export(link, sub_id=None):
+    """Submissions this link is allowed to export, with faculty rows attached."""
+    modules = [m for m in (link.get('modules') or SHARE_MODULES) if m in SHARE_MODULES] or SHARE_MODULES
+    campus = (link.get('campus') or 'All').strip()
+
+    if sub_id:
+        try:
+            doc = submissions_col.find_one({'_id': ObjectId(sub_id)})
+        except Exception:
+            return []
+        if not doc:
+            return []
+        docs = [doc]
+    else:
+        docs = list(submissions_col.find().sort('timestamp', -1))
+
+    allowed = []
+    for d in docs:
+        if (d.get('form_type') or 'readiness') not in modules:
+            continue
+        if campus and campus != 'All' and (d.get('identity', {}) or {}).get('campus') != campus:
+            continue
+        d['_faculty_submissions'] = list(
+            faculty_submissions_col.find({'parent_submission_id': str(d['_id'])}))
+        allowed.append(d)
+    return allowed
+
+
+def _share_send_workbook(docs, filename):
+    wb = build_workbook(docs)
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, download_name=filename,
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+# ── Admin: create / list / revoke share links ─────────────────────────
+
+# Under /api/ on purpose: the service worker cache-firsts every other GET,
+# which would keep serving a stale list right after a link is created or revoked.
+@app.route('/api/admin/share-links')
+def admin_share_links():
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    links = [_share_public(l) for l in share_links_col.find().sort('created_at', -1).limit(25)]
+    return jsonify({'ok': True, 'links': links})
+
+
+@app.route('/admin/share-link/create', methods=['POST'])
+def admin_share_link_create():
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+
+    data = request.json or {}
+    modules = [m for m in (data.get('modules') or SHARE_MODULES) if m in SHARE_MODULES]
+    if not modules:
+        modules = list(SHARE_MODULES)
+
+    expires_at = ''
+    try:
+        days = int(data.get('expires_days') or 0)
+    except (TypeError, ValueError):
+        days = 0
+    if days > 0:
+        expires_at = (datetime.utcnow() + timedelta(days=days)).isoformat()
+
+    link = {
+        'token': secrets.token_urlsafe(24),
+        'label': (data.get('label') or '').strip()[:120],
+        'modules': modules,
+        'campus': (data.get('campus') or 'All').strip() or 'All',
+        'allow_download': bool(data.get('allow_download', True)),
+        'active': True,
+        'created_at': _share_now(),
+        'created_by': session.get('admin_email') or session.get('user_email') or 'admin',
+        'expires_at': expires_at,
+        'views': 0,
+        'last_viewed': '',
+    }
+    result = share_links_col.insert_one(link)
+    link['_id'] = result.inserted_id
+    return jsonify({'ok': True, 'link': _share_public(link)})
+
+
+@app.route('/admin/share-link/<token>/revoke', methods=['POST'])
+def admin_share_link_revoke(token):
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    res = share_links_col.update_one({'token': token}, {'$set': {'active': False}})
+    return jsonify({'ok': res.matched_count > 0})
+
+
+@app.route('/admin/share-link/<token>/delete', methods=['POST'])
+def admin_share_link_delete(token):
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    share_links_col.delete_one({'token': token})
+    return jsonify({'ok': True})
+
+
+# ── Public: the shared, read-only status view ─────────────────────────
+
+@app.route('/share/<token>')
+def share_view(token):
+    link = _get_valid_share(token)
+    if not link:
+        return render_template('share_invalid.html'), 404
+
+    share_links_col.update_one({'_id': link['_id']},
+                               {'$inc': {'views': 1},
+                                '$set': {'last_viewed': _share_now()}})
+
+    return render_template('share_view.html',
+                           token=token,
+                           data=_share_dataset(link),
+                           hod_sections=HOD_SECTIONS,
+                           closure_sections=HOD_CLOSURE_SECTIONS,
+                           faculty_sections=FACULTY_SECTIONS,
+                           faculty_closure_sections=FACULTY_CLOSURE_SECTIONS)
+
+
+@app.route('/api/share/<token>/data')
+def share_data(token):
+    link = _get_valid_share(token)
+    if not link:
+        return jsonify({'ok': False, 'error': 'This share link is no longer valid.'}), 404
+    return jsonify({'ok': True, 'data': _share_dataset(link)})
+
+
+@app.route('/api/share/<token>/submission/<sub_id>')
+def share_submission(token, sub_id):
+    """Full read-only detail for one department's submission."""
+    link = _get_valid_share(token)
+    if not link:
+        return jsonify({'ok': False, 'error': 'This share link is no longer valid.'}), 404
+
+    docs = _share_docs_for_export(link, sub_id)
+    if not docs:
+        return jsonify({'ok': False, 'error': 'Submission not available on this link.'}), 404
+
+    doc = docs[0]
+    form_type = doc.get('form_type', 'readiness') or 'readiness'
+    faculty = []
+    for f in doc.get('_faculty_submissions', []):
+        faculty.append({
+            'faculty_name': f.get('faculty_name', ''),
+            'faculty_email': f.get('faculty_email', ''),
+            'course_name': f.get('course_name', ''),
+            'course_code': f.get('course_code', ''),
+            'program': f.get('program', ''),
+            'year_sem': f.get('year_sem', ''),
+            'no_of_students': f.get('no_of_students', ''),
+            'timestamp': f.get('timestamp', ''),
+            'hod_review_status': f.get('hod_review_status', ''),
+            'hod_remarks': f.get('hod_remarks', ''),
+            'checklist': {k: v for k, v in (f.get('checklist', {}) or {}).items()
+                          if isinstance(v, dict)},
+        })
+
+    idt = doc.get('identity', {}) or {}
+    payload = {
+        'id': str(doc['_id']),
+        'form_type': form_type,
+        'draft': bool(doc.get('_draft', False)),
+        'timestamp': doc.get('timestamp', ''),
+        'identity': {
+            'dept': idt.get('dept', ''),
+            'campus': idt.get('campus', ''),
+            'hodName': idt.get('hodName', '') or idt.get('hod', ''),
+            'hodEmail': idt.get('hodEmail', '') or idt.get('email', ''),
+            'semester': idt.get('semester', '') or idt.get('sem', ''),
+            'acYear': idt.get('acYear', '') or idt.get('ac_year', ''),
+            'subDate': idt.get('subDate', '') or idt.get('date', ''),
+        },
+        'programs': doc.get('programs', []) or [],
+        'hodChecklist': {k: v for k, v in (doc.get('hodChecklist', {}) or {}).items()
+                         if isinstance(v, dict)},
+        'hodReport': {k: v for k, v in (doc.get('hodReport', {}) or {}).items()
+                      if isinstance(v, dict)},
+        'faculty': faculty,
+        'stats': _share_checklist_stats(doc),
+        'allow_download': bool(link.get('allow_download', True)),
+    }
+    return jsonify({'ok': True, 'submission': payload})
+
+
+@app.route('/share/<token>/export')
+def share_export_all(token):
+    link = _get_valid_share(token)
+    if not link:
+        return render_template('share_invalid.html'), 404
+    if not link.get('allow_download', True):
+        return "Downloads are disabled for this link.", 403
+
+    docs = _share_docs_for_export(link)
+    if not docs:
+        return "No submissions available to export.", 404
+    return _share_send_workbook(
+        docs, f"Semester_AllDepartments_{datetime.utcnow().strftime('%Y%m%d')}.xlsx")
+
+
+@app.route('/share/<token>/export/<sub_id>')
+def share_export_one(token, sub_id):
+    link = _get_valid_share(token)
+    if not link:
+        return render_template('share_invalid.html'), 404
+    if not link.get('allow_download', True):
+        return "Downloads are disabled for this link.", 403
+
+    docs = _share_docs_for_export(link, sub_id)
+    if not docs:
+        return "Submission not available on this link.", 404
+
+    doc = docs[0]
+    dept = (doc.get('identity', {}) or {}).get('dept', 'Department').replace(' ', '_')[:40]
+    label = 'Closure' if doc.get('form_type') == 'closure' else 'Readiness'
+    return _share_send_workbook(docs, f"Sem{label}_{dept}.xlsx")
+
 
 @app.route('/admin/delete/<sid>', methods=['POST'])
 def delete_submission(sid):
