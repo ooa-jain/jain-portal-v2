@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ data.label }} — OoA, Jain University</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0a2558">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32.png">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0a2558;
+      --navy2: #143a80;
+      --gold: #f2a900;
+      --ink: #16203a;
+      --ink2: #475569;
+      --ink3: #7c8aa5;
+      --border: #e3e8f2;
+      --bg: #f2f5fb;
+      --ok: #15803d;
+      --okbg: #eafaef;
+      --okbd: #b6e7c6;
+      --warn: #b45309;
+      --warnbg: #fff5e6;
+      --warnbd: #ffdda6;
+      --off: #64748b;
+      --offbg: #f1f4f9;
+      --offbd: #dde3ee;
+      --sh1: 0 1px 2px rgba(10, 37, 88, .06);
+      --sh2: 0 10px 30px rgba(10, 37, 88, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+
+    /* ── Topbar ─────────────────────────────────────────── */
+    .topbar {
+      background: linear-gradient(120deg, var(--navy) 0%, var(--navy2) 100%);
+      color: #fff;
+      padding: 14px 0;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      box-shadow: 0 2px 18px rgba(10, 37, 88, .22);
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 22px;
+    }
+
+    .tb-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .tb-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tb-brand img { height: 38px; }
+
+    .tb-brand h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      margin: 0;
+      letter-spacing: -.01em;
+    }
+
+    .tb-brand p {
+      margin: 2px 0 0;
+      font-size: 11.5px;
+      color: #b9c7e4;
+      font-weight: 600;
+    }
+
+    .ro-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .28);
+      color: #fff;
+      border-radius: 999px;
+      padding: 5px 13px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Buttons ────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-gold { background: var(--gold); color: #3a2600; box-shadow: 0 4px 14px rgba(242, 169, 0, .32); }
+    .btn-navy { background: var(--navy); color: #fff; }
+    .btn-white { background: #fff; color: var(--navy); border-color: var(--border); box-shadow: var(--sh1); }
+    .btn-ghost { background: transparent; color: var(--ink2); border-color: var(--border); }
+    .btn-sm { padding: 6px 11px; font-size: 12px; border-radius: 7px; }
+    .btn-xs { padding: 4px 9px; font-size: 11px; border-radius: 6px; font-weight: 700; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 24px;
+      margin: 24px 0 20px;
+      box-shadow: var(--sh2);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .hero h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 23px;
+      margin: 0 0 6px;
+      color: var(--navy);
+    }
+
+    .hero .meta {
+      font-size: 12.5px;
+      color: var(--ink3);
+      font-weight: 600;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .meta-pill {
+      background: #eef2fb;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px 11px;
+      color: var(--ink2);
+      font-size: 11.5px;
+    }
+
+    /* ── Summary tiles ──────────────────────────────────── */
+    .mod-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .mod-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: var(--sh1);
+    }
+
+    .mod-card h3 {
+      margin: 0 0 2px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mod-card .sub {
+      font-size: 11.5px;
+      color: var(--ink3);
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: #eef1f7;
+      overflow: hidden;
+      display: flex;
+      margin-bottom: 12px;
+    }
+
+    .bar span { display: block; height: 100%; }
+    .bar .s-sub { background: var(--ok); }
+    .bar .s-draft { background: var(--gold); }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .legend > div {
+      border-radius: 9px;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid;
+    }
+
+    .legend .n { font-size: 21px; font-weight: 800; line-height: 1.1; }
+    .legend .l { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-top: 3px; }
+    .lg-sub { background: var(--okbg); border-color: var(--okbd); color: var(--ok); }
+    .lg-draft { background: var(--warnbg); border-color: var(--warnbd); color: var(--warn); }
+    .lg-none { background: var(--offbg); border-color: var(--offbd); color: var(--off); }
+
+    /* ── Controls ───────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--sh1);
+      margin-bottom: 26px;
+    }
+
+    .card-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .card-head h3 {
+      margin: 0;
+      font-size: 15.5px;
+      font-weight: 800;
+      color: var(--navy);
+    }
+
+    .card-head p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--ink3);
+      font-weight: 600;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #fafbfe;
+    }
+
+    .controls input, .controls select {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      outline: none;
+    }
+
+    .controls input { flex: 1; min-width: 220px; }
+    .controls input:focus, .controls select:focus { border-color: var(--navy2); box-shadow: 0 0 0 3px rgba(20, 58, 128, .1); }
+
+    /* ── Table ──────────────────────────────────────────── */
+    .t-scroll { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      background: #f6f8fd;
+      color: var(--navy);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    tbody td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #eef1f7;
+      vertical-align: top;
+    }
+
+    tbody tr:hover { background: #fafbff; }
+
+    .dept-name { font-weight: 700; color: var(--navy); }
+    .dept-sub { font-size: 11px; color: var(--ink3); font-weight: 600; margin-top: 2px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 4px 11px;
+      font-size: 11.5px;
+      font-weight: 800;
+      border: 1px solid;
+      white-space: nowrap;
+    }
+
+    .b-sub { background: var(--okbg); border-color: var(--okbd); color: var(--ok); }
+    .b-draft { background: var(--warnbg); border-color: var(--warnbd); color: var(--warn); }
+    .b-none { background: var(--offbg); border-color: var(--offbd); color: var(--off); }
+
+    .cell-actions { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+    .cell-meta { font-size: 11px; color: var(--ink3); font-weight: 600; margin-top: 4px; }
+
+    .empty {
+      text-align: center;
+      padding: 46px 20px;
+      color: var(--ink3);
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+
+    /* ── Modal ──────────────────────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 37, 88, .55);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 90;
+    }
+
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 940px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 30px 90px rgba(0, 0, 0, .3);
+      overflow: hidden;
+    }
+
+    .modal-head {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      background: linear-gradient(120deg, var(--navy), var(--navy2));
+      color: #fff;
+    }
+
+    .modal-head h3 { margin: 0; font-size: 17px; font-weight: 800; }
+    .modal-head p { margin: 4px 0 0; font-size: 12px; color: #bccbe8; font-weight: 600; }
+
+    .x-btn {
+      background: rgba(255, 255, 255, .14);
+      border: 1px solid rgba(255, 255, 255, .3);
+      color: #fff;
+      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      font-size: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .modal-body { padding: 22px; overflow-y: auto; }
+    .modal-foot {
+      padding: 14px 22px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: #fafbfe;
+      flex-wrap: wrap;
+    }
+
+    .sec { margin-bottom: 24px; }
+    .sec > h4 {
+      margin: 0 0 10px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--navy);
+      padding-bottom: 7px;
+      border-bottom: 2px solid #eef1f7;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px;
+    }
+
+    .kv > div {
+      background: #f7f9fd;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 12px;
+    }
+
+    .kv .k { font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--ink3); }
+    .kv .v { font-size: 13.5px; font-weight: 700; color: var(--navy); margin-top: 3px; word-break: break-word; }
+
+    .chk-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 9px 11px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 7px;
+      background: #fff;
+      font-size: 12.5px;
+    }
+
+    .chk-row.yes { background: #f4fdf7; border-color: var(--okbd); }
+    .chk-row.no { background: #fff5f5; border-color: #f9c9c9; }
+    .chk-row.na { background: #f8fafc; }
+
+    .chk-mark {
+      font-weight: 800;
+      font-size: 12px;
+      min-width: 34px;
+      text-align: center;
+      border-radius: 6px;
+      padding: 2px 4px;
+      flex-shrink: 0;
+    }
+
+    .chk-row.yes .chk-mark { background: var(--okbg); color: var(--ok); }
+    .chk-row.no .chk-mark { background: #fee; color: #b91c1c; }
+    .chk-row.na .chk-mark, .chk-row .chk-mark { background: var(--offbg); color: var(--off); }
+
+    .chk-text { color: var(--ink); font-weight: 600; line-height: 1.5; }
+    .chk-remark { color: var(--ink2); font-weight: 500; font-size: 11.5px; margin-top: 3px; font-style: italic; }
+    .sec-title { font-size: 11.5px; font-weight: 800; color: var(--navy2); margin: 14px 0 7px; }
+
+    .fac-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      background: #fbfcfe;
+    }
+
+    .fac-name { font-weight: 800; color: var(--navy); font-size: 13.5px; }
+    .fac-meta { font-size: 11.5px; color: var(--ink3); font-weight: 600; margin-top: 3px; }
+
+    .mini-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 5px;
+      margin: 3px 4px 0 0;
+      border: 1px solid;
+    }
+
+    .mt-yes { background: var(--okbg); border-color: var(--okbd); color: var(--ok); }
+    .mt-no { background: #fee; border-color: #f9c9c9; color: #b91c1c; }
+    .mt-na { background: var(--offbg); border-color: var(--offbd); color: var(--off); }
+
+    .narrative {
+      background: #f7f9fd;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--gold);
+      border-radius: 8px;
+      padding: 11px 13px;
+      margin-bottom: 9px;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: var(--ink2);
+      white-space: pre-wrap;
+    }
+
+    .narrative b { display: block; color: var(--navy); font-size: 12.5px; margin-bottom: 4px; }
+
+    .spinner { text-align: center; padding: 50px; color: var(--ink3); font-weight: 600; font-size: 13px; }
+
+    footer {
+      text-align: center;
+      padding: 26px 20px 40px;
+      color: var(--ink3);
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 720px) {
+      .hero { flex-direction: column; }
+      .legend { grid-template-columns: 1fr; }
+      thead th { position: static; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="wrap tb-inner">
+      <div class="tb-brand">
+        <img src="/static/images/jain.png" alt="Jain" onerror="this.style.display='none'">
+        <div>
+          <h1>Office of Academics</h1>
+          <p>Jain (Deemed-to-be University)</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="ro-chip">👁 Read-only shared view</span>
+        {% if data.allow_download %}
+        <a class="btn btn-gold btn-sm" href="/share/{{ token }}/export">⬇ Download All Departments</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h2>{{ data.label }}</h2>
+        <div class="meta">
+          <span class="meta-pill">🏛 {{ data.departments|length }} departments</span>
+          {% for m in data.modules %}
+          <span class="meta-pill">{{ {'readiness': 'Semester Readiness', 'closure': 'Semester Closure', 'iea': 'Innovation & Emerging Areas'}[m] }}</span>
+          {% endfor %}
+          {% if data.campus and data.campus != 'All' %}<span class="meta-pill">📍 {{ data.campus }} campus</span>{% endif %}
+          <span class="meta-pill" id="generatedPill">Updated just now</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-white btn-sm" onclick="refreshData()" id="refreshBtn">⟳ Refresh</button>
+        {% if data.allow_download %}
+        <a class="btn btn-navy btn-sm" href="/share/{{ token }}/export">⬇ Consolidated Excel</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mod-grid" id="modGrid"></div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h3>Departmental Status Summary</h3>
+          <p>Submitted · Draft · Not Started — view or download any single department, or all of them together</p>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:var(--ink2)" id="rowCount"></div>
+      </div>
+
+      <div class="controls">
+        <input type="text" id="q" placeholder="Search department, campus or HOD…" oninput="renderTable()">
+        <select id="campusFilter" onchange="renderTable()">
+          <option value="All">All Campuses</option>
+          <option value="Bangalore">Bangalore</option>
+          <option value="Kochi">Kochi</option>
+          <option value="ODL">ODL</option>
+          <option value="Online">Online</option>
+        </select>
+        <select id="statusFilter" onchange="renderTable()">
+          <option value="All">All Statuses</option>
+          <option value="submitted">Submitted only</option>
+          <option value="draft">Draft only</option>
+          <option value="none">Not Started only</option>
+        </select>
+        <select id="moduleFilter" onchange="renderTable()">
+          <option value="All">Status of: Either module</option>
+          {% for m in data.formModules %}
+          <option value="{{ m }}">Status of: {{ 'Semester Readiness' if m == 'readiness' else 'Semester Closure' }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="t-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:260px">Department</th>
+              <th>Campus</th>
+              {% for m in data.formModules %}
+              <th style="min-width:230px">{{ 'Semester Readiness' if m == 'readiness' else 'Semester Closure' }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="emptyState" style="display:none">No departments match the current filters.</div>
+    </div>
+
+    {% if 'iea' in data.modules %}
+    <div class="card" id="ieaCard">
+      <div class="card-head">
+        <div>
+          <h3>Innovation &amp; Emerging Areas</h3>
+          <p>Per School / Department / Programme level — submitted, draft or not started, with the full
+            edit history behind every re-submission</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:var(--ink2)" id="ieaRowCount"></span>
+          {% if data.allow_download %}
+          <a class="btn btn-navy btn-sm" href="/share/{{ token }}/iea-export">⬇ All IEA (Excel)</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="controls">
+        <input type="text" id="ieaQ" placeholder="Search school, department or person…" oninput="renderIea()">
+        <select id="ieaStatusFilter" onchange="renderIea()">
+          <option value="All">All Statuses</option>
+          <option value="submitted">Submitted only</option>
+          <option value="draft">Draft only</option>
+          <option value="none">Not Started only</option>
+        </select>
+        <select id="ieaEditedFilter" onchange="renderIea()">
+          <option value="All">All submissions</option>
+          <option value="edited">Edited after submitting (v2+)</option>
+        </select>
+      </div>
+
+      <div class="t-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:250px">School / Department</th>
+              <th>Level</th>
+              <th style="min-width:230px">Status</th>
+              <th style="min-width:210px">Edit history</th>
+            </tr>
+          </thead>
+          <tbody id="ieaTbody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="ieaEmpty" style="display:none">No IEA units match the current filters.</div>
+    </div>
+    {% endif %}
+
+    <footer>
+      Shared by the Office of Academics, Jain (Deemed-to-be University) · This is a read-only view — no data can be
+      edited or submitted from this page.
+    </footer>
+  </div>
+
+  <!-- Department detail -->
+  <div class="overlay" id="detailOverlay" onclick="if(event.target===this) closeDetail()">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3 id="dTitle">Department</h3>
+          <p id="dSub"></p>
+        </div>
+        <button class="x-btn" onclick="closeDetail()" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="dBody">
+        <div class="spinner">Loading department details…</div>
+      </div>
+      <div class="modal-foot" id="dFoot"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/iea-history.js"></script>
+  <script>
+    const TOKEN = {{ token | tojson }};
+    const HOD_SECTIONS = {{ hod_sections | tojson }};
+    const CLOSURE_SECTIONS = {{ closure_sections | tojson }};
+    const FACULTY_SECTIONS = {{ faculty_sections | tojson }};
+    const FACULTY_CLOSURE_SECTIONS = {{ faculty_closure_sections | tojson }};
+    let DATA = {{ data | tojson }};
+
+    const MODULE_LABEL = { readiness: 'Semester Readiness', closure: 'Semester Closure' };
+
+    // The department matrix covers the two form-based modules only; IEA is
+    // keyed by school/department/level and gets its own table below.
+    function formModules() {
+      return DATA.formModules || DATA.modules.filter(m => m !== 'iea');
+    }
+
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+      ));
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      if (isNaN(d)) return String(iso).substring(0, 10);
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    /* Latest row for a department + campus + module. DATA.rows arrives
+       newest-first, so the first hit is the current state. */
+    function findRow(dept, campus, module) {
+      return DATA.rows.find(r =>
+        r.dept === dept && r.campus === campus && (r.form_type || 'readiness') === module) || null;
+    }
+
+    function statusOf(row) {
+      if (!row) return 'none';
+      return row.draft ? 'draft' : 'submitted';
+    }
+
+    /* One line per department-campus pair that actually exists, plus a
+       placeholder line for departments that have not started at all. */
+    function buildMatrix() {
+      const byDept = {};
+      DATA.rows.forEach(r => {
+        if (!r.dept) return;
+        (byDept[r.dept] = byDept[r.dept] || new Set()).add(r.campus || '');
+      });
+
+      const out = [];
+      DATA.departments.forEach(dept => {
+        const campuses = byDept[dept] ? [...byDept[dept]].sort() : [''];
+        campuses.forEach(campus => {
+          const cells = {};
+          formModules().forEach(m => { cells[m] = findRow(dept, campus, m); });
+          out.push({ dept, campus, cells });
+        });
+      });
+
+      // Departments recorded on a submission but missing from the master list
+      Object.keys(byDept).forEach(dept => {
+        if (DATA.departments.includes(dept)) return;
+        [...byDept[dept]].sort().forEach(campus => {
+          const cells = {};
+          formModules().forEach(m => { cells[m] = findRow(dept, campus, m); });
+          out.push({ dept, campus, cells });
+        });
+      });
+      return out;
+    }
+
+    function renderSummary(matrix) {
+      const formCards = formModules().map(m => {
+        let sub = 0, draft = 0, none = 0;
+        // Count once per department, not per campus line.
+        const seen = {};
+        matrix.forEach(r => {
+          const st = statusOf(r.cells[m]);
+          const prev = seen[r.dept];
+          // submitted beats draft beats not-started for the department roll-up
+          const rank = { submitted: 3, draft: 2, none: 1 };
+          if (!prev || rank[st] > rank[prev]) seen[r.dept] = st;
+        });
+        Object.values(seen).forEach(st => {
+          if (st === 'submitted') sub++; else if (st === 'draft') draft++; else none++;
+        });
+        const total = sub + draft + none || 1;
+        const deadline = (DATA.deadlines || {})[m];
+        return `<div class="mod-card">
+          <h3>${m === 'readiness' ? '📘' : '📗'} ${esc(MODULE_LABEL[m] || m)}</h3>
+          <div class="sub">${sub} of ${sub + draft + none} departments submitted${deadline ? ' · Deadline ' + esc(fmtDate(deadline)) : ''}</div>
+          <div class="bar">
+            <span class="s-sub" style="width:${(sub / total * 100).toFixed(1)}%"></span>
+            <span class="s-draft" style="width:${(draft / total * 100).toFixed(1)}%"></span>
+          </div>
+          <div class="legend">
+            <div class="lg-sub"><div class="n">${sub}</div><div class="l">Submitted</div></div>
+            <div class="lg-draft"><div class="n">${draft}</div><div class="l">Draft</div></div>
+            <div class="lg-none"><div class="n">${none}</div><div class="l">Not Started</div></div>
+          </div>
+        </div>`;
+      }).join('');
+
+      document.getElementById('modGrid').innerHTML =
+        formCards + (DATA.modules.includes('iea') ? ieaCardHtml() : '');
+    }
+
+    function cellHtml(row) {
+      if (!row) {
+        return `<span class="badge b-none">⏳ Not Started</span>`;
+      }
+      const st = statusOf(row);
+      const badge = st === 'submitted'
+        ? `<span class="badge b-sub">✅ Submitted</span>`
+        : `<span class="badge b-draft">📝 Draft</span>`;
+      const chk = row.checklist || {};
+      const meta = [
+        fmtDate(row.timestamp),
+        row.hodName ? esc(row.hodName) : null,
+        chk.total ? `${chk.yes}/${chk.total} complete` : null,
+        row.faculty_count ? `${row.faculty_count} faculty response${row.faculty_count > 1 ? 's' : ''}` : null
+      ].filter(Boolean).join(' · ');
+
+      const dl = DATA.allow_download
+        ? `<a class="btn btn-white btn-xs" href="/share/${encodeURIComponent(TOKEN)}/export/${encodeURIComponent(row.id)}">⬇ Excel</a>`
+        : '';
+      return `${badge}
+        <div class="cell-meta">${meta}</div>
+        <div class="cell-actions">
+          <button class="btn btn-navy btn-xs" onclick="openDetail('${esc(row.id)}')">👁 View</button>
+          ${dl}
+        </div>`;
+    }
+
+    /* ── Innovation & Emerging Areas ──────────────────────────────
+       IEA is keyed by School / Department / Level rather than by the
+       campus-and-department matrix above, so it gets its own table. */
+    function ieaStatusCounts() {
+      const c = { submitted: 0, draft: 0, none: 0, edited: 0 };
+      (DATA.iea || []).forEach(r => {
+        c[r.status] = (c[r.status] || 0) + 1;
+        if (r.status === 'submitted' && (r.version || 0) > 1) c.edited++;
+      });
+      return c;
+    }
+
+    function ieaCardHtml() {
+      const c = ieaStatusCounts();
+      const total = c.submitted + c.draft + c.none || 1;
+      return `<div class="mod-card">
+        <h3>🚀 Innovation &amp; Emerging Areas</h3>
+        <div class="sub">${c.submitted} of ${c.submitted + c.draft + c.none} units submitted${c.edited ? ' · ' + c.edited + ' edited after submitting' : ''}</div>
+        <div class="bar">
+          <span class="s-sub" style="width:${(c.submitted / total * 100).toFixed(1)}%"></span>
+          <span class="s-draft" style="width:${(c.draft / total * 100).toFixed(1)}%"></span>
+        </div>
+        <div class="legend">
+          <div class="lg-sub"><div class="n">${c.submitted}</div><div class="l">Submitted</div></div>
+          <div class="lg-draft"><div class="n">${c.draft}</div><div class="l">Draft</div></div>
+          <div class="lg-none"><div class="n">${c.none}</div><div class="l">Not Started</div></div>
+        </div>
+      </div>`;
+    }
+
+    function renderIea() {
+      if (!DATA.modules.includes('iea')) return;
+      const q = document.getElementById('ieaQ').value.trim().toLowerCase();
+      const status = document.getElementById('ieaStatusFilter').value;
+      const edited = document.getElementById('ieaEditedFilter').value;
+
+      const rows = (DATA.iea || []).filter(r => {
+        if (status !== 'All' && r.status !== status) return false;
+        if (edited === 'edited' && !(r.status === 'submitted' && (r.version || 0) > 1)) return false;
+        if (q && ![r.school, r.department, r.level, r.by].join(' ').toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      document.getElementById('ieaRowCount').textContent =
+        `${rows.length} of ${(DATA.iea || []).length} units shown`;
+      document.getElementById('ieaEmpty').style.display = rows.length ? 'none' : 'block';
+
+      document.getElementById('ieaTbody').innerHTML = rows.map(r => {
+        const badge = r.status === 'submitted'
+          ? `<span class="badge b-sub">✅ Submitted${(r.version || 0) > 1 ? ' · v' + r.version : ''}</span>`
+          : r.status === 'draft'
+            ? `<span class="badge b-draft">📝 Draft</span>`
+            : `<span class="badge b-none">⏳ Not Started</span>`;
+
+        const meta = r.id
+          ? `<div class="cell-meta">${esc(fmtDate(r.at))}${r.by ? ' · ' + esc(r.by) : ''} · ${r.entries} ${r.entries === 1 ? 'entry' : 'entries'}</div>`
+          : '';
+
+        const actions = r.id ? `<div class="cell-actions">
+            <button class="btn btn-navy btn-xs" onclick="openIeaDetail('${esc(r.id)}')">👁 View</button>
+            ${DATA.allow_download ? `<a class="btn btn-white btn-xs" href="/share/${encodeURIComponent(TOKEN)}/iea-export/${encodeURIComponent(r.id)}">⬇ Excel</a>` : ''}
+          </div>` : '';
+
+        // Every re-submission can be opened as a before/after comparison.
+        let history = '<span style="font-size:11.5px;color:var(--ink3);font-weight:600">—</span>';
+        if (r.id && (r.versions || []).length) {
+          const vs = r.versions;
+          const latest = vs[vs.length - 1];
+          history = `<div style="font-size:11.5px;color:var(--ink2);font-weight:600;margin-bottom:6px">
+              ${vs.length} ${vs.length === 1 ? 'version' : 'versions'} · latest ${esc(fmtDate(latest.at))}
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="ieah-chip" data-ieah-timeline="${esc(r.id)}">🕐 All versions</button>
+              ${(latest.version || 0) > 1
+                ? `<button class="ieah-chip" data-ieah-diff="${esc(r.id)}" data-ieah-version="${latest.version}">✎ What changed in v${latest.version}</button>`
+                : ''}
+            </div>`;
+        }
+
+        return `<tr>
+          <td>
+            <div class="dept-name">${esc(r.department)}</div>
+            <div class="dept-sub">${esc(r.school)}</div>
+          </td>
+          <td style="font-weight:600;color:var(--ink2)">${esc(r.level)}</td>
+          <td>${badge}${meta}${actions}</td>
+          <td>${history}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function openIeaDetail(id) {
+      document.getElementById('dTitle').textContent = 'Loading…';
+      document.getElementById('dSub').textContent = '';
+      document.getElementById('dBody').innerHTML = '<div class="spinner">Loading department details…</div>';
+      document.getElementById('dFoot').innerHTML =
+        '<button class="btn btn-ghost btn-sm" onclick="closeDetail()">Close</button>';
+      document.getElementById('detailOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      fetch(`/api/share/${encodeURIComponent(TOKEN)}/iea/${encodeURIComponent(id)}`)
+        .then(r => r.json())
+        .then(res => {
+          if (!res.ok) throw new Error(res.error || 'Not available');
+          renderIeaDetail(res);
+        })
+        .catch(err => {
+          document.getElementById('dTitle').textContent = 'Unavailable';
+          document.getElementById('dBody').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+        });
+    }
+
+    function renderIeaDetail(res) {
+      const s = res.submission;
+      document.getElementById('dTitle').textContent = s.department || 'Department';
+      document.getElementById('dSub').textContent =
+        `Innovation & Emerging Areas · ${s.level} · ${s.school} · ` +
+        (s.submitted ? `Submitted (v${s.version}) on ${fmtDate(s.submittedAt)}` : `Draft — last edited ${fmtDate(s.lastUpdated)}`);
+
+      let html = `<div class="sec">
+        <h4>Unit</h4>
+        <div class="kv">
+          <div><div class="k">School</div><div class="v">${esc(s.school)}</div></div>
+          <div><div class="k">Department</div><div class="v">${esc(s.department)}</div></div>
+          <div><div class="k">Programme level</div><div class="v">${esc(s.level)}</div></div>
+          <div><div class="k">Filed by</div><div class="v">${esc(s.by || '—')}</div></div>
+          <div><div class="k">Total entries</div><div class="v">${s.entries}</div></div>
+          <div><div class="k">Version</div><div class="v">${s.submitted ? 'v' + s.version : 'Not submitted'}</div></div>
+        </div>
+      </div>`;
+
+      if ((s.versions || []).length) {
+        html += `<div class="sec"><h4>Edit history — ${s.versions.length} ${s.versions.length === 1 ? 'version' : 'versions'}</h4>
+          ${s.versions.slice().reverse().map(v => `<div class="chk-row">
+            <span class="chk-mark">v${v.version}</span>
+            <span><span class="chk-text">${v.version === 1 ? 'First submission' : 'Re-submitted'}${v.current ? ' · current' : ''}</span>
+              <div class="chk-remark">${esc(fmtDate(v.at))} · ${v.entries} ${v.entries === 1 ? 'entry' : 'entries'}${v.by ? ' · ' + esc(v.by) : ''}</div>
+            </span>
+            ${v.version > 1 ? `<button class="ieah-chip" style="margin-left:auto" data-ieah-diff="${esc(s.id)}" data-ieah-version="${v.version}">✎ What changed</button>` : ''}
+          </div>`).join('')}
+        </div>`;
+      }
+
+      // Entries, grouped by academic year then section
+      (res.iea_years || []).forEach(year => {
+        const secs = (s.years || {})[year] || {};
+        const filled = res.sections.filter(sec => (secs[sec.key] || []).length);
+        if (!filled.length) return;
+        html += `<div class="sec"><h4>${esc(year)}</h4>` + filled.map(sec => `
+          <div class="sec-title">${esc(sec.key)}. ${esc(sec.title)} — ${(secs[sec.key] || []).length}</div>
+          ${(secs[sec.key] || []).map(e => `<div class="chk-row">
+            <span><span class="chk-text">${esc(sec.fields.map(f => e[f.k]).find(v => v && String(v).trim()) || 'Entry')}</span>
+              ${sec.fields.filter(f => e[f.k] && String(e[f.k]).trim()).map(f =>
+                `<div class="chk-remark"><strong>${esc(f.l)}:</strong> ${esc(e[f.k])}</div>`).join('')}
+            </span>
+          </div>`).join('')}`).join('') + `</div>`;
+      });
+
+      document.getElementById('dBody').innerHTML = html;
+      document.getElementById('dFoot').innerHTML = `
+        ${res.allow_download ? `<a class="btn btn-gold btn-sm" href="/share/${encodeURIComponent(TOKEN)}/iea-export/${encodeURIComponent(s.id)}">⬇ Download this unit</a>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="closeDetail()">Close</button>`;
+    }
+
+    function renderTable() {
+      const matrix = buildMatrix();
+      renderSummary(matrix);
+      renderIea();
+
+      const q = document.getElementById('q').value.trim().toLowerCase();
+      const campus = document.getElementById('campusFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      const moduleSel = document.getElementById('moduleFilter').value;
+      const mods = moduleSel === 'All' ? formModules() : [moduleSel];
+
+      const rows = matrix.filter(r => {
+        if (campus !== 'All' && (r.campus || '') !== campus) return false;
+        if (status !== 'All' && !mods.some(m => statusOf(r.cells[m]) === status)) return false;
+        if (q) {
+          const hay = [r.dept, r.campus,
+            ...formModules().map(m => (r.cells[m] || {}).hodName || ''),
+            ...formModules().map(m => (r.cells[m] || {}).hodEmail || '')
+          ].join(' ').toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('rowCount').textContent =
+        `${rows.length} of ${matrix.length} rows shown`;
+      document.getElementById('emptyState').style.display = rows.length ? 'none' : 'block';
+
+      document.getElementById('tbody').innerHTML = rows.map(r => `<tr>
+        <td>
+          <div class="dept-name">${esc(r.dept)}</div>
+          <div class="dept-sub">${formModules().map(m => {
+            const st = statusOf(r.cells[m]);
+            return `${MODULE_LABEL[m]}: ${st === 'submitted' ? 'Submitted' : st === 'draft' ? 'Draft' : 'Not Started'}`;
+          }).join(' · ')}</div>
+        </td>
+        <td style="font-weight:600;color:var(--ink2)">${esc(r.campus || '—')}</td>
+        ${formModules().map(m => `<td>${cellHtml(r.cells[m])}</td>`).join('')}
+      </tr>`).join('');
+    }
+
+    /* ── Detail modal ─────────────────────────────────── */
+    function itemLookup(formType, isFaculty) {
+      const secs = isFaculty
+        ? (formType === 'closure' ? FACULTY_CLOSURE_SECTIONS : FACULTY_SECTIONS)
+        : HOD_SECTIONS;
+      const map = {};
+      secs.forEach(s => (s.items || []).forEach(i => { map[i.id] = { text: i.text, section: s.title }; }));
+      return map;
+    }
+
+    function openDetail(id) {
+      document.getElementById('dTitle').textContent = 'Loading…';
+      document.getElementById('dSub').textContent = '';
+      document.getElementById('dBody').innerHTML = '<div class="spinner">Loading department details…</div>';
+      document.getElementById('dFoot').innerHTML =
+        '<button class="btn btn-ghost btn-sm" onclick="closeDetail()">Close</button>';
+      document.getElementById('detailOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      fetch(`/api/share/${encodeURIComponent(TOKEN)}/submission/${encodeURIComponent(id)}`)
+        .then(r => r.json())
+        .then(res => {
+          if (!res.ok) throw new Error(res.error || 'Not available');
+          renderDetail(res.submission);
+        })
+        .catch(err => {
+          document.getElementById('dTitle').textContent = 'Unavailable';
+          document.getElementById('dBody').innerHTML =
+            `<div class="empty">${esc(err.message)}</div>`;
+        });
+    }
+
+    function renderDetail(s) {
+      const idt = s.identity || {};
+      const isClosure = s.form_type === 'closure';
+      document.getElementById('dTitle').textContent = idt.dept || 'Department';
+      document.getElementById('dSub').textContent =
+        `${MODULE_LABEL[s.form_type] || s.form_type} · ${idt.campus || '—'} · ${s.draft ? 'Draft (not finalised)' : 'Submitted'} on ${fmtDate(s.timestamp)}`;
+
+      let html = `<div class="sec">
+        <h4>Identity</h4>
+        <div class="kv">
+          <div><div class="k">Department</div><div class="v">${esc(idt.dept || '—')}</div></div>
+          <div><div class="k">Campus</div><div class="v">${esc(idt.campus || '—')}</div></div>
+          <div><div class="k">Head of Department</div><div class="v">${esc(idt.hodName || '—')}</div></div>
+          <div><div class="k">HOD Email</div><div class="v">${esc(idt.hodEmail || '—')}</div></div>
+          <div><div class="k">Semester</div><div class="v">${esc(idt.semester || '—')}</div></div>
+          <div><div class="k">Academic Year</div><div class="v">${esc(idt.acYear || '—')}</div></div>
+        </div>
+      </div>`;
+
+      if ((s.programs || []).length) {
+        html += `<div class="sec"><h4>Programs (${s.programs.length})</h4>
+          <div class="t-scroll"><table>
+            <thead><tr><th>Program</th><th>Courses</th><th>Students</th><th>Faculty</th><th>Coordinator</th></tr></thead>
+            <tbody>${s.programs.map(p => `<tr>
+              <td style="font-weight:700;color:var(--navy)">${esc(p.name || '—')}</td>
+              <td>${esc(p.courses || '—')}</td>
+              <td>${esc(p.students || '—')}</td>
+              <td>${esc(p.faculty || '—')}</td>
+              <td>${esc(p.coord || '—')}</td></tr>`).join('')}
+            </tbody></table></div></div>`;
+      }
+
+      if (isClosure) {
+        const report = s.hodReport || {};
+        const written = CLOSURE_SECTIONS.filter(sec => {
+          const v = report[sec.id] || {};
+          return v.text || v.remark || v.status;
+        });
+        html += `<div class="sec"><h4>HOD Closure Report — ${written.length}/${CLOSURE_SECTIONS.length} verticals filled</h4>`;
+        html += CLOSURE_SECTIONS.map(sec => {
+          const v = report[sec.id] || {};
+          const body = v.text || v.remark || v.status || '';
+          return `<div class="narrative"><b>${esc(sec.id)}. ${esc(sec.title)}</b>${body ? esc(body) : '<span style="color:var(--ink3)">— not filled —</span>'}</div>`;
+        }).join('');
+        html += `</div>`;
+      } else {
+        const chk = s.hodChecklist || {};
+        const st = s.stats || {};
+        html += `<div class="sec"><h4>HOD Checklist — ${st.yes || 0} Yes · ${st.no || 0} Gaps · ${st.na || 0} N/A · ${st.blank || 0} Blank</h4>`;
+        html += HOD_SECTIONS.map(sec => `
+          <div class="sec-title">${esc(sec.title)}</div>
+          ${(sec.items || []).map(item => {
+            const v = chk[item.id] || {};
+            const status = v.status || '';
+            const cls = status === 'Yes' ? 'yes' : status === 'No' ? 'no' : status === 'N/A' ? 'na' : '';
+            const mark = status === 'Yes' ? '✓' : status === 'No' ? '✗' : status === 'N/A' ? 'N/A' : '—';
+            return `<div class="chk-row ${cls}">
+              <span class="chk-mark">${mark}</span>
+              <span><span class="chk-text">${esc(item.id)}. ${esc(item.text)}</span>
+              ${v.remark ? `<div class="chk-remark">${esc(v.remark)}</div>` : ''}</span>
+            </div>`;
+          }).join('')}`).join('');
+        html += `</div>`;
+      }
+
+      const fac = s.faculty || [];
+      html += `<div class="sec"><h4>Faculty Responses (${fac.length})</h4>`;
+      if (!fac.length) {
+        html += `<div class="empty" style="padding:26px">No faculty responses recorded for this department.</div>`;
+      } else {
+        const lookup = itemLookup(s.form_type, true);
+        html += fac.map(f => {
+          const c = f.checklist || {};
+          const entries = Object.entries(c);
+          const yes = entries.filter(([, v]) => v.status === 'Yes').length;
+          const no = entries.filter(([, v]) => v.status === 'No').length;
+          return `<div class="fac-card">
+            <div class="fac-name">${esc(f.faculty_name || 'Unnamed faculty')}</div>
+            <div class="fac-meta">📧 ${esc(f.faculty_email || '—')} · 📚 ${esc(f.course_name || '—')} (${esc(f.course_code || '—')}) · ${esc(f.program || '—')}</div>
+            <div class="fac-meta">Submitted ${fmtDate(f.timestamp)} · ${yes} ✓ · ${no} ✗${f.hod_review_status ? ' · HOD: ' + esc(f.hod_review_status) : ''}</div>
+            ${f.hod_remarks ? `<div class="chk-remark">HOD remark: ${esc(f.hod_remarks)}</div>` : ''}
+            <div style="margin-top:6px">${entries.map(([k, v]) => {
+              const cls = v.status === 'Yes' ? 'mt-yes' : v.status === 'No' ? 'mt-no' : 'mt-na';
+              const label = (lookup[k] || {}).text || k;
+              return `<span class="mini-tag ${cls}" title="${esc(label)}">${esc(k)}: ${esc(v.status || '—')}</span>`;
+            }).join('')}</div>
+          </div>`;
+        }).join('');
+      }
+      html += `</div>`;
+
+      document.getElementById('dBody').innerHTML = html;
+      document.getElementById('dFoot').innerHTML = `
+        ${s.allow_download ? `<a class="btn btn-gold btn-sm" href="/share/${encodeURIComponent(TOKEN)}/export/${encodeURIComponent(s.id)}">⬇ Download this department</a>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="closeDetail()">Close</button>`;
+    }
+
+    function closeDetail() {
+      document.getElementById('detailOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+    function refreshData() {
+      const btn = document.getElementById('refreshBtn');
+      btn.disabled = true;
+      btn.textContent = '⟳ Refreshing…';
+      fetch(`/api/share/${encodeURIComponent(TOKEN)}/data`)
+        .then(r => r.json())
+        .then(res => {
+          if (res.ok) {
+            DATA = res.data;
+            renderTable();
+            document.getElementById('generatedPill').textContent =
+              'Updated ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+          }
+        })
+        .finally(() => { btn.disabled = false; btn.textContent = '⟳ Refresh'; });
+    }
+
+    renderTable();
+  </script>
+</body>
+
+</html>

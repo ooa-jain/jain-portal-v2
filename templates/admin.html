@@ -1109,6 +1109,7 @@
       <div class="tbar-actions" id="tbarActions">
         <a href="/" class="btn btn-white btn-sm">← Form</a>
         <a href="/admin/iea" class="btn btn-white btn-sm" style="border-color:#f2a900;">🚀 IEA Dashboard</a>
+        <button type="button" class="btn btn-white btn-sm" onclick="openShareLinkModal()" style="border-color:#7dd3fc;">🔗 Share Status Link</button>
         <a href="/admin/export-all" class="btn btn-gold btn-sm">Export All Excel</a>
         <a href="/admin/logout" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">Sign
           Out</a>
@@ -1232,6 +1233,17 @@
             <label style="font-size: 11px; font-weight: 700; color: var(--ink3);">Deadline Notice</label>
             <input type="datetime-local" id="set_iea_deadline" value="{{ settings.iea_deadline }}"
               style="width:100%;padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit;">
+            <label
+              style="display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; font-size: 13px; font-weight: 600; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 10px 12px; cursor: pointer;">
+              <input type="checkbox" id="set_iea_locked" {% if settings.iea_locked %}checked{% endif %} style="margin-top:2px;">
+              <span>
+                🔒 Stop submission
+                <span style="display:block; font-weight:600; color:#9a5b12; font-size:11.5px; margin-top:3px;">
+                  Once on, a department that has already submitted cannot edit. They must request
+                  edit access, and it opens for one re-submission after you approve it.
+                </span>
+              </span>
+            </label>
           </div>
         </div>
         <div
@@ -2710,6 +2722,7 @@
         closure_deadline: document.getElementById('set_closure_deadline').value,
         iea_enabled: document.getElementById('set_iea_enabled').checked,
         iea_deadline: document.getElementById('set_iea_deadline').value,
+        iea_locked: document.getElementById('set_iea_locked').checked,
         enabled_years: enabled_years,
         enabled_semesters: enabled_semesters
       };
@@ -2957,9 +2970,186 @@
       });
     }
 
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeFacModal(); document.getElementById('addUserModal').style.display='none'; } });
+
+    // ═══════════════════════════════════════════════════════════════
+    // READ-ONLY STATUS SHARE LINKS
+    // One URL that anyone (Dean, Registrar, VC office) can open to see
+    // every department's Readiness / Closure status and download the
+    // Excel for one department or for all of them.
+    // ═══════════════════════════════════════════════════════════════
+    function shEsc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function openShareLinkModal() {
+      document.getElementById('shareLinkModal').style.display = 'flex';
+      loadShareLinks();
+    }
+
+    function closeShareLinkModal() {
+      document.getElementById('shareLinkModal').style.display = 'none';
+    }
+
+    function loadShareLinks() {
+      const box = document.getElementById('shareLinkList');
+      box.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink3);font-size:12.5px;font-weight:600">Loading links…</div>';
+      fetch('/api/admin/share-links', { cache: 'no-store' }).then(r => r.json()).then(res => {
+        if (!res.ok) { box.innerHTML = '<div style="padding:18px;color:#b91c1c;font-size:12.5px">Could not load share links.</div>'; return; }
+        if (!res.links.length) {
+          box.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink3);font-size:12.5px;font-weight:600">No share links yet — generate one above.</div>';
+          return;
+        }
+        box.innerHTML = res.links.map(l => {
+          const dead = !l.active || l.expired;
+          const state = !l.active ? '<span style="background:#fee;border:1px solid #f9c9c9;color:#b91c1c;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">REVOKED</span>'
+            : l.expired ? '<span style="background:#fff5e6;border:1px solid #ffdda6;color:#b45309;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">EXPIRED</span>'
+            : '<span style="background:#eafaef;border:1px solid #b6e7c6;color:#15803d;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">ACTIVE</span>';
+          const mods = (l.modules || []).map(m =>
+            ({ readiness: 'Readiness', closure: 'Closure', iea: 'IEA' })[m] || m).join(' + ');
+          return `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:${dead ? '#fafbfe' : '#fff'};${dead ? 'opacity:.72' : ''}">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+              <div style="font-weight:800;color:var(--navy);font-size:13px">${shEsc(l.label || 'Untitled share link')} ${state}</div>
+              <div style="font-size:11px;color:var(--ink3);font-weight:600">${mods}${l.campus && l.campus !== 'All' ? ' · ' + shEsc(l.campus) : ''} · 👁 ${l.views || 0} views</div>
+            </div>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+              <input type="text" readonly value="${shEsc(l.url)}" onclick="this.select()" style="flex:1;min-width:230px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:11.5px;background:#f7f9fd;color:var(--ink2)">
+              <button class="btn btn-ghost btn-sm" onclick="copyShareUrl(this,'${shEsc(l.url)}')">Copy</button>
+              <a class="btn btn-ghost btn-sm" href="${shEsc(l.url)}" target="_blank" rel="noopener">Open</a>
+              ${l.active ? `<button class="btn btn-ghost btn-sm" style="color:#b45309;border-color:#ffdda6" onclick="revokeShareLink('${shEsc(l.token)}')">Revoke</button>` : ''}
+              <button class="btn btn-ghost btn-sm" style="color:#b91c1c;border-color:#f9c9c9" onclick="deleteShareLink('${shEsc(l.token)}')">Delete</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--ink3);font-weight:600;margin-top:7px">
+              Created ${l.created_at ? new Date(l.created_at).toLocaleString('en-IN') : '—'}${l.expires_at ? ' · Expires ' + new Date(l.expires_at).toLocaleString('en-IN') : ' · Never expires'}${l.allow_download === false ? ' · Downloads disabled' : ''}
+            </div>
+          </div>`;
+        }).join('');
+      });
+    }
+
+    function copyShareUrl(btn, url) {
+      navigator.clipboard.writeText(url).then(() => {
+        const old = btn.textContent;
+        btn.textContent = '✓ Copied';
+        setTimeout(() => { btn.textContent = old; }, 1600);
+      }).catch(() => alert(url));
+    }
+
+    function createShareLink(btn) {
+      const modules = [];
+      if (document.getElementById('sl_readiness').checked) modules.push('readiness');
+      if (document.getElementById('sl_closure').checked) modules.push('closure');
+      if (document.getElementById('sl_iea').checked) modules.push('iea');
+      if (!modules.length) { alert('Select at least one module to share.'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Generating…';
+      fetch('/admin/share-link/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: document.getElementById('sl_label').value,
+          modules: modules,
+          campus: document.getElementById('sl_campus').value,
+          expires_days: document.getElementById('sl_expiry').value,
+          allow_download: document.getElementById('sl_download').checked
+        })
+      }).then(r => r.json()).then(res => {
+        if (!res.ok) { alert('Error: ' + (res.error || 'Could not create link')); return; }
+        document.getElementById('sl_label').value = '';
+        loadShareLinks();
+      }).catch(() => alert('Network error creating share link'))
+        .finally(() => { btn.disabled = false; btn.textContent = '🔗 Generate Share Link'; });
+    }
+
+    function revokeShareLink(token) {
+      if (!confirm('Revoke this link? Anyone holding it will immediately lose access.')) return;
+      fetch('/admin/share-link/' + encodeURIComponent(token) + '/revoke', { method: 'POST' })
+        .then(r => r.json()).then(() => loadShareLinks());
+    }
+
+    function deleteShareLink(token) {
+      if (!confirm('Delete this link permanently?')) return;
+      fetch('/admin/share-link/' + encodeURIComponent(token) + '/delete', { method: 'POST' })
+        .then(r => r.json()).then(() => loadShareLinks());
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeFacModal(); closeShareLinkModal(); document.getElementById('addUserModal').style.display='none'; } });
   </script>
   <script src="/static/loading.js"></script>
+
+  <!-- Read-only Status Share Link Modal -->
+  <div id="shareLinkModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,37,88,0.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px); padding:20px;"
+    onclick="if(event.target===this) closeShareLinkModal()">
+    <div style="background:#fff; border-radius:16px; width:100%; max-width:720px; max-height:88vh; overflow-y:auto; padding:26px; box-shadow:0 20px 50px rgba(0,0,0,0.3); font-family:'Plus Jakarta Sans', sans-serif;">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:6px;">
+        <div>
+          <h3 style="color:#0a2558; font-size:18px; font-weight:800; margin:0;">🔗 Read-only Status Share Link</h3>
+          <p style="color:#7c8aa5; font-size:12.5px; font-weight:600; margin:4px 0 0;">
+            Generates one public URL showing every department as <strong>Submitted</strong>, <strong>Draft</strong> or
+            <strong>Not Started</strong>. Anyone with the link can view a single department or download the consolidated
+            Excel — nobody can edit or submit anything.
+          </p>
+        </div>
+        <button onclick="closeShareLinkModal()"
+          style="background:#f1f4f9; border:1px solid #dde3ee; color:#475569; border-radius:8px; width:30px; height:30px; font-size:15px; cursor:pointer; flex-shrink:0; line-height:1;">&times;</button>
+      </div>
+
+      <div style="background:#f7f9fd; border:1px solid #e3e8f2; border-radius:12px; padding:16px; margin:18px 0;">
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:11px; font-weight:800; color:#0a2558; margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em;">Link Label (who is it for?)</label>
+          <input type="text" id="sl_label" placeholder="e.g. Dean's Office — Odd Semester Review"
+            style="width:100%; padding:9px 11px; border:1px solid #dde3f0; border-radius:8px; font-size:13px; font-family:inherit; outline:none; background:#fff;">
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="display:block; font-size:11px; font-weight:800; color:#0a2558; margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em;">Campus Scope</label>
+            <select id="sl_campus" style="width:100%; padding:9px 11px; border:1px solid #dde3f0; border-radius:8px; font-size:13px; font-family:inherit; outline:none; background:#fff;">
+              <option value="All">All Campuses</option>
+              <option value="Bangalore">Bangalore</option>
+              <option value="Kochi">Kochi</option>
+              <option value="ODL">ODL</option>
+              <option value="Online">Online</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:11px; font-weight:800; color:#0a2558; margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em;">Expires After</label>
+            <select id="sl_expiry" style="width:100%; padding:9px 11px; border:1px solid #dde3f0; border-radius:8px; font-size:13px; font-family:inherit; outline:none; background:#fff;">
+              <option value="0">Never</option>
+              <option value="7">7 days</option>
+              <option value="30">30 days</option>
+              <option value="90">90 days</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:18px; flex-wrap:wrap; align-items:center; font-size:13px; font-weight:700; color:#16203a;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="sl_readiness" checked> Semester Readiness
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="sl_closure" checked> Semester Closure
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="sl_iea" checked> Innovation &amp; Emerging Areas
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="sl_download" checked> Allow Excel downloads
+          </label>
+        </div>
+
+        <button class="btn btn-gold" onclick="createShareLink(this)" style="margin-top:16px;">🔗 Generate Share Link</button>
+      </div>
+
+      <h4 style="font-size:11.5px; font-weight:800; color:#0a2558; text-transform:uppercase; letter-spacing:.06em; margin:0 0 10px;">Existing Links</h4>
+      <div id="shareLinkList"></div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+        <button class="btn btn-ghost btn-sm" onclick="closeShareLinkModal()">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Add User / Create Admin Modal -->
   <div id="addUserModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,37,88,0.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
