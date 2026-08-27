@@ -1500,6 +1500,18 @@ def iea_submissions():
             query = {'submitterEmail': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}} if user_email else {}
 
     subs = list(iea_col.find(query).sort([('school', 1), ('department', 1), ('level', 1)]))
+
+    # Resolved once for the whole list rather than per row — the dashboard
+    # greys out locked units, and an N+1 here would be paid on every load.
+    settings = get_global_settings()
+    stop_submission = bool(settings.get('iea_locked')) and not session.get('admin')
+    request_status = {}
+    if stop_submission:
+        for r in iea_edit_requests_col.find(
+                {}, {'school': 1, 'department': 1, 'level': 1, 'status': 1}):
+            request_status[(r.get('school', ''), r.get('department', ''),
+                            r.get('level', ''))] = r.get('status', '')
+
     results = []
     for s in subs:
         sid = str(s['_id'])
@@ -1511,6 +1523,11 @@ def iea_submissions():
             year_counts[y] = count
             total_entries += count
         
+        req_status = request_status.get(
+            (s.get('school', ''), s.get('department', ''), s.get('level', '')), '')
+        locked = (stop_submission and bool(s.get('submitted', False))
+                  and req_status != 'approved')
+
         results.append({
             'id': sid,
             'school': s.get('school', ''),
@@ -1526,8 +1543,11 @@ def iea_submissions():
             'submitted': bool(s.get('submitted', False)),
             'version': s.get('version', 0),
             'submittedAt': s.get('submittedAt', ''),
+            'locked': locked,
+            'editRequestStatus': req_status,
         })
-    return jsonify({'ok': True, 'submissions': results})
+    return jsonify({'ok': True, 'submissions': results,
+                    'submissionsStopped': stop_submission, 'ooaEmail': OOA_EMAIL})
 
 @app.route('/api/iea/upload', methods=['POST'])
 def iea_upload():
@@ -1915,9 +1935,25 @@ def _iea_public_request(req):
     return out
 
 
-def send_iea_edit_request_email(unit_label, requester_name, requester_email, reason):
-    """Tell the Office of Academics that a department wants to edit."""
-    admin_url = get_base_url().rstrip('/') + '/admin/iea'
+def _send_email_async(to_email, subject, html_content):
+    """Hand an email to a background thread.
+
+    SMTP can take tens of seconds — or hang outright — and these notifications
+    are best-effort: the request row is already written, so the admin queue is
+    correct whether or not the mail lands. Blocking the HTTP response on it
+    just leaves the user staring at a spinning button.
+    """
+    import threading
+    threading.Thread(target=_send_email, args=(to_email, subject, html_content),
+                     daemon=True).start()
+
+
+def send_iea_edit_request_email(unit_label, requester_name, requester_email, reason, admin_url):
+    """Tell the Office of Academics that a department wants to edit.
+
+    admin_url is passed in because get_base_url() reads request.host_url, which
+    is not available on the background thread this is dispatched to.
+    """
     html = f"""
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:32px">
       <div style="background:#0a2540;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
@@ -1941,11 +1977,12 @@ def send_iea_edit_request_email(unit_label, requester_name, requester_email, rea
       </div>
     </div>
     """
-    return _send_email(OOA_EMAIL, f'IEA Edit Access Requested — {unit_label}', html)
+    _send_email_async(OOA_EMAIL, f'IEA Edit Access Requested — {unit_label}', html)
 
 
-def send_iea_edit_approval_email(to_email, name, unit_label, admin_comment):
-    portal_url = get_base_url().rstrip('/') + '/iea'
+def send_iea_edit_approval_email(to_email, name, unit_label, admin_comment, portal_url):
+    """portal_url is passed in for the same reason as above — no request
+    context on the background thread."""
     html = f"""
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:32px">
       <div style="background:#0a2540;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
@@ -1965,7 +2002,7 @@ def send_iea_edit_approval_email(to_email, name, unit_label, admin_comment):
       </div>
     </div>
     """
-    return _send_email(to_email, f'IEA Edit Access Approved — {unit_label}', html)
+    _send_email_async(to_email, f'IEA Edit Access Approved — {unit_label}', html)
 
 
 @app.route('/api/iea/edit-request', methods=['POST'])
@@ -2003,12 +2040,13 @@ def iea_request_edit():
         }},
         upsert=True)
 
-    notified = send_iea_edit_request_email(
+    send_iea_edit_request_email(
         _iea_unit_label(school, dept, level),
         session.get('user_name', ''), session.get('user_email', ''),
-        (data.get('comment') or '').strip()[:500])
+        (data.get('comment') or '').strip()[:500],
+        get_base_url().rstrip('/') + '/admin/iea')
 
-    return jsonify({'ok': True, 'notified': bool(notified), 'ooaEmail': OOA_EMAIL,
+    return jsonify({'ok': True, 'ooaEmail': OOA_EMAIL,
                     'message': 'Your edit request has been sent to the Office of Academics.'})
 
 
@@ -2073,14 +2111,13 @@ def admin_iea_edit_request_action(rid, action):
         'decided_by': session.get('admin_email') or 'admin',
     }})
 
-    emailed = False
     if status == 'approved' and req.get('user_email'):
-        emailed = send_iea_edit_approval_email(
+        send_iea_edit_approval_email(
             req['user_email'], req.get('user_name') or 'Colleague',
             _iea_unit_label(req.get('school', ''), req.get('department', ''), req.get('level', '')),
-            admin_comment)
+            admin_comment, get_base_url().rstrip('/') + '/iea')
 
-    return jsonify({'ok': True, 'status': status, 'emailed': bool(emailed)})
+    return jsonify({'ok': True, 'status': status})
 
 
 @app.route('/admin/iea/edit-request/<rid>/delete', methods=['POST'])

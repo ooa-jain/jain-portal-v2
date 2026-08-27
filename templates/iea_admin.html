@@ -331,9 +331,6 @@
         body: JSON.stringify({ comment: note })
       }).then(function (r) { return r.json(); }).then(function (res) {
         if (!res.ok) { alert('Error: ' + (res.error || 'Could not update request')); return; }
-        if (action === 'approve' && !res.emailed) {
-          alert('Approved. The approval email could not be sent — please tell the department directly.');
-        }
         loadEditRequests();
       }).catch(function () { alert('Network error'); })
         .finally(function () { btn.disabled = false; });

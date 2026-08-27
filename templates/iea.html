@@ -1150,10 +1150,23 @@
           ? '<span class="status-badge status-draft">' + ICON.edit + ' Draft</span>'
           : '<span class="status-badge status-submitted">' + ICON.check + ' Submitted' + (s.version > 1 ? ' · v' + s.version : '') + '</span>';
         const openLabel = isDraft ? ' Open IEA Form' : ' Edit Submission';
+        // While submissions are stopped, say so on the card itself rather than
+        // offering an inviting Edit button that only refuses once clicked.
+        const locked = !!s.locked;
+        const reqStatus = s.editRequestStatus || '';
+        const lockLabel = reqStatus === 'pending'
+          ? ' Locked \u00b7 request pending'
+          : ' Locked \u2014 request edit access';
         const ayVal = s.acYear || 'AY 2025-26';
+        const lockChip = locked
+          ? '<span style="font-size:11px; background:#fff7ed; border:1px solid #fed7aa; color:#9a5b12; ' +
+              'font-weight:800; padding:2px 10px; border-radius:99px;">&#128274; ' +
+              (reqStatus === 'pending' ? 'Request pending' : 'Editing stopped') + '</span>'
+          : '';
         const headerTags = '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px;">' +
           badge +
           '<span class="semester-tag" style="font-size:11px; background:var(--navy); color:#fff; font-weight:800; padding:2px 10px; border-radius:99px;">AY: ' + escapeHtml(ayVal) + '</span>' +
+          lockChip +
         '</div>';
         return '<div class="dash-card">' +
           '<div class="dc-left">' + headerTags +
@@ -1161,7 +1174,11 @@
           '<div class="dc-sub">Last saved: ' + when + ' · ' + escapeHtml(s.school) + ' · ' + escapeHtml(s.level) + '</div>' +
           '<div><span class="dc-tag">' + ICON.layers + ' ' + entryLabel + ' across ' + YEARS.length + ' years</span></div></div>' +
           '<div class="dc-right">' +
-          '<button class="btn btn-gold" onclick="openSubmission(\'' + escapeHtml(s.school) + '\', \'' + escapeHtml(s.department) + '\', \'' + escapeHtml(s.level) + '\', \'' + escapeHtml(s.acYear || '') + '\')">' + ICON.edit + openLabel + '</button>' +
+          '<button class="' + (locked ? 'btn btn-ghost' : 'btn btn-gold') + '"' +
+            (locked ? ' style="color:#9a5b12; border-color:#fed7aa; background:#fff7ed;"' +
+                      ' title="This entry has been submitted and editing is stopped"' : '') +
+            ' onclick="openSubmission(\'' + escapeHtml(s.school) + '\', \'' + escapeHtml(s.department) + '\', \'' + escapeHtml(s.level) + '\', \'' + escapeHtml(s.acYear || '') + '\')">' +
+            (locked ? '&#128274;' + lockLabel : ICON.edit + openLabel) + '</button>' +
           '<button class="btn btn-ghost" onclick="deleteSubmission(\'' + s.id + '\', \'' + escapeHtml(s.department) + '\')" style="color:var(--danger);border-color:#f5b8b8">' + ICON.trash + ' Delete</button>' +
           '</div></div>';
       }).join('');
@@ -1839,6 +1856,12 @@
         if (banner && banner.style.display === 'block') {
           if (approved) banner.style.display = 'none';
           else showEditLockBanner({ requestStatus: 'pending' });
+        }
+        // The card behind the dialog still shows the old state — refresh it so
+        // it reads "Request pending" straight away.
+        if (typeof loadDashboard === 'function'
+            && document.getElementById('dashView').style.display !== 'none') {
+          loadDashboard();
         }
       } catch (err) {
         showToast('Network error sending the request', true);
