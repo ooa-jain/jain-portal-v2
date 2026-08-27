@@ -1072,6 +1072,14 @@
     }
 
     async function openSubmission(school, dept, level, acYear) {
+      // While submissions are stopped, an already-submitted unit must not open
+      // for editing at all — say so here rather than letting them type into a
+      // form that will refuse to save.
+      const lock = await fetchIeaLockState(school, dept, level);
+      if (lock && lock.locked) {
+        showLockedDialog(school, dept, level, lock);
+        return;
+      }
       document.getElementById('dashView').style.display = 'none';
       document.getElementById('formView').style.display = 'block';
       document.getElementById('formView').classList.add('animate-rise');
@@ -1648,10 +1656,109 @@
       } catch (err) { showToast('Submit failed: ' + err.message, true); }
     }
 
+    /* ── Locked-submission dialog ────────────────────────────────
+       Shown the moment a user tries to edit a submitted unit while
+       submissions are stopped. */
+    async function fetchIeaLockState(school, dept, level) {
+      try {
+        const qs = new URLSearchParams({ school: school, dept: dept, level: level });
+        const res = await fetch('/api/iea/edit-request/status?' + qs.toString());
+        const json = await res.json();
+        return json.ok ? json : null;
+      } catch (err) {
+        return null;   // advisory only — the API still enforces the lock
+      }
+    }
+
+    function lockedDialogEl() {
+      let el = document.getElementById('ieaLockedModal');
+      if (el) return el;
+      el = document.createElement('div');
+      el.id = 'ieaLockedModal';
+      el.style.cssText = 'position:fixed;inset:0;background:rgba(10,37,88,.58);backdrop-filter:blur(3px);' +
+        'display:none;align-items:center;justify-content:center;padding:20px;z-index:99999;' +
+        "font-family:'Plus Jakarta Sans',system-ui,sans-serif";
+      el.addEventListener('click', e => { if (e.target === el) closeLockedDialog(); });
+      document.body.appendChild(el);
+      return el;
+    }
+
+    function closeLockedDialog() {
+      const el = document.getElementById('ieaLockedModal');
+      if (el) el.style.display = 'none';
+    }
+
+    function showLockedDialog(school, dept, level, lock) {
+      const el = lockedDialogEl();
+      const ooa = (lock && lock.ooaEmail) || 'officeofacademicaffairs@jainuniversity.ac.in';
+      const status = ((lock && lock.request) || {}).status || '';
+      const unit = [dept, level, school].filter(Boolean).join(' · ');
+
+      let action;
+      if (status === 'pending') {
+        action = '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:13px 15px;' +
+          'color:#9a5b12;font-size:13px;font-weight:700">⏳ Your edit request has already been sent and is ' +
+          'waiting for approval from the Office of Academics.</div>';
+      } else {
+        action = '<button type="button" id="ieaLockedReqBtn" style="background:#f2a900;color:#3a2600;border:none;' +
+          'border-radius:9px;padding:11px 20px;font-weight:800;font-size:13.5px;cursor:pointer;' +
+          'font-family:inherit">Request edit access</button>' +
+          (status === 'rejected'
+            ? '<div style="font-size:12px;color:#b91c1c;font-weight:700;margin-top:9px">' +
+              'Your last request was rejected — you can send another.</div>'
+            : '');
+      }
+
+      el.innerHTML =
+        '<div style="background:#fff;border-radius:16px;max-width:560px;width:100%;overflow:hidden;' +
+          'box-shadow:0 30px 90px rgba(0,0,0,.3)">' +
+          '<div style="background:linear-gradient(120deg,#0a2558,#173a80);color:#fff;padding:20px 24px">' +
+            '<div style="font-size:18px;font-weight:800">🔒 This submission cannot be edited</div>' +
+            '<div style="font-size:12.5px;color:#bccbe8;font-weight:600;margin-top:4px">' + escapeHtml(unit) + '</div>' +
+          '</div>' +
+          '<div style="padding:22px 24px">' +
+            '<p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:#334155">' +
+              'This entry has already been <strong>submitted</strong>, and the Office of Academics has ' +
+              'stopped further editing. Once submitted, it cannot be changed.' +
+            '</p>' +
+            '<div style="background:#f7f9fd;border:1px solid #e3e8f2;border-left:4px solid #f2a900;' +
+              'border-radius:10px;padding:14px 16px;margin-bottom:18px">' +
+              '<div style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;' +
+                'color:#7c8aa5;margin-bottom:5px">For edit access, write to</div>' +
+              '<a href="mailto:' + escapeHtml(ooa) + '?subject=' +
+                encodeURIComponent('IEA Edit Access Request — ' + unit) +
+                '" style="font-size:14px;font-weight:800;color:#0a2558;word-break:break-all">' +
+                escapeHtml(ooa) + '</a>' +
+              '<div style="font-size:12px;color:#64748b;margin-top:7px;line-height:1.6">' +
+                'Or raise the request here — it reaches the same office and they can approve it ' +
+                'directly in the portal.</div>' +
+            '</div>' +
+            action +
+          '</div>' +
+          '<div style="padding:14px 24px;border-top:1px solid #e3e8f2;background:#fafbfe;display:flex;' +
+            'justify-content:flex-end">' +
+            '<button type="button" id="ieaLockedCloseBtn" style="background:#fff;border:1px solid #dde3f0;' +
+              'color:#475569;border-radius:9px;padding:9px 18px;font-weight:700;font-size:13px;' +
+              'cursor:pointer;font-family:inherit">Close</button>' +
+          '</div>' +
+        '</div>';
+
+      el.style.display = 'flex';
+      el.querySelector('#ieaLockedCloseBtn').addEventListener('click', closeLockedDialog);
+      const req = el.querySelector('#ieaLockedReqBtn');
+      if (req) {
+        req.addEventListener('click', () => requestIeaEditFor(req, school, dept, level));
+      }
+    }
+
     /* ── Stop-submission lock ────────────────────────────────────
        When the admin has stopped submissions, an already-submitted unit is
        read-only until an edit request is approved. The banner explains that
        and carries the request button. */
+    // Overwritten by the first lock-status response; the literal is only a
+    // fallback for when that call has not come back yet.
+    let IEA_OOA_EMAIL = 'officeofacademicaffairs@jainuniversity.ac.in';
+
     function ieaLockBannerEl() {
       let el = document.getElementById('ieaLockBanner');
       if (el) return el;
@@ -1688,8 +1795,9 @@
           '<div style="flex:1">' +
             '<div style="font-weight:800;color:#0a2558;font-size:14px;margin-bottom:5px">🔒 Submissions have been stopped</div>' +
             '<div style="font-size:12.5px;color:#475569;line-height:1.6;margin-bottom:10px">' +
-              'This department has already submitted, so the form is read-only. Request edit access — ' +
-              'once an administrator approves it, you can make changes and re-submit once.</div>' +
+              'This department has already submitted, so the form is read-only. For edit access write to ' +
+              '<a href="mailto:' + escapeHtml(IEA_OOA_EMAIL) + '" style="color:#0a2558;font-weight:800">' +
+              escapeHtml(IEA_OOA_EMAIL) + '</a>, or raise the request below — it reaches the same office.</div>' +
             action +
           '</div>' +
           '<button type="button" onclick="document.getElementById(\'ieaLockBanner\').style.display=\'none\'" ' +
@@ -1699,30 +1807,44 @@
       el.style.display = 'block';
     }
 
-    async function requestIeaEdit(btn) {
+    function requestIeaEdit(btn) {
       if (!state) return;
+      return requestIeaEditFor(btn, state.school, state.department, state.level);
+    }
+
+    async function requestIeaEditFor(btn, school, dept, level) {
       const reason = prompt('Why do you need to edit this submission? (optional)', '') || '';
+      const label = btn.textContent;
       btn.disabled = true;
       btn.textContent = 'Sending…';
       try {
         const res = await fetch('/api/iea/edit-request', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            school: state.school, department: state.department,
-            level: state.level, comment: reason
-          })
+          body: JSON.stringify({ school: school, department: dept, level: level, comment: reason })
         });
         const json = await res.json();
         if (!json.ok) { showToast(json.error || 'Could not send the request', true); return; }
+
         showToast(json.message || 'Edit request sent to the Office of Academics.');
-        showEditLockBanner({ requestStatus: json.already === 'approved' ? '' : 'pending' });
-        if (json.already === 'approved') {
-          document.getElementById('ieaLockBanner').style.display = 'none';
+        const approved = json.already === 'approved';
+
+        // Refresh whichever surface asked for it
+        const modal = document.getElementById('ieaLockedModal');
+        if (modal && modal.style.display === 'flex') {
+          if (approved) closeLockedDialog();
+          else showLockedDialog(school, dept, level,
+                                { ooaEmail: json.ooaEmail, request: { status: 'pending' } });
+        }
+        const banner = document.getElementById('ieaLockBanner');
+        if (banner && banner.style.display === 'block') {
+          if (approved) banner.style.display = 'none';
+          else showEditLockBanner({ requestStatus: 'pending' });
         }
       } catch (err) {
         showToast('Network error sending the request', true);
       } finally {
         btn.disabled = false;
+        btn.textContent = label;
       }
     }
 
@@ -1736,6 +1858,7 @@
         });
         const res = await fetch('/api/iea/edit-request/status?' + qs.toString());
         const json = await res.json();
+        if (json.ok && json.ooaEmail) IEA_OOA_EMAIL = json.ooaEmail;
         if (json.ok && json.locked) {
           showEditLockBanner({ requestStatus: (json.request || {}).status || '' });
         }

@@ -126,6 +126,10 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin2023')
 _raw_admin_emails = os.environ.get('ADMIN_EMAILS', 'santosh.ks@jainuniversity.ac.in,admin@jainuniversity.ac.in,admin@juooa.cloud')
 ADMIN_EMAILS = set(e.strip().lower() for e in _raw_admin_emails.split(',') if e.strip())
 
+# Office of Academics mailbox — shown to departments as the address to write to
+# for edit access, and copied on every IEA edit request.
+OOA_EMAIL = os.environ.get('OOA_EMAIL', 'officeofacademicaffairs@jainuniversity.ac.in')
+
 def is_admin_email(email):
     if not email:
         return False
@@ -1911,6 +1915,35 @@ def _iea_public_request(req):
     return out
 
 
+def send_iea_edit_request_email(unit_label, requester_name, requester_email, reason):
+    """Tell the Office of Academics that a department wants to edit."""
+    admin_url = get_base_url().rstrip('/') + '/admin/iea'
+    html = f"""
+    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:32px">
+      <div style="background:#0a2540;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
+        <div style="color:#fff;font-size:20px;font-weight:800">Office of Academics</div>
+        <div style="color:#94a3b8;font-size:12px;margin-top:4px">Jain (Deemed-to-be University)</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:28px;border:1px solid #e2e8f0">
+        <h2 style="color:#9a5b12;margin:0 0 16px;font-size:18px">🔓 IEA Edit Access Requested</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+          <strong>{requester_name or 'A department user'}</strong>
+          ({requester_email or 'email not recorded'}) has asked to edit the already-submitted
+          Innovation &amp; Emerging Areas entry for <strong>{unit_label}</strong>.
+        </p>
+        {f'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:18px;color:#334155;font-size:13px"><strong>Reason given:</strong> {reason}</div>' if reason else ''}
+        <p style="color:#475569;font-size:13px;line-height:1.7;margin:0 0 18px">
+          Approving opens that department for exactly one re-submission, after which it locks again.
+        </p>
+        <a href="{admin_url}" style="display:inline-block;background:#f2a900;color:#3a2600;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:800;font-size:14px">
+          Review the request &rarr;
+        </a>
+      </div>
+    </div>
+    """
+    return _send_email(OOA_EMAIL, f'IEA Edit Access Requested — {unit_label}', html)
+
+
 def send_iea_edit_approval_email(to_email, name, unit_label, admin_comment):
     portal_url = get_base_url().rstrip('/') + '/iea'
     html = f"""
@@ -1969,7 +2002,14 @@ def iea_request_edit():
             'admin_comment': '',
         }},
         upsert=True)
-    return jsonify({'ok': True, 'message': 'Your edit request has been sent to the Office of Academics.'})
+
+    notified = send_iea_edit_request_email(
+        _iea_unit_label(school, dept, level),
+        session.get('user_name', ''), session.get('user_email', ''),
+        (data.get('comment') or '').strip()[:500])
+
+    return jsonify({'ok': True, 'notified': bool(notified), 'ooaEmail': OOA_EMAIL,
+                    'message': 'Your edit request has been sent to the Office of Academics.'})
 
 
 @app.route('/api/iea/edit-request/status')
@@ -1987,6 +2027,7 @@ def iea_edit_request_status():
 
     return jsonify({
         'ok': True,
+        'ooaEmail': OOA_EMAIL,
         'submissionsStopped': bool(settings.get('iea_locked')),
         'submitted': bool(doc and doc.get('submitted')),
         'locked': locked and not _iea_edit_unlocked(school, dept, level),
