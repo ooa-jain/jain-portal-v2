@@ -1317,12 +1317,18 @@ def iea_load():
     level = request.args.get('level', '').strip()
     if not school or not dept or not level:
         return jsonify({'ok': False, 'error': 'Missing school/department/level'})
-    doc = iea_col.find_one({'$or': [
+    match = {'$or': [
         {'school': school, 'department': dept, 'level': level},
         {'school': {'$regex': f'^{re.escape(school)}$', '$options': 'i'},
          'department': {'$regex': f'^{re.escape(dept)}$', '$options': 'i'},
          'level': {'$regex': f'^{re.escape(level)}$', '$options': 'i'}}
-    ]})
+    ]}
+    # Submissions are personal: each user only ever sees their own entries for
+    # a given School/Department/Level, never a colleague's.
+    email = session.get('user_email', '').strip()
+    if email:
+        match = {'$and': [match, {'submitterEmail': {'$regex': f'^{re.escape(email)}$', '$options': 'i'}}]}
+    doc = iea_col.find_one(match)
     if not doc:
         return jsonify({'ok': True, 'submission': None})
     doc['_id'] = str(doc['_id'])
@@ -1366,6 +1372,7 @@ def iea_save():
     ac_year = (data.get('acYear') or data.get('ac_year') or 'AY 2025-26').strip()
     semester = (data.get('semester') or data.get('sem') or 'Odd Semester').strip()
 
+    email = session.get('user_email', '').strip()
     doc = {
         'school': school,
         'department': dept,
@@ -1374,10 +1381,13 @@ def iea_save():
         'semester': semester,
         'years': _iea_merge_years(data.get('years')),
         'lastUpdated': datetime.utcnow().isoformat(),
-        'submitterEmail': session.get('user_email', ''),
+        'submitterEmail': email,
         'submitterName': session.get('user_name', ''),
     }
-    iea_col.update_one({'school': school, 'department': dept, 'level': level},
+    owner_filter = {'school': school, 'department': dept, 'level': level}
+    if email:
+        owner_filter['submitterEmail'] = {'$regex': f'^{re.escape(email)}$', '$options': 'i'}
+    iea_col.update_one(owner_filter,
                        {'$set': doc, '$setOnInsert': {'createdAt': doc['lastUpdated']}},
                        upsert=True)
     return jsonify({'ok': True, 'lastUpdated': doc['lastUpdated']})
@@ -1401,7 +1411,11 @@ def iea_submit():
     semester = (data.get('semester') or data.get('sem') or 'Odd Semester').strip()
 
     now = datetime.utcnow().isoformat()
-    existing = iea_col.find_one({'school': school, 'department': dept, 'level': level})
+    email = session.get('user_email', '').strip()
+    owner_filter = {'school': school, 'department': dept, 'level': level}
+    if email:
+        owner_filter['submitterEmail'] = {'$regex': f'^{re.escape(email)}$', '$options': 'i'}
+    existing = iea_col.find_one(owner_filter)
     history = []
     if existing and existing.get('submitted'):
         history = list(existing.get('history', []))
@@ -1434,10 +1448,10 @@ def iea_submit():
         'version': version,
         'submittedAt': now,
         'history': history[-20:],
-        'submitterEmail': session.get('user_email', ''),
+        'submitterEmail': email,
         'submitterName': session.get('user_name', ''),
     }
-    iea_col.update_one({'school': school, 'department': dept, 'level': level},
+    iea_col.update_one(owner_filter,
                        {'$set': doc, '$setOnInsert': {'createdAt': now}}, upsert=True)
     return jsonify({'ok': True, 'version': version, 'submittedAt': now})
 
@@ -1447,27 +1461,16 @@ def iea_submissions():
         return jsonify({'ok': False, 'error': 'Not logged in'})
 
     user_email = session.get('user_email', '').strip()
-    user = get_user_context(user_email)
-    user_dept = user.get('department', '').strip() if user else ''
-    user_school = user.get('school', '').strip() if user else ''
 
     show_all = (request.args.get('all') == 'true')
 
     if show_all and session.get('admin'):
         query = {}
     else:
-        or_conds = []
-        if user_email:
-            or_conds.append({'submitterEmail': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}})
-        if user_dept:
-            or_conds.append({'department': {'$regex': f'^{re.escape(user_dept)}$', '$options': 'i'}})
-        if user_school and not user_dept:
-            or_conds.append({'school': {'$regex': f'^{re.escape(user_school)}$', '$options': 'i'}})
-            
-        if or_conds:
-            query = {'$or': or_conds}
-        else:
-            query = {'submitterEmail': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}} if user_email else {}
+        # Each user's dashboard only ever lists their own submissions, never a
+        # colleague's in the same department/school (this list has Edit/Delete
+        # buttons, so leaking other people's entries here isn't just visual).
+        query = {'submitterEmail': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}} if user_email else {}
 
     subs = list(iea_col.find(query).sort([('school', 1), ('department', 1), ('level', 1)]))
     results = []
@@ -1533,7 +1536,11 @@ def iea_user_delete(sid):
     if 'user_email' not in session and not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Not logged in'})
     try:
-        res = iea_col.delete_one({'_id': ObjectId(sid)})
+        query = {'_id': ObjectId(sid)}
+        if not session.get('admin'):
+            email = session.get('user_email', '').strip()
+            query['submitterEmail'] = {'$regex': f'^{re.escape(email)}$', '$options': 'i'}
+        res = iea_col.delete_one(query)
         if res.deleted_count > 0:
             return jsonify({'ok': True})
         return jsonify({'ok': False, 'error': 'Submission not found'})
