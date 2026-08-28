@@ -318,13 +318,13 @@ FACULTY_CLOSURE_SECTIONS = [
 # ══════════════════════════════════════════════════════════════════
 IEA_SCHOOLS = {
     "School of Sciences": {
-        "Department of Chemistry & Biochemistry": ["UG"],
-        "Department of Computer Science & IT": ["UG"],
-        "Department of Data Analytics & Mathematical Sciences": ["UG"],
-        "Department of Forensic Science": ["UG"],
-        "Department of Microbiology & Botany": ["UG"],
-        "Department of Physics & Electronics": ["UG"],
-        "Department of Psychology & Allied Science": ["UG"],
+        "Department of Chemistry & Biochemistry": ["UG", "PG"],
+        "Department of Computer Science & IT": ["UG", "PG"],
+        "Department of Data Analytics & Mathematical Sciences": ["UG", "PG"],
+        "Department of Forensic Science": ["UG", "PG"],
+        "Department of Microbiology & Botany": ["UG", "PG"],
+        "Department of Physics & Electronics": ["UG", "PG"],
+        "Department of Psychology & Allied Science": ["UG", "PG"],
     },
     "School of Commerce": {
         "Department of Commerce": ["UG", "PG", "Doctoral"],
@@ -339,7 +339,7 @@ IEA_SCHOOLS = {
         "Department of Electrical & Electronics Engineering": ["UG", "PG"],
         "Department of Electronics & Communication Engineering": ["UG", "PG"],
         "Department of Food Technology": ["UG", "PG"],
-        "Department of Information Science & Engineering": ["UG"],
+        "Department of Information Science & Engineering": ["UG", "PG"],
         "Department of Mechanical Engineering": ["UG", "PG"],
     },
     "School of Humanities & Social Sciences": {
@@ -362,10 +362,10 @@ IEA_SCHOOLS = {
         "Department of Allied Healthcare & Sciences": ["UG", "PG"],
     },
     "Center for Management Studies (CMS)": {
-        "Department of Management Studies": ["UG"],
+        "Department of Management Studies": ["UG", "PG"],
     },
     "CMS Business School": {
-        "Department of Management": ["PG"],
+        "Department of Management": ["UG", "PG"],
     },
     "School of Aerospace Engineering": {
         "Department of Aerospace Engineering": ["UG", "PG"],
@@ -374,8 +374,8 @@ IEA_SCHOOLS = {
         "Department of Aviation & Aerospace Management": ["UG", "PG", "Executive Programme", "Executive Postgraduate"],
     },
     "School of Sports Science & Research": {
-        "Department of Physical Education & Sports": ["UG"],
-        "Department of Sports Science": ["PG"],
+        "Department of Physical Education & Sports": ["UG", "PG"],
+        "Department of Sports Science": ["UG", "PG"],
     },
 }
 
