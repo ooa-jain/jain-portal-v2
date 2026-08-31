@@ -318,6 +318,7 @@ FACULTY_CLOSURE_SECTIONS = [
 # ══════════════════════════════════════════════════════════════════
 IEA_SCHOOLS = {
     "School of Sciences": {
+        "Department of Biotechnology and Genetics": ["UG", "PG"],
         "Department of Chemistry & Biochemistry": ["UG", "PG"],
         "Department of Computer Science & IT": ["UG", "PG"],
         "Department of Data Analytics & Mathematical Sciences": ["UG", "PG"],
