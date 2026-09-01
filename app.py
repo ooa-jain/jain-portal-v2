@@ -347,6 +347,7 @@ IEA_SCHOOLS = {
         "Department of Economics": ["UG", "PG"],
         "Department of Journalism & Mass Communication": ["UG", "PG"],
         "Department of Languages": ["UG", "PG"],
+        "Department of Performing Arts & Cultural Studies": ["UG", "PG"],
         "Department of Psychology & Allied Science": ["UG", "PG"],
         "Department of CERSSE": ["UG", "PG", "Doctoral"],
         "Department of Humanities & Social Sciences": ["UG", "PG", "Doctoral"],
