@@ -79,6 +79,8 @@ def robots_txt():
     body = (
         "User-agent: *\n"
         "Allow: /\n"
+        # Tokenised read-only status links — keep them out of search results
+        "Disallow: /share/\n"
         "Sitemap: https://jain-sarathi.juooa.cloud/sitemap.xml\n"
     )
     return app.response_class(body, mimetype='text/plain')
@@ -115,12 +117,18 @@ faculty_submissions_col = db['faculty_submissions']  # Faculty's individual chec
 iea_col = db['iea_submissions']  # Innovation & Emerging Areas programme/course submissions
 users_col = db['users']
 settings_col = db['settings']
+share_links_col = db['share_links']  # Admin-generated read-only status share links
+iea_edit_requests_col = db['iea_edit_requests']  # Per-unit unlock requests when IEA submissions are stopped
 
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin2023')
 
 _raw_admin_emails = os.environ.get('ADMIN_EMAILS', 'santosh.ks@jainuniversity.ac.in,admin@jainuniversity.ac.in,admin@juooa.cloud')
 ADMIN_EMAILS = set(e.strip().lower() for e in _raw_admin_emails.split(',') if e.strip())
+
+# Office of Academics mailbox — shown to departments as the address to write to
+# for edit access, and copied on every IEA edit request.
+OOA_EMAIL = os.environ.get('OOA_EMAIL', 'officeofacademicaffairs@jainuniversity.ac.in')
 
 def is_admin_email(email):
     if not email:
@@ -717,6 +725,9 @@ def get_global_settings():
     settings.setdefault('closure_deadline', '')
     settings.setdefault('iea_enabled', True)
     settings.setdefault('iea_deadline', '')
+    # Stop-submission switch: a submitted IEA unit becomes read-only until an
+    # admin approves an edit request for it.
+    settings.setdefault('iea_locked', False)
     settings.setdefault('enabled_years', ['2024-25', '2025-26', '2026-27', '2027-28'])
     settings.setdefault('enabled_semesters', ['Even', 'Odd'])
     return settings
@@ -1191,6 +1202,7 @@ def _iea_recent_activity(docs):
             status = 'Draft saved'
         rows.append({
             'day': day,
+            'id': str(d.get('_id', '')),
             'school': d.get('school', ''),
             'department': d.get('department', ''),
             'level': d.get('level', ''),
@@ -1215,7 +1227,7 @@ def _iea_calendar_events(docs):
     """
     days = {}
 
-    def add(stamp, dept_doc, kind, label, entries, person):
+    def add(stamp, dept_doc, kind, label, entries, person, version=0):
         dt = _iea_parse_dt(stamp)
         if not dt:
             return
@@ -1224,6 +1236,10 @@ def _iea_calendar_events(docs):
         days.setdefault(key, []).append({
             'kind': kind,                      # submitted | draft | started
             'label': label,
+            # Carried so a re-submission row can open its before/after diff.
+            'id': str(dept_doc.get('_id', '')),
+            'version': version,
+            'date': key,
             'school': dept_doc.get('school', ''),
             'department': dept_doc.get('department', ''),
             'level': dept_doc.get('level', ''),
@@ -1239,7 +1255,7 @@ def _iea_calendar_events(docs):
         for v in versions:
             num = v.get('version') or 1
             label = 'Submitted' if num == 1 else f'Re-submitted · version {num}'
-            add(v.get('at'), d, 'submitted', label, v.get('entries', 0), v.get('by') or who)
+            add(v.get('at'), d, 'submitted', label, v.get('entries', 0), v.get('by') or who, num)
 
         # A draft save that is not itself one of the submitted versions.
         last_edit = _iea_parse_dt(d.get('lastUpdated'))
@@ -1331,34 +1347,44 @@ def iea_load():
     doc.pop('history', None)
     return jsonify({'ok': True, 'submission': doc})
 
-def iea_write_blocked():
-    """Module-disabled / deadline check for IEA writes.
+def iea_write_blocked(school='', dept='', level=''):
+    """Module-disabled / deadline / stop-submission check for IEA writes.
 
     The readiness and closure forms are blocked at page level, but IEA is a
     single-page app — so the same rules have to be enforced on the API.
-    Returns an error message when the write must be refused, else None.
+    Returns a payload to merge into the error response, or None to allow.
     """
     if session.get('admin'):
         return None
     settings = get_global_settings()
     if not settings.get('iea_enabled', True):
-        return 'The Innovation & Emerging Areas module is currently closed by the administrator.'
+        return {'error': 'The Innovation & Emerging Areas module is currently closed by the administrator.'}
     if is_deadline_passed(settings.get('iea_deadline')) \
             and not has_access_override(session.get('user_email'), 'iea'):
-        return 'The submission deadline for Innovation & Emerging Areas has passed. Please request late submission access.'
+        return {'error': 'The submission deadline for Innovation & Emerging Areas has passed. Please request late submission access.'}
+
+    # Stop-submission: a unit that is already submitted is frozen until an
+    # admin approves an edit request for it.
+    if settings.get('iea_locked') and school and dept and level:
+        doc = iea_col.find_one(_iea_unit_query(school, dept, level))
+        if doc and doc.get('submitted') and not _iea_edit_unlocked(school, dept, level):
+            req = _iea_edit_request(school, dept, level)
+            return {'error': IEA_LOCKED_MESSAGE,
+                    'needsEditRequest': True,
+                    'requestStatus': (req or {}).get('status', '')}
     return None
 
 @app.route('/api/iea/save', methods=['POST'])
 def iea_save():
     if 'user_email' not in session and not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Not logged in'})
-    blocked = iea_write_blocked()
-    if blocked:
-        return jsonify({'ok': False, 'error': blocked})
     data = request.json or {}
     school = (data.get('school') or '').strip()
     dept = (data.get('department') or '').strip()
     level = (data.get('level') or '').strip()
+    blocked = iea_write_blocked(school, dept, level)
+    if blocked:
+        return jsonify({'ok': False, **blocked})
     if school not in IEA_SCHOOLS or dept not in IEA_SCHOOLS.get(school, {}) \
             or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
         return jsonify({'ok': False, 'error': 'Invalid School / Department / Programme Level'})
@@ -1386,13 +1412,13 @@ def iea_save():
 def iea_submit():
     if 'user_email' not in session and not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Not logged in'})
-    blocked = iea_write_blocked()
-    if blocked:
-        return jsonify({'ok': False, 'error': blocked})
     data = request.json or {}
     school = (data.get('school') or '').strip()
     dept = (data.get('department') or '').strip()
     level = (data.get('level') or '').strip()
+    blocked = iea_write_blocked(school, dept, level)
+    if blocked:
+        return jsonify({'ok': False, **blocked})
     if school not in IEA_SCHOOLS or dept not in IEA_SCHOOLS.get(school, {}) \
             or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
         return jsonify({'ok': False, 'error': 'Invalid School / Department / Programme Level'})
@@ -1439,6 +1465,10 @@ def iea_submit():
     }
     iea_col.update_one({'school': school, 'department': dept, 'level': level},
                        {'$set': doc, '$setOnInsert': {'createdAt': now}}, upsert=True)
+    # An approved edit covers exactly one re-submission — spend it now, so the
+    # unit re-locks instead of staying open indefinitely.
+    if not session.get('admin'):
+        _iea_consume_edit_approval(school, dept, level)
     return jsonify({'ok': True, 'version': version, 'submittedAt': now})
 
 @app.route('/api/iea/submissions')
@@ -1470,6 +1500,18 @@ def iea_submissions():
             query = {'submitterEmail': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}} if user_email else {}
 
     subs = list(iea_col.find(query).sort([('school', 1), ('department', 1), ('level', 1)]))
+
+    # Resolved once for the whole list rather than per row — the dashboard
+    # greys out locked units, and an N+1 here would be paid on every load.
+    settings = get_global_settings()
+    stop_submission = bool(settings.get('iea_locked')) and not session.get('admin')
+    request_status = {}
+    if stop_submission:
+        for r in iea_edit_requests_col.find(
+                {}, {'school': 1, 'department': 1, 'level': 1, 'status': 1}):
+            request_status[(r.get('school', ''), r.get('department', ''),
+                            r.get('level', ''))] = r.get('status', '')
+
     results = []
     for s in subs:
         sid = str(s['_id'])
@@ -1481,6 +1523,11 @@ def iea_submissions():
             year_counts[y] = count
             total_entries += count
         
+        req_status = request_status.get(
+            (s.get('school', ''), s.get('department', ''), s.get('level', '')), '')
+        locked = (stop_submission and bool(s.get('submitted', False))
+                  and req_status != 'approved')
+
         results.append({
             'id': sid,
             'school': s.get('school', ''),
@@ -1496,8 +1543,11 @@ def iea_submissions():
             'submitted': bool(s.get('submitted', False)),
             'version': s.get('version', 0),
             'submittedAt': s.get('submittedAt', ''),
+            'locked': locked,
+            'editRequestStatus': req_status,
         })
-    return jsonify({'ok': True, 'submissions': results})
+    return jsonify({'ok': True, 'submissions': results,
+                    'submissionsStopped': stop_submission, 'ooaEmail': OOA_EMAIL})
 
 @app.route('/api/iea/upload', methods=['POST'])
 def iea_upload():
@@ -1592,6 +1642,492 @@ def admin_iea_delete(sid):
     if not session.get('admin'):
         return jsonify({'ok': False, 'error': 'Unauthorized'})
     iea_col.delete_one({'_id': ObjectId(sid)})
+    return jsonify({'ok': True})
+
+# ═════════════════════════════════════════════════════════════════════
+# IEA VERSION HISTORY — every re-submission stores a full snapshot, so
+# any version can be replayed and compared field-by-field against the
+# one before it ("what did they change, and when").
+# ═════════════════════════════════════════════════════════════════════
+
+def _iea_section_by_key(key):
+    return next((s for s in IEA_SECTIONS if s['key'] == key), None)
+
+
+def _iea_entry_fields(section, entry):
+    """Flatten one entry into ordered (key, label, value) triples.
+
+    Covers the section's own fields plus the evidence block, so a change to
+    an evidence link or a note shows up in the diff like any other edit.
+    """
+    entry = entry if isinstance(entry, dict) else {}
+    out = []
+    for f in (section or {}).get('fields', []):
+        out.append((f['k'], f['l'], str(entry.get(f['k'], '') or '').strip()))
+
+    types = entry.get('evidenceTypes')
+    if isinstance(types, list):
+        out.append(('evidenceTypes', 'Evidence types',
+                    ', '.join(sorted(str(t).strip() for t in types if str(t or '').strip()))))
+    out.append(('evidenceLink', 'Evidence link', str(entry.get('evidenceLink', '') or '').strip()))
+    out.append(('evidenceMissing', 'Reason evidence is missing',
+                str(entry.get('evidenceMissing', '') or '').strip()))
+
+    details = entry.get('evidenceDetails')
+    if isinstance(details, dict):
+        for etype in sorted(details.keys()):
+            d = details.get(etype)
+            if not isinstance(d, dict):
+                continue
+            for sub in ('fileName', 'fileUrl', 'driveLink', 'notes'):
+                val = str(d.get(sub, '') or '').strip()
+                if val:
+                    out.append((f'evidenceDetails.{etype}.{sub}',
+                                f'{etype} — {sub}', val))
+    return out
+
+
+def _iea_entry_label(section, entry, idx):
+    """A human handle for an entry — its first non-empty text field."""
+    for f in (section or {}).get('fields', []):
+        val = str((entry or {}).get(f['k'], '') or '').strip()
+        if val:
+            return val[:90]
+    return f'Entry #{idx + 1}'
+
+
+def _iea_entry_summary(section, entry, idx):
+    return {
+        'id': (entry or {}).get('id', ''),
+        'label': _iea_entry_label(section, entry, idx),
+        'fields': [{'k': k, 'l': l, 'v': v}
+                   for k, l, v in _iea_entry_fields(section, entry) if v],
+    }
+
+
+def _iea_match_entries(before_list, after_list):
+    """Pair up entries across two versions.
+
+    Entries carry a stable client-generated id, so ids drive the match; the
+    index fallback keeps rows written before ids existed from showing up as
+    a delete plus an unrelated add.
+    """
+    before_list = [e for e in (before_list or []) if isinstance(e, dict)]
+    after_list = [e for e in (after_list or []) if isinstance(e, dict)]
+
+    before_by_id = {e['id']: (i, e) for i, e in enumerate(before_list)
+                    if str(e.get('id') or '').strip()}
+    after_by_id = {e['id']: (i, e) for i, e in enumerate(after_list)
+                   if str(e.get('id') or '').strip()}
+
+    pairs, used_before, used_after = [], set(), set()
+    for eid, (ai, aentry) in after_by_id.items():
+        if eid in before_by_id:
+            bi, bentry = before_by_id[eid]
+            pairs.append((bi, bentry, ai, aentry))
+            used_before.add(bi)
+            used_after.add(ai)
+
+    # Anything without an id falls back to positional pairing.
+    left = [(i, e) for i, e in enumerate(before_list) if i not in used_before]
+    right = [(i, e) for i, e in enumerate(after_list) if i not in used_after]
+    if not before_by_id or not after_by_id:
+        for (bi, bentry), (ai, aentry) in zip(left, right):
+            pairs.append((bi, bentry, ai, aentry))
+            used_before.add(bi)
+            used_after.add(ai)
+
+    removed = [(i, e) for i, e in enumerate(before_list) if i not in used_before]
+    added = [(i, e) for i, e in enumerate(after_list) if i not in used_after]
+    return pairs, added, removed
+
+
+def _iea_diff_years(before_years, after_years):
+    """Field-level diff between two IEA snapshots.
+
+    Only years and sections that actually changed are returned, so the UI can
+    render the whole thing without filtering.
+    """
+    before = _iea_merge_years(before_years)
+    after = _iea_merge_years(after_years)
+
+    years_out = []
+    totals = {'added': 0, 'removed': 0, 'modified': 0, 'fields': 0}
+
+    for year in IEA_YEARS:
+        sections_out = []
+        for s in IEA_SECTIONS:
+            b_list = (before.get(year) or {}).get(s['key']) or []
+            a_list = (after.get(year) or {}).get(s['key']) or []
+            if not b_list and not a_list:
+                continue
+
+            pairs, added, removed = _iea_match_entries(b_list, a_list)
+
+            modified = []
+            for bi, bentry, ai, aentry in sorted(pairs, key=lambda p: p[2]):
+                b_fields = {k: (l, v) for k, l, v in _iea_entry_fields(s, bentry)}
+                a_fields = {k: (l, v) for k, l, v in _iea_entry_fields(s, aentry)}
+                changed = []
+                for k in list(a_fields.keys()) + [k for k in b_fields if k not in a_fields]:
+                    b_label, b_val = b_fields.get(k, ('', ''))
+                    a_label, a_val = a_fields.get(k, ('', ''))
+                    if b_val == a_val:
+                        continue
+                    changed.append({'k': k, 'l': a_label or b_label or k,
+                                    'before': b_val, 'after': a_val})
+                if changed:
+                    modified.append({
+                        'id': aentry.get('id', '') or bentry.get('id', ''),
+                        'label': _iea_entry_label(s, aentry, ai),
+                        'beforeLabel': _iea_entry_label(s, bentry, bi),
+                        'fields': changed,
+                    })
+                    totals['fields'] += len(changed)
+
+            add_rows = [_iea_entry_summary(s, e, i) for i, e in added]
+            rem_rows = [_iea_entry_summary(s, e, i) for i, e in removed]
+            if not (add_rows or rem_rows or modified):
+                continue
+
+            totals['added'] += len(add_rows)
+            totals['removed'] += len(rem_rows)
+            totals['modified'] += len(modified)
+            sections_out.append({
+                'key': s['key'], 'title': s['title'], 'color': s.get('color', '#0a2558'),
+                'added': add_rows, 'removed': rem_rows, 'modified': modified,
+            })
+
+        if sections_out:
+            years_out.append({'year': year, 'sections': sections_out})
+
+    totals['changed'] = totals['added'] + totals['removed'] + totals['modified']
+    return {'summary': totals, 'years': years_out}
+
+
+def _iea_version_snapshots(doc):
+    """Every stored version of a doc, oldest first, each with its years blob."""
+    snaps = []
+    for h in (doc.get('history') or []):
+        if not isinstance(h, dict):
+            continue
+        snaps.append({
+            'version': h.get('version', 1),
+            'at': h.get('submittedAt') or h.get('lastUpdated') or '',
+            'by': h.get('submitterName') or h.get('submitterEmail') or '',
+            'years': h.get('years'),
+        })
+    if doc.get('submitted'):
+        snaps.append({
+            'version': doc.get('version', 1),
+            'at': doc.get('submittedAt') or doc.get('lastUpdated') or '',
+            'by': doc.get('submitterName') or doc.get('submitterEmail') or '',
+            'years': doc.get('years'),
+            'current': True,
+        })
+    snaps.sort(key=lambda s: s.get('version') or 0)
+    return snaps
+
+
+def _iea_find_doc(sid):
+    try:
+        return iea_col.find_one({'_id': ObjectId(sid)})
+    except Exception:
+        return None
+
+
+@app.route('/api/iea/versions/<sid>')
+def iea_versions(sid):
+    """Version timeline for one IEA unit — no login needed beyond the page
+    that renders it, which is already access-controlled."""
+    doc = _iea_find_doc(sid)
+    if not doc:
+        return jsonify({'ok': False, 'error': 'Submission not found'}), 404
+    snaps = _iea_version_snapshots(doc)
+    return jsonify({'ok': True, 'unit': {
+        'id': str(doc['_id']),
+        'school': doc.get('school', ''),
+        'department': doc.get('department', ''),
+        'level': doc.get('level', ''),
+    }, 'versions': [{
+        'version': s['version'], 'at': s['at'], 'by': s['by'],
+        'entries': _iea_count_entries(s['years']),
+        'current': bool(s.get('current')),
+    } for s in snaps]})
+
+
+@app.route('/api/iea/diff/<sid>/<int:version>')
+def iea_diff(sid, version):
+    """What changed in a given version, against the version before it."""
+    doc = _iea_find_doc(sid)
+    if not doc:
+        return jsonify({'ok': False, 'error': 'Submission not found'}), 404
+
+    snaps = _iea_version_snapshots(doc)
+    after = next((s for s in snaps if (s.get('version') or 0) == version), None)
+    if not after:
+        return jsonify({'ok': False, 'error': f'Version {version} was not recorded for this department.'}), 404
+
+    earlier = [s for s in snaps if (s.get('version') or 0) < version]
+    before = earlier[-1] if earlier else None
+
+    return jsonify({
+        'ok': True,
+        'unit': {
+            'id': str(doc['_id']),
+            'school': doc.get('school', ''),
+            'department': doc.get('department', ''),
+            'level': doc.get('level', ''),
+        },
+        'version': version,
+        'isFirst': before is None,
+        'after': {'version': after['version'], 'at': after['at'], 'by': after['by'],
+                  'entries': _iea_count_entries(after['years'])},
+        'before': ({'version': before['version'], 'at': before['at'], 'by': before['by'],
+                    'entries': _iea_count_entries(before['years'])} if before else None),
+        'diff': _iea_diff_years(before['years'] if before else None, after['years']),
+    })
+
+# ═════════════════════════════════════════════════════════════════════
+# IEA SUBMISSION LOCK — when the admin switches "Stop submission" on, a
+# unit that has already been submitted becomes read-only. To change it the
+# department raises an edit request; an admin approves it, which unlocks
+# that unit for exactly one more submission.
+# ═════════════════════════════════════════════════════════════════════
+
+IEA_LOCKED_MESSAGE = ('This submission is locked. Submissions have been stopped by the '
+                      'Office of Academics — request edit access to make changes.')
+
+
+def _iea_unit_query(school, dept, level):
+    return {'school': school, 'department': dept, 'level': level}
+
+
+def _iea_unit_label(school, dept, level):
+    return ' · '.join(x for x in (school, dept, level) if x)
+
+
+def _iea_edit_request(school, dept, level):
+    """The live edit request for a unit, whatever its state."""
+    if not (school and dept and level):
+        return None
+    return iea_edit_requests_col.find_one(_iea_unit_query(school, dept, level))
+
+
+def _iea_edit_unlocked(school, dept, level):
+    """True when an admin has approved an edit that has not been used yet."""
+    req = _iea_edit_request(school, dept, level)
+    return bool(req and req.get('status') == 'approved')
+
+
+def _iea_consume_edit_approval(school, dept, level):
+    """An approved edit is good for one submission — spend it here."""
+    iea_edit_requests_col.update_one(
+        dict(_iea_unit_query(school, dept, level), status='approved'),
+        {'$set': {'status': 'used', 'used_at': datetime.utcnow().isoformat()}})
+
+
+def _iea_public_request(req):
+    if not req:
+        return None
+    out = dict(req)
+    out['_id'] = str(req['_id'])
+    return out
+
+
+def _send_email_async(to_email, subject, html_content):
+    """Hand an email to a background thread.
+
+    SMTP can take tens of seconds — or hang outright — and these notifications
+    are best-effort: the request row is already written, so the admin queue is
+    correct whether or not the mail lands. Blocking the HTTP response on it
+    just leaves the user staring at a spinning button.
+    """
+    import threading
+    threading.Thread(target=_send_email, args=(to_email, subject, html_content),
+                     daemon=True).start()
+
+
+def send_iea_edit_request_email(unit_label, requester_name, requester_email, reason, admin_url):
+    """Tell the Office of Academics that a department wants to edit.
+
+    admin_url is passed in because get_base_url() reads request.host_url, which
+    is not available on the background thread this is dispatched to.
+    """
+    html = f"""
+    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:32px">
+      <div style="background:#0a2540;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
+        <div style="color:#fff;font-size:20px;font-weight:800">Office of Academics</div>
+        <div style="color:#94a3b8;font-size:12px;margin-top:4px">Jain (Deemed-to-be University)</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:28px;border:1px solid #e2e8f0">
+        <h2 style="color:#9a5b12;margin:0 0 16px;font-size:18px">🔓 IEA Edit Access Requested</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+          <strong>{requester_name or 'A department user'}</strong>
+          ({requester_email or 'email not recorded'}) has asked to edit the already-submitted
+          Innovation &amp; Emerging Areas entry for <strong>{unit_label}</strong>.
+        </p>
+        {f'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:18px;color:#334155;font-size:13px"><strong>Reason given:</strong> {reason}</div>' if reason else ''}
+        <p style="color:#475569;font-size:13px;line-height:1.7;margin:0 0 18px">
+          Approving opens that department for exactly one re-submission, after which it locks again.
+        </p>
+        <a href="{admin_url}" style="display:inline-block;background:#f2a900;color:#3a2600;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:800;font-size:14px">
+          Review the request &rarr;
+        </a>
+      </div>
+    </div>
+    """
+    _send_email_async(OOA_EMAIL, f'IEA Edit Access Requested — {unit_label}', html)
+
+
+def send_iea_edit_approval_email(to_email, name, unit_label, admin_comment, portal_url):
+    """portal_url is passed in for the same reason as above — no request
+    context on the background thread."""
+    html = f"""
+    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:32px">
+      <div style="background:#0a2540;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
+        <div style="color:#fff;font-size:20px;font-weight:800">Office of Academics</div>
+        <div style="color:#94a3b8;font-size:12px;margin-top:4px">Jain (Deemed-to-be University)</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:28px;border:1px solid #e2e8f0">
+        <h2 style="color:#065f46;margin:0 0 16px;font-size:18px">✅ Edit Access Approved — Innovation &amp; Emerging Areas</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 12px">Dear {name},</p>
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">
+          Your request to edit the Innovation &amp; Emerging Areas submission for
+          <strong>{unit_label}</strong> has been approved. You may now open the form and
+          re-submit. The approval covers <strong>one</strong> re-submission.
+        </p>
+        {f'<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:8px;padding:14px;margin-bottom:18px;color:#0369a1;font-size:13px"><strong>Note from the administrator:</strong> {admin_comment}</div>' if admin_comment else ''}
+        <a href="{portal_url}" style="display:inline-block;background:#0a2540;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px">Open IEA Form &rarr;</a>
+      </div>
+    </div>
+    """
+    _send_email_async(to_email, f'IEA Edit Access Approved — {unit_label}', html)
+
+
+@app.route('/api/iea/edit-request', methods=['POST'])
+def iea_request_edit():
+    """A department asks for permission to change a locked submission."""
+    if 'user_email' not in session:
+        return jsonify({'ok': False, 'error': 'Not logged in'}), 401
+
+    data = request.json or {}
+    school = (data.get('school') or '').strip()
+    dept = (data.get('department') or '').strip()
+    level = (data.get('level') or '').strip()
+    if school not in IEA_SCHOOLS or dept not in IEA_SCHOOLS.get(school, {}) \
+            or level not in IEA_SCHOOLS.get(school, {}).get(dept, []):
+        return jsonify({'ok': False, 'error': 'Invalid School / Department / Programme Level'})
+
+    existing = _iea_edit_request(school, dept, level)
+    if existing and existing.get('status') == 'approved':
+        return jsonify({'ok': True, 'already': 'approved',
+                        'message': 'Edit access is already approved — you can edit and re-submit now.'})
+    if existing and existing.get('status') == 'pending':
+        return jsonify({'ok': True, 'already': 'pending',
+                        'message': 'Your earlier request is still awaiting approval.'})
+
+    iea_edit_requests_col.update_one(
+        _iea_unit_query(school, dept, level),
+        {'$set': {
+            'school': school, 'department': dept, 'level': level,
+            'user_email': session.get('user_email', ''),
+            'user_name': session.get('user_name', ''),
+            'comment': (data.get('comment') or '').strip()[:500],
+            'status': 'pending',
+            'timestamp': datetime.utcnow().isoformat(),
+            'admin_comment': '',
+        }},
+        upsert=True)
+
+    send_iea_edit_request_email(
+        _iea_unit_label(school, dept, level),
+        session.get('user_name', ''), session.get('user_email', ''),
+        (data.get('comment') or '').strip()[:500],
+        get_base_url().rstrip('/') + '/admin/iea')
+
+    return jsonify({'ok': True, 'ooaEmail': OOA_EMAIL,
+                    'message': 'Your edit request has been sent to the Office of Academics.'})
+
+
+@app.route('/api/iea/edit-request/status')
+def iea_edit_request_status():
+    """Does this unit need an edit request, and where does it stand?"""
+    school = (request.args.get('school') or '').strip()
+    dept = (request.args.get('dept') or request.args.get('department') or '').strip()
+    level = (request.args.get('level') or '').strip()
+
+    settings = get_global_settings()
+    doc = iea_col.find_one(_iea_unit_query(school, dept, level)) if school and dept and level else None
+    req = _iea_edit_request(school, dept, level)
+    locked = bool(settings.get('iea_locked')) and bool(doc and doc.get('submitted')) \
+        and not session.get('admin')
+
+    return jsonify({
+        'ok': True,
+        'ooaEmail': OOA_EMAIL,
+        'submissionsStopped': bool(settings.get('iea_locked')),
+        'submitted': bool(doc and doc.get('submitted')),
+        'locked': locked and not _iea_edit_unlocked(school, dept, level),
+        'unlocked': _iea_edit_unlocked(school, dept, level),
+        'request': ({'status': req.get('status', ''), 'timestamp': req.get('timestamp', ''),
+                     'comment': req.get('comment', ''),
+                     'admin_comment': req.get('admin_comment', '')} if req else None),
+    })
+
+
+@app.route('/api/admin/iea/edit-requests')
+def admin_iea_edit_requests():
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    reqs = [_iea_public_request(r) for r in
+            iea_edit_requests_col.find().sort('timestamp', -1).limit(100)]
+    return jsonify({'ok': True, 'requests': reqs,
+                    'pending': sum(1 for r in reqs if r.get('status') == 'pending')})
+
+
+@app.route('/admin/iea/edit-request/<rid>/<action>', methods=['POST'])
+def admin_iea_edit_request_action(rid, action):
+    """Approve or reject one edit request. Approving unlocks the unit for a
+    single re-submission; rejecting leaves it locked."""
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    if action not in ('approve', 'reject'):
+        return jsonify({'ok': False, 'error': 'Unknown action'}), 400
+
+    try:
+        req = iea_edit_requests_col.find_one({'_id': ObjectId(rid)})
+    except Exception:
+        req = None
+    if not req:
+        return jsonify({'ok': False, 'error': 'Request not found'}), 404
+
+    admin_comment = ((request.json or {}).get('comment') or '').strip()[:500]
+    status = 'approved' if action == 'approve' else 'rejected'
+    iea_edit_requests_col.update_one({'_id': req['_id']}, {'$set': {
+        'status': status,
+        'admin_comment': admin_comment,
+        'decided_at': datetime.utcnow().isoformat(),
+        'decided_by': session.get('admin_email') or 'admin',
+    }})
+
+    if status == 'approved' and req.get('user_email'):
+        send_iea_edit_approval_email(
+            req['user_email'], req.get('user_name') or 'Colleague',
+            _iea_unit_label(req.get('school', ''), req.get('department', ''), req.get('level', '')),
+            admin_comment, get_base_url().rstrip('/') + '/iea')
+
+    return jsonify({'ok': True, 'status': status})
+
+
+@app.route('/admin/iea/edit-request/<rid>/delete', methods=['POST'])
+def admin_iea_edit_request_delete(rid):
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    try:
+        iea_edit_requests_col.delete_one({'_id': ObjectId(rid)})
+    except Exception:
+        return jsonify({'ok': False, 'error': 'Request not found'}), 404
     return jsonify({'ok': True})
 
 def _iea_send_workbook(docs, year, name_hint):
@@ -2669,6 +3205,9 @@ def save_settings():
         update[mod['deadline_key']] = data.get(mod['deadline_key'],
                                                prev_settings.get(mod['deadline_key'], ''))
 
+    # Same partial-save rule as the module switches above.
+    update['iea_locked'] = bool(data.get('iea_locked', prev_settings.get('iea_locked', False)))
+
     settings_col.update_one({'_id': 'global'}, {'$set': update}, upsert=True)
 
     # Broadcast a notification when a module is opened or its deadline moves —
@@ -3048,6 +3587,463 @@ def export_all():
     return send_file(buf, as_attachment=True,
                      download_name=f"SemReadiness_ALL_{datetime.utcnow().strftime('%Y%m%d')}.xlsx",
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+# ═════════════════════════════════════════════════════════════════════
+# READ-ONLY SHARE LINK — admin generates one URL that anyone can open to
+# see every department's Readiness / Closure status (Submitted, Draft or
+# Not Started), drill into a single department, and download the Excel
+# for one department or for all of them at once.
+# ═════════════════════════════════════════════════════════════════════
+
+SHARE_MODULES = ['readiness', 'closure', 'iea']
+
+
+def _share_now():
+    return datetime.utcnow().isoformat()
+
+
+def _share_public(link):
+    """Strip the Mongo id and hand back a JSON-safe copy of a share link."""
+    if not link:
+        return None
+    out = dict(link)
+    out['_id'] = str(link['_id'])
+    out['url'] = get_base_url().rstrip('/') + '/share/' + link['token']
+    out['expired'] = _share_is_expired(link)
+    return out
+
+
+def _share_is_expired(link):
+    expires = (link or {}).get('expires_at') or ''
+    if not expires:
+        return False
+    try:
+        return datetime.utcnow() > datetime.fromisoformat(expires)
+    except Exception:
+        return False
+
+
+def _get_valid_share(token):
+    """Return the share link for this token, or None when it is missing,
+    revoked or past its expiry."""
+    if not token:
+        return None
+    link = share_links_col.find_one({'token': token})
+    if not link or not link.get('active', True) or _share_is_expired(link):
+        return None
+    return link
+
+
+def _share_checklist_stats(doc):
+    """Yes / No / N-A / blank tallies for whichever checklist this doc carries."""
+    form_type = doc.get('form_type', 'readiness')
+    if form_type == 'closure':
+        report = doc.get('hodReport', {}) or {}
+        filled = sum(1 for v in report.values()
+                     if isinstance(v, dict) and (v.get('text') or v.get('remark') or v.get('status')))
+        return {'yes': filled, 'no': 0, 'na': 0,
+                'blank': max(len(HOD_CLOSURE_SECTIONS) - filled, 0),
+                'total': len(HOD_CLOSURE_SECTIONS)}
+
+    chk = doc.get('hodChecklist', {}) or {}
+    vals = [v for v in chk.values() if isinstance(v, dict)]
+    total = sum(len(sec['items']) for sec in HOD_SECTIONS)
+    yes = sum(1 for v in vals if v.get('status') == 'Yes')
+    no = sum(1 for v in vals if v.get('status') == 'No')
+    na = sum(1 for v in vals if v.get('status') == 'N/A')
+    return {'yes': yes, 'no': no, 'na': na,
+            'blank': max(total - (yes + no + na), 0), 'total': total}
+
+
+def _share_row(doc, faculty_counts):
+    """One lightweight row per submission — enough for the summary table
+    without shipping every checklist remark to the browser."""
+    idt = doc.get('identity', {}) or {}
+    sid = str(doc['_id'])
+    return {
+        'id': sid,
+        'dept': idt.get('dept', '') or '',
+        'campus': idt.get('campus', '') or '',
+        'hodName': idt.get('hodName', '') or idt.get('hod', '') or '',
+        'hodEmail': idt.get('hodEmail', '') or idt.get('email', '') or '',
+        'semester': idt.get('semester', '') or idt.get('sem', '') or '',
+        'acYear': idt.get('acYear', '') or idt.get('ac_year', '') or '',
+        'form_type': doc.get('form_type', 'readiness') or 'readiness',
+        'draft': bool(doc.get('_draft', False)),
+        'timestamp': doc.get('timestamp', '') or '',
+        'programs': len(doc.get('programs', []) or []),
+        'faculty_count': faculty_counts.get(sid, 0),
+        'checklist': _share_checklist_stats(doc),
+    }
+
+
+def _share_dataset(link):
+    """Everything the public share page needs in one payload."""
+    modules = [m for m in (link.get('modules') or SHARE_MODULES) if m in SHARE_MODULES] or SHARE_MODULES
+    form_modules = [m for m in modules if m in ('readiness', 'closure')]
+
+    # Filtered in Python rather than in the query: rows written before
+    # form_type existed carry no such field and must still count as readiness.
+    docs = [d for d in submissions_col.find().sort('timestamp', -1)
+            if (d.get('form_type') or 'readiness') in form_modules]
+
+    campus = (link.get('campus') or 'All').strip()
+    if campus and campus != 'All':
+        docs = [d for d in docs if (d.get('identity', {}) or {}).get('campus') == campus]
+
+    faculty_counts = {}
+    for row in faculty_submissions_col.aggregate([
+        {'$group': {'_id': '$parent_submission_id', 'count': {'$sum': 1}}}
+    ]):
+        faculty_counts[row['_id']] = row['count']
+
+    rows = [_share_row(d, faculty_counts) for d in docs]
+
+    settings = get_global_settings()
+    return {
+        'rows': rows,
+        'departments': DEPARTMENTS,
+        'modules': modules,
+        'formModules': form_modules,
+        'iea': _share_iea_rows() if 'iea' in modules else [],
+        'campus': campus or 'All',
+        'label': link.get('label', '') or 'Semester Readiness & Closure — Status',
+        'allow_download': bool(link.get('allow_download', True)),
+        'generated_at': _share_now(),
+        'deadlines': {
+            'readiness': settings.get('readiness_deadline', ''),
+            'closure': settings.get('closure_deadline', ''),
+        },
+    }
+
+
+def _share_docs_for_export(link, sub_id=None):
+    """Submissions this link is allowed to export, with faculty rows attached."""
+    modules = [m for m in (link.get('modules') or SHARE_MODULES) if m in SHARE_MODULES] or SHARE_MODULES
+    # IEA lives in its own collection and has its own export route.
+    modules = [m for m in modules if m in ('readiness', 'closure')]
+    campus = (link.get('campus') or 'All').strip()
+
+    if sub_id:
+        try:
+            doc = submissions_col.find_one({'_id': ObjectId(sub_id)})
+        except Exception:
+            return []
+        if not doc:
+            return []
+        docs = [doc]
+    else:
+        docs = list(submissions_col.find().sort('timestamp', -1))
+
+    allowed = []
+    for d in docs:
+        if (d.get('form_type') or 'readiness') not in modules:
+            continue
+        if campus and campus != 'All' and (d.get('identity', {}) or {}).get('campus') != campus:
+            continue
+        d['_faculty_submissions'] = list(
+            faculty_submissions_col.find({'parent_submission_id': str(d['_id'])}))
+        allowed.append(d)
+    return allowed
+
+
+def _share_send_workbook(docs, filename):
+    wb = build_workbook(docs)
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, download_name=filename,
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+# ── Admin: create / list / revoke share links ─────────────────────────
+
+# Under /api/ on purpose: the service worker cache-firsts every other GET,
+# which would keep serving a stale list right after a link is created or revoked.
+@app.route('/api/admin/share-links')
+def admin_share_links():
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    links = [_share_public(l) for l in share_links_col.find().sort('created_at', -1).limit(25)]
+    return jsonify({'ok': True, 'links': links})
+
+
+@app.route('/admin/share-link/create', methods=['POST'])
+def admin_share_link_create():
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+
+    data = request.json or {}
+    modules = [m for m in (data.get('modules') or SHARE_MODULES) if m in SHARE_MODULES]
+    if not modules:
+        modules = list(SHARE_MODULES)
+
+    expires_at = ''
+    try:
+        days = int(data.get('expires_days') or 0)
+    except (TypeError, ValueError):
+        days = 0
+    if days > 0:
+        expires_at = (datetime.utcnow() + timedelta(days=days)).isoformat()
+
+    link = {
+        'token': secrets.token_urlsafe(24),
+        'label': (data.get('label') or '').strip()[:120],
+        'modules': modules,
+        'campus': (data.get('campus') or 'All').strip() or 'All',
+        'allow_download': bool(data.get('allow_download', True)),
+        'active': True,
+        'created_at': _share_now(),
+        'created_by': session.get('admin_email') or session.get('user_email') or 'admin',
+        'expires_at': expires_at,
+        'views': 0,
+        'last_viewed': '',
+    }
+    result = share_links_col.insert_one(link)
+    link['_id'] = result.inserted_id
+    return jsonify({'ok': True, 'link': _share_public(link)})
+
+
+@app.route('/admin/share-link/<token>/revoke', methods=['POST'])
+def admin_share_link_revoke(token):
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    res = share_links_col.update_one({'token': token}, {'$set': {'active': False}})
+    return jsonify({'ok': res.matched_count > 0})
+
+
+@app.route('/admin/share-link/<token>/delete', methods=['POST'])
+def admin_share_link_delete(token):
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    share_links_col.delete_one({'token': token})
+    return jsonify({'ok': True})
+
+
+# ── Public: the shared, read-only status view ─────────────────────────
+
+@app.route('/share/<token>')
+def share_view(token):
+    link = _get_valid_share(token)
+    if not link:
+        return render_template('share_invalid.html'), 404
+
+    share_links_col.update_one({'_id': link['_id']},
+                               {'$inc': {'views': 1},
+                                '$set': {'last_viewed': _share_now()}})
+
+    return render_template('share_view.html',
+                           token=token,
+                           data=_share_dataset(link),
+                           hod_sections=HOD_SECTIONS,
+                           closure_sections=HOD_CLOSURE_SECTIONS,
+                           faculty_sections=FACULTY_SECTIONS,
+                           faculty_closure_sections=FACULTY_CLOSURE_SECTIONS)
+
+
+@app.route('/api/share/<token>/data')
+def share_data(token):
+    link = _get_valid_share(token)
+    if not link:
+        return jsonify({'ok': False, 'error': 'This share link is no longer valid.'}), 404
+    return jsonify({'ok': True, 'data': _share_dataset(link)})
+
+
+@app.route('/api/share/<token>/submission/<sub_id>')
+def share_submission(token, sub_id):
+    """Full read-only detail for one department's submission."""
+    link = _get_valid_share(token)
+    if not link:
+        return jsonify({'ok': False, 'error': 'This share link is no longer valid.'}), 404
+
+    docs = _share_docs_for_export(link, sub_id)
+    if not docs:
+        return jsonify({'ok': False, 'error': 'Submission not available on this link.'}), 404
+
+    doc = docs[0]
+    form_type = doc.get('form_type', 'readiness') or 'readiness'
+    faculty = []
+    for f in doc.get('_faculty_submissions', []):
+        faculty.append({
+            'faculty_name': f.get('faculty_name', ''),
+            'faculty_email': f.get('faculty_email', ''),
+            'course_name': f.get('course_name', ''),
+            'course_code': f.get('course_code', ''),
+            'program': f.get('program', ''),
+            'year_sem': f.get('year_sem', ''),
+            'no_of_students': f.get('no_of_students', ''),
+            'timestamp': f.get('timestamp', ''),
+            'hod_review_status': f.get('hod_review_status', ''),
+            'hod_remarks': f.get('hod_remarks', ''),
+            'checklist': {k: v for k, v in (f.get('checklist', {}) or {}).items()
+                          if isinstance(v, dict)},
+        })
+
+    idt = doc.get('identity', {}) or {}
+    payload = {
+        'id': str(doc['_id']),
+        'form_type': form_type,
+        'draft': bool(doc.get('_draft', False)),
+        'timestamp': doc.get('timestamp', ''),
+        'identity': {
+            'dept': idt.get('dept', ''),
+            'campus': idt.get('campus', ''),
+            'hodName': idt.get('hodName', '') or idt.get('hod', ''),
+            'hodEmail': idt.get('hodEmail', '') or idt.get('email', ''),
+            'semester': idt.get('semester', '') or idt.get('sem', ''),
+            'acYear': idt.get('acYear', '') or idt.get('ac_year', ''),
+            'subDate': idt.get('subDate', '') or idt.get('date', ''),
+        },
+        'programs': doc.get('programs', []) or [],
+        'hodChecklist': {k: v for k, v in (doc.get('hodChecklist', {}) or {}).items()
+                         if isinstance(v, dict)},
+        'hodReport': {k: v for k, v in (doc.get('hodReport', {}) or {}).items()
+                      if isinstance(v, dict)},
+        'faculty': faculty,
+        'stats': _share_checklist_stats(doc),
+        'allow_download': bool(link.get('allow_download', True)),
+    }
+    return jsonify({'ok': True, 'submission': payload})
+
+
+@app.route('/share/<token>/export')
+def share_export_all(token):
+    link = _get_valid_share(token)
+    if not link:
+        return render_template('share_invalid.html'), 404
+    if not link.get('allow_download', True):
+        return "Downloads are disabled for this link.", 403
+
+    docs = _share_docs_for_export(link)
+    if not docs:
+        return "No submissions available to export.", 404
+    return _share_send_workbook(
+        docs, f"Semester_AllDepartments_{datetime.utcnow().strftime('%Y%m%d')}.xlsx")
+
+
+@app.route('/share/<token>/export/<sub_id>')
+def share_export_one(token, sub_id):
+    link = _get_valid_share(token)
+    if not link:
+        return render_template('share_invalid.html'), 404
+    if not link.get('allow_download', True):
+        return "Downloads are disabled for this link.", 403
+
+    docs = _share_docs_for_export(link, sub_id)
+    if not docs:
+        return "Submission not available on this link.", 404
+
+    doc = docs[0]
+    dept = (doc.get('identity', {}) or {}).get('dept', 'Department').replace(' ', '_')[:40]
+    label = 'Closure' if doc.get('form_type') == 'closure' else 'Readiness'
+    return _share_send_workbook(docs, f"Sem{label}_{dept}.xlsx")
+
+
+def _iea_all_units():
+    """Every School / Department / Level combination the IEA form covers."""
+    units = []
+    for school, depts in IEA_SCHOOLS.items():
+        for dept, levels in depts.items():
+            for level in levels:
+                units.append({'school': school, 'department': dept, 'level': level})
+    return units
+
+
+def _share_iea_rows():
+    """One row per IEA unit — submitted, draft or not started — for the
+    share page. Units nobody has opened yet still get a row."""
+    by_key = {}
+    for d in iea_col.find():
+        key = (d.get('school', ''), d.get('department', ''), d.get('level', ''))
+        by_key[key] = d
+
+    rows = []
+    for unit in _iea_all_units():
+        key = (unit['school'], unit['department'], unit['level'])
+        doc = by_key.pop(key, None)
+        rows.append(_share_iea_row(unit, doc))
+
+    # Units recorded against a school/department the master list no longer has
+    for (school, department, level), doc in by_key.items():
+        rows.append(_share_iea_row(
+            {'school': school, 'department': department, 'level': level}, doc))
+
+    rows.sort(key=lambda r: (r['school'], r['department'], r['level']))
+    return rows
+
+
+def _share_iea_row(unit, doc):
+    if not doc:
+        return dict(unit, id='', status='none', version=0, entries=0,
+                    at='', by='', versions=[])
+    entries = _iea_count_entries(doc.get('years'))
+    versions = _iea_version_timeline(dict(doc))
+    return dict(unit,
+                id=str(doc['_id']),
+                status='submitted' if doc.get('submitted') else 'draft',
+                version=doc.get('version', 0) if doc.get('submitted') else 0,
+                entries=entries,
+                at=(doc.get('submittedAt') if doc.get('submitted') else doc.get('lastUpdated')) or '',
+                by=doc.get('submitterName') or doc.get('submitterEmail') or '',
+                versions=versions)
+
+
+@app.route('/api/share/<token>/iea/<sid>')
+def share_iea_submission(token, sid):
+    """Full read-only detail for one IEA unit on a share link."""
+    link = _get_valid_share(token)
+    if not link or 'iea' not in (link.get('modules') or SHARE_MODULES):
+        return jsonify({'ok': False, 'error': 'This share link does not cover IEA.'}), 404
+
+    doc = _iea_find_doc(sid)
+    if not doc:
+        return jsonify({'ok': False, 'error': 'Submission not found'}), 404
+
+    public = _iea_public_doc(dict(doc))
+    return jsonify({'ok': True, 'submission': {
+        'id': public['_id'],
+        'school': public.get('school', ''),
+        'department': public.get('department', ''),
+        'level': public.get('level', ''),
+        'acYear': public.get('acYear', ''),
+        'semester': public.get('semester', ''),
+        'submitted': bool(public.get('submitted')),
+        'version': public.get('version', 0),
+        'submittedAt': public.get('submittedAt', ''),
+        'lastUpdated': public.get('lastUpdated', ''),
+        'by': public.get('submitterName') or public.get('submitterEmail') or '',
+        'entries': _iea_count_entries(public.get('years')),
+        'years': public.get('years'),
+        'versions': public.get('versions', []),
+    }, 'sections': IEA_SECTIONS, 'iea_years': IEA_YEARS,
+        'allow_download': bool(link.get('allow_download', True))})
+
+
+@app.route('/share/<token>/iea-export')
+@app.route('/share/<token>/iea-export/<sid>')
+def share_iea_export(token, sid=None):
+    """IEA workbook for every unit on this link, or for a single one."""
+    link = _get_valid_share(token)
+    if not link or 'iea' not in (link.get('modules') or SHARE_MODULES):
+        return render_template('share_invalid.html'), 404
+    if not link.get('allow_download', True):
+        return "Downloads are disabled for this link.", 403
+
+    if sid:
+        doc = _iea_find_doc(sid)
+        if not doc:
+            return "Submission not available on this link.", 404
+        docs = [_iea_public_doc(dict(doc))]
+        hint = (doc.get('department') or 'Department').replace(' ', '_')[:40]
+    else:
+        docs = [_iea_public_doc(d) for d in
+                iea_col.find().sort([('school', 1), ('department', 1), ('level', 1)])]
+        if not docs:
+            return "No IEA submissions available to export.", 404
+        hint = 'AllDepartments'
+
+    return _iea_send_workbook(docs, None, hint)
+
 
 @app.route('/admin/delete/<sid>', methods=['POST'])
 def delete_submission(sid):

@@ -188,6 +188,26 @@
 
     <div id="cardsWrap"></div>
 
+    <!-- ═════════ EDIT ACCESS REQUESTS (stop-submission is on) ═════════ -->
+    <div style="margin-top:40px;" id="editReqCard">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:14px;">
+        <div>
+          <h2 style="font-family:'Playfair Display',serif; font-size:22px; color:#0a2558; margin-bottom:4px;">
+            Edit Access Requests</h2>
+          <p style="color:#64748b; font-size:13.5px; margin:0;">
+            When <strong>Stop submission</strong> is on, a department that has already submitted must ask
+            before changing anything. Approving opens that department for one re-submission.</p>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span id="editReqCount"
+            style="font-size:12.5px; font-weight:800; background:#fff7ed; border:1px solid #fed7aa; color:#9a5b12; padding:6px 14px; border-radius:999px;">—</span>
+          <button class="btn btn-ghost" type="button" onclick="loadEditRequests()"
+            style="color:#0a2558; border-color:#cbd5e1;">⟳ Refresh</button>
+        </div>
+      </div>
+      <div id="editReqList"></div>
+    </div>
+
     <!-- ═════════ PORTAL FEEDBACK ═════════ -->
     <div style="margin-top:40px;">
       <h2 style="font-family:'Playfair Display',serif; font-size:22px; color:#0a2558; margin-bottom:4px;">Portal Feedback &amp; Experience</h2>
@@ -211,7 +231,125 @@
     </div>
   </div>
 
+  <script>
+    /* ── Edit access requests ─────────────────────────────────────
+       Only meaningful while "Stop submission" is on, but the queue is
+       always rendered so earlier decisions stay auditable. */
+    function reqEsc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    function reqDate(iso) {
+      if (!iso) return '—';
+      var d = new Date(iso);
+      return isNaN(d) ? String(iso).substring(0, 16).replace('T', ' ')
+        : d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric',
+                                      hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    var REQ_STATE = {
+      pending:  { bg: '#fff7ed', bd: '#fed7aa', fg: '#9a5b12', label: '⏳ Awaiting approval' },
+      approved: { bg: '#ecfdf5', bd: '#a7f3d0', fg: '#047857', label: '✅ Approved — can re-submit once' },
+      used:     { bg: '#eef2ff', bd: '#c7d2fe', fg: '#4338ca', label: '🔁 Approval used — locked again' },
+      rejected: { bg: '#fef2f2', bd: '#fecaca', fg: '#b91c1c', label: '⛔ Rejected' }
+    };
+
+    function loadEditRequests() {
+      var list = document.getElementById('editReqList');
+      list.innerHTML = '<div style="background:#fff;border:1px dashed #cbd5e1;border-radius:12px;' +
+        'padding:24px;text-align:center;color:#94a3b8;font-size:13.5px">Loading requests…</div>';
+
+      fetch('/api/admin/iea/edit-requests', { cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (!res.ok) throw new Error(res.error || 'Could not load requests');
+          document.getElementById('editReqCount').textContent =
+            res.pending + (res.pending === 1 ? ' pending request' : ' pending requests');
+
+          if (!res.requests.length) {
+            list.innerHTML = '<div style="background:#fff;border:1px dashed #cbd5e1;border-radius:12px;' +
+              'padding:24px;text-align:center;color:#94a3b8;font-size:13.5px">' +
+              'No department has requested edit access.</div>';
+            return;
+          }
+
+          list.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' +
+            res.requests.map(function (r) {
+              var st = REQ_STATE[r.status] || REQ_STATE.pending;
+              var pending = r.status === 'pending';
+              return '<div style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid ' + st.bd +
+                  ';border-radius:12px;padding:16px 18px">' +
+                '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px">' +
+                  '<div>' +
+                    '<strong style="color:#0a2558;font-size:14px">' + reqEsc(r.department) + '</strong>' +
+                    '<div style="font-size:12px;color:#64748b;font-weight:600;margin-top:2px">' +
+                      reqEsc(r.school) + ' · ' + reqEsc(r.level) + '</div>' +
+                    '<div style="font-size:12px;color:#334155;margin-top:4px">' +
+                      reqEsc(r.user_name || '') + (r.user_email ? ' · ' + reqEsc(r.user_email) : '') + '</div>' +
+                  '</div>' +
+                  '<div style="text-align:right">' +
+                    '<span style="display:inline-block;background:' + st.bg + ';border:1px solid ' + st.bd +
+                      ';color:' + st.fg + ';font-size:11px;font-weight:800;padding:4px 11px;border-radius:999px">' +
+                      st.label + '</span>' +
+                    '<div style="font-size:11.5px;color:#94a3b8;margin-top:5px">' + reqEsc(reqDate(r.timestamp)) + '</div>' +
+                  '</div>' +
+                '</div>' +
+                (r.comment ? '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;' +
+                  'padding:9px 12px;font-size:12.5px;color:#334155;margin-bottom:8px"><strong>Reason:</strong> ' +
+                  reqEsc(r.comment) + '</div>' : '') +
+                (r.admin_comment ? '<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;' +
+                  'padding:9px 12px;font-size:12.5px;color:#3730a3;margin-bottom:8px"><strong>Your note:</strong> ' +
+                  reqEsc(r.admin_comment) + '</div>' : '') +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">' +
+                  (pending
+                    ? '<button class="btn btn-gold" type="button" onclick="decideEditRequest(this,\'' + r._id + '\',\'approve\')">✅ Approve edit</button>' +
+                      '<button class="btn btn-ghost" type="button" style="color:#b91c1c;border-color:#fecaca" onclick="decideEditRequest(this,\'' + r._id + '\',\'reject\')">Reject</button>'
+                    : '<button class="btn btn-ghost" type="button" style="color:#0a2558;border-color:#cbd5e1" onclick="decideEditRequest(this,\'' + r._id + '\',\'approve\')">Re-approve</button>') +
+                  '<button class="btn btn-ghost" type="button" style="color:#64748b;border-color:#e2e8f0" onclick="deleteEditRequest(this,\'' + r._id + '\')">Delete</button>' +
+                '</div>' +
+              '</div>';
+            }).join('') + '</div>';
+        })
+        .catch(function (e) {
+          list.innerHTML = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;' +
+            'padding:18px;color:#b91c1c;font-size:13px">' + reqEsc(e.message) + '</div>';
+        });
+    }
+
+    function decideEditRequest(btn, rid, action) {
+      var note = '';
+      if (action === 'approve') {
+        note = prompt('Optional note to the department (sent in the approval email):', '') || '';
+      } else if (!confirm('Reject this edit request? The department stays locked.')) {
+        return;
+      }
+      btn.disabled = true;
+      fetch('/admin/iea/edit-request/' + encodeURIComponent(rid) + '/' + action, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: note })
+      }).then(function (r) { return r.json(); }).then(function (res) {
+        if (!res.ok) { alert('Error: ' + (res.error || 'Could not update request')); return; }
+        loadEditRequests();
+      }).catch(function () { alert('Network error'); })
+        .finally(function () { btn.disabled = false; });
+    }
+
+    function deleteEditRequest(btn, rid) {
+      if (!confirm('Delete this request from the queue?')) return;
+      btn.disabled = true;
+      fetch('/admin/iea/edit-request/' + encodeURIComponent(rid) + '/delete', { method: 'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function () { loadEditRequests(); })
+        .finally(function () { btn.disabled = false; });
+    }
+
+    loadEditRequests();
+  </script>
+
   <script src="/static/js/iea-cards.js"></script>
+  <script src="/static/js/iea-history.js"></script>
   <script>
     const YEARS = {{ iea_years|tojson }};
     const SECTIONS = {{ iea_sections|tojson }};

@@ -487,6 +487,12 @@ window.IEACards = (function () {
               ' · ' + v.entries + ' ' + (v.entries === 1 ? 'entry' : 'entries') +
               (v.by ? ' · ' + esc(v.by) : '') +
             '</div>' +
+            // Re-submissions can be compared against the version before them.
+            (!isFirst && window.IEAHistory
+              ? '<div class="tl-actions">' +
+                  IEAHistory.buttonHtml(unitId(u), v.version, 'What changed in v' + v.version) +
+                '</div>'
+              : '') +
           '</div>' +
         '</div>';
       }).join('');
@@ -500,7 +506,12 @@ window.IEACards = (function () {
       }).join('');
 
     return '<div class="chart-card wide tl-card">' +
-      '<h5>Submission history</h5>' +
+      '<h5>Submission history' +
+        (versions.length > 1 && window.IEAHistory
+          ? ' <span style="float:right;font-weight:400">' +
+              IEAHistory.timelineButtonHtml(unitId(u), 'Compare versions') + '</span>'
+          : '') +
+      '</h5>' +
       '<div class="tl">' + rows + '</div>' +
       (yearRows
         ? '<div class="ty-block"><div class="ty-head">Submitted per academic year</div>' + yearRows + '</div>'

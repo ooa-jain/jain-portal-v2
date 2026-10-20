@@ -222,3 +222,8 @@
 .iea-empty-state h3 { color: #111827; margin-bottom: 8px; font-size: 18px; }
 
 @media (max-width: 640px) { .dept-grid { grid-template-columns: 1fr; } }
+
+/* Version-history entry points inside the submission timeline */
+.tl-actions {
+  margin-top: 7px;
+}
