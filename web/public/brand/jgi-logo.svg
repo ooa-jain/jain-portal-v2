@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <circle cx="256" cy="256" r="256" fill="#16234a"/>
+  <text x="205" y="350" text-anchor="middle" font-family="Liberation Sans, Arial, sans-serif"
+        font-weight="bold" font-size="250" fill="#ffffff" letter-spacing="-4">JG</text>
+  <rect x="360" y="193" width="46" height="157" rx="10" fill="#ffffff"/>
+  <circle cx="383" cy="150" r="30" fill="#f5a623"/>
+</svg>
