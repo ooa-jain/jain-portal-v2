@@ -16,6 +16,11 @@ export type CurrentUser = {
   isAdmin: boolean;
   canReadiness: boolean;
   canClosure: boolean;
+  canIea: boolean;
+  /** Late access granted by an admin, per module. */
+  overrides: { readiness: boolean; closure: boolean; iea: boolean };
+  /** Set while an admin is viewing the portal as this user. */
+  impersonatedBy: string | null;
 };
 
 /** Admin = listed in ADMIN_EMAILS, listed in settings.admin_emails, or flagged on the user document. */
@@ -55,6 +60,13 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     isAdmin,
     canReadiness: isAdmin || doc.can_readiness !== false,
     canClosure: isAdmin || doc.can_closure !== false,
+    canIea: isAdmin || doc.can_iea !== false,
+    overrides: {
+      readiness: doc.readiness_access_override === true,
+      closure: doc.closure_access_override === true,
+      iea: doc.iea_access_override === true,
+    },
+    impersonatedBy: session.impersonator ?? null,
   };
 });
 

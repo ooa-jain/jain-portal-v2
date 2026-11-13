@@ -6,14 +6,15 @@ import { env } from "./env";
 const COOKIE = "portal_session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
-export type SessionData = { email: string; name: string };
+/** `impersonator` is set while an admin is viewing the portal as another user. */
+export type SessionData = { email: string; name: string; impersonator?: string };
 
 function key() {
   return new TextEncoder().encode(env.sessionSecret);
 }
 
 export async function createSession(data: SessionData) {
-  const token = await new SignJWT({ email: data.email, name: data.name })
+  const token = await new SignJWT({ email: data.email, name: data.name, ...(data.impersonator ? { impersonator: data.impersonator } : {}) })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE_SECONDS}s`)
@@ -39,6 +40,7 @@ export async function readSession(): Promise<SessionData | null> {
     return {
       email: payload.email,
       name: typeof payload.name === "string" ? payload.name : payload.email,
+      impersonator: typeof payload.impersonator === "string" ? payload.impersonator : undefined,
     };
   } catch {
     return null;

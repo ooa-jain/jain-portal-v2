@@ -1,26 +1,56 @@
 import { requireUser } from "@/lib/auth";
-import { getSettings } from "@/lib/data";
-import { SiteHeader, type NavLink } from "@/components/site-header";
+import { collections } from "@/lib/db";
+import { getSettings, listNotifications } from "@/lib/data";
+import { moduleAccess } from "@/lib/access";
+import { MODULES, MODULE_KEYS } from "@/lib/constants";
+import { AppShell, type NavGroup } from "@/components/app-shell";
 
 export default async function PortalLayout({ children }: LayoutProps<"/">) {
-  const [user, settings] = await Promise.all([requireUser(), getSettings()]);
+  const user = await requireUser();
+  const [settings, notifications] = await Promise.all([getSettings(), listNotifications(10)]);
 
-  const links: NavLink[] = [{ href: "/", label: "Dashboard" }];
-  if (user.isAdmin || (settings.readiness_enabled && user.canReadiness)) {
-    links.push({ href: "/readiness", label: "Semester Readiness" });
+  const workspace: NavGroup = { title: "Workspace", items: [{ href: "/", label: "Dashboard", icon: "dashboard" }] };
+  for (const key of MODULE_KEYS) {
+    if (moduleAccess(user, settings, key).open) {
+      workspace.items.push({ href: MODULES[key].href, label: MODULES[key].label, icon: key });
+    }
   }
-  if (user.isAdmin || (settings.closure_enabled && user.canClosure)) {
-    links.push({ href: "/closure", label: "Semester Closure" });
+  const reports: NavGroup = {
+    title: "Reports",
+    items: [
+      { href: "/analysis", label: "Faculty Responses", icon: "analysis" },
+      { href: "/iea-analysis", label: "IEA Analysis", icon: "ieaAnalysis" },
+    ],
+  };
+  const groups = [workspace, reports];
+
+  if (user.isAdmin && !user.impersonatedBy) {
+    const [accessPending, editPending] = await Promise.all([
+      collections.accessRequests().countDocuments({ status: "pending" }),
+      collections.submissions().countDocuments({ "edit_request.status": "pending" }),
+    ]);
+    groups.push({
+      title: "Administration",
+      items: [
+        { href: "/admin", label: "Overview", icon: "admin" },
+        { href: "/admin/submissions", label: "Submissions", icon: "submissions" },
+        { href: "/admin/iea", label: "IEA Submissions", icon: "iea" },
+        { href: "/admin/users", label: "Users & Access", icon: "users" },
+        { href: "/admin/requests", label: "Requests", icon: "requests", badge: accessPending + editPending },
+        { href: "/admin/notifications", label: "Notifications", icon: "notifications" },
+        { href: "/admin/settings", label: "Settings", icon: "settings" },
+      ],
+    });
   }
-  if (user.isAdmin) links.push({ href: "/admin", label: "Admin" });
 
   return (
-    <>
-      <SiteHeader links={links} userName={user.name} userEmail={user.email} />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{children}</main>
-      <footer className="border-t py-5 text-center text-xs text-muted-foreground">
-        Office of Academics · JAIN (Deemed-to-be University)
-      </footer>
-    </>
+    <AppShell
+      groups={groups}
+      user={{ name: user.name, email: user.email, department: user.department, isAdmin: user.isAdmin }}
+      impersonatedBy={user.impersonatedBy}
+      notifications={notifications}
+    >
+      {children}
+    </AppShell>
   );
 }

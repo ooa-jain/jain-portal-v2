@@ -5,11 +5,14 @@ import {
   FACULTY_SECTIONS,
   HOD_CLOSURE_SECTIONS,
   HOD_SECTIONS,
+  IEA_SECTIONS,
+  IEA_YEARS,
   MID_SEM_ITEM_ID,
   facultySectionsFor,
-  type ModuleKey,
+  type FormModuleKey,
 } from "./constants";
-import type { FacultySubmission, Submission } from "./types";
+import type { FacultySubmission, IeaSubmission, Submission } from "./types";
+import { str } from "./utils";
 
 const NAVY = "FF0A2558";
 const GOLD = "FFF4A819";
@@ -89,7 +92,7 @@ function statusTint(status: string): string | undefined {
   return undefined;
 }
 
-function moduleLabel(module: ModuleKey) {
+function moduleLabel(module: FormModuleKey) {
   return module === "closure" ? "Closure" : "Readiness";
 }
 
@@ -305,6 +308,68 @@ export async function buildHodChecklistWorkbook(sub: Submission): Promise<Buffer
   }
   widths(template, [10, 60, 20, 38]);
 
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
+
+/** IEA report: one sheet per academic year, sections A–F stacked inside each sheet. */
+export async function buildIeaWorkbook(docs: IeaSubmission[], year?: string): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Jain Sarathi — Office of Academics";
+  const maxCols = Math.max(...IEA_SECTIONS.map((s) => 4 + s.fields.length + 3));
+
+  for (const y of year ? [year] : IEA_YEARS) {
+    const ws = wb.addWorksheet(y.replace(/\//g, "-").slice(0, 31));
+    titleRow(ws, `JAIN University — Innovation & Emerging Areas — ${y}`, maxCols);
+    let r = 3;
+    let total = 0;
+
+    for (const section of IEA_SECTIONS) {
+      const rows = docs.flatMap((d) => (d.years[y]?.[section.key] ?? []).map((entry) => ({ d, entry })));
+      total += rows.length;
+
+      ws.mergeCells(r, 1, r, maxCols);
+      const band = ws.getCell(r, 1);
+      band.value = `Section ${section.key} — ${section.title}  (${rows.length} ${rows.length === 1 ? "entry" : "entries"})`;
+      band.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+      band.fill = fill(`FF${section.color.replace("#", "").toUpperCase()}`);
+      band.alignment = { horizontal: "left", vertical: "middle" };
+      ws.getRow(r).height = 22;
+      r++;
+
+      headerRow(ws, r++, [
+        "School", "Department", "Programme Level", "Academic Year", "Submitted By",
+        ...section.fields.map((f) => f.l),
+        "Evidence Types", "Evidence Links / Files", "Evidence Notes",
+      ]);
+
+      if (rows.length === 0) {
+        const cell = ws.getCell(r, 1);
+        cell.value = "No entries submitted for this section.";
+        cell.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FF94A3B8" } };
+        r += 2;
+        continue;
+      }
+      for (const { d, entry } of rows) {
+        const details = Object.values(entry.evidenceDetails);
+        const links = [entry.evidenceLink, ...details.flatMap((x) => [x.driveLink, x.fileUrl])].filter(Boolean);
+        const notes = [entry.evidenceMissing, ...details.map((x) => x.notes)].filter(Boolean);
+        dataRow(ws, r++, [
+          d.school, d.department, d.level, y, d.submitterName || d.submitterEmail,
+          ...section.fields.map((f) => str(entry[f.k])),
+          entry.evidenceTypes.join("; "), [...new Set(links)].join("\n"), [...new Set(notes)].join("\n"),
+        ]);
+      }
+      r++;
+    }
+
+    if (total === 0) {
+      const note = ws.getCell(2, 1);
+      note.value = "No submissions recorded for this academic year.";
+      note.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FF94A3B8" } };
+    }
+    widths(ws, [26, 32, 16, 14, 22, ...Array(maxCols - 8).fill(30), 26, 34, 30]);
+    ws.views = [{ state: "frozen", ySplit: 1 }];
+  }
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 

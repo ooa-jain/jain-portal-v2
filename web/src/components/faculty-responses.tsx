@@ -72,12 +72,12 @@ function ResponseCard({
   }
 
   return (
-    <li className="rounded-lg border bg-card">
+    <li className="rounded border bg-card">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-4 p-4 text-left"
+        className="flex w-full items-center gap-4 px-3 py-2.5 text-left"
       >
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium">
@@ -115,7 +115,7 @@ function ResponseCard({
           <ChecklistReadOnly sections={facultySectionsFor(response.form_type)} value={response.checklist} />
 
           {canReview ? (
-            <div className="flex flex-col gap-3 rounded-lg bg-muted/60 p-4">
+            <div className="flex flex-col gap-3 rounded border bg-muted/40 p-3">
               <p className="text-sm font-semibold">HOD review</p>
               <div className="grid gap-3 sm:grid-cols-[14rem_1fr]">
                 <Select
@@ -152,7 +152,7 @@ function ResponseCard({
             </div>
           ) : (
             response.hod_remarks && (
-              <p className="rounded-lg bg-muted/60 p-4 text-sm">
+              <p className="rounded border bg-muted/40 p-3 text-sm">
                 <span className="font-semibold">HOD remarks: </span>
                 {response.hod_remarks}
               </p>
@@ -175,13 +175,13 @@ export function FacultyResponses({
 }) {
   if (responses.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+      <p className="rounded border border-dashed p-8 text-center text-sm text-muted-foreground">
         No faculty responses yet. They appear here as soon as faculty submit through your link.
       </p>
     );
   }
   return (
-    <ul className="flex flex-col gap-3">
+    <ul className="flex flex-col gap-2">
       {responses.map((response) => (
         <ResponseCard key={response._id} response={response} canReview={canReview} canDelete={canDelete} />
       ))}

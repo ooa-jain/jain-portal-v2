@@ -1,54 +1,64 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { requireModule } from "@/lib/access";
+import { requireFormModule } from "@/lib/access";
 import { listMySubmissions } from "@/lib/data";
-import { MODULES, isModuleKey } from "@/lib/constants";
-import { SubmissionList } from "@/components/submission-list";
+import { MODULES, isFormModuleKey } from "@/lib/constants";
+import { DeadlineBanner } from "@/components/deadline-banner";
+import { SubmissionTable } from "@/components/submission-list";
 import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader, Stat } from "@/components/ui/page";
 
 export async function generateMetadata({ params }: PageProps<"/[module]">): Promise<Metadata> {
   const { module } = await params;
-  return { title: isModuleKey(module) ? MODULES[module].label : "Not found" };
+  return { title: isFormModuleKey(module) ? MODULES[module].label : "Not found" };
 }
 
 export default async function ModulePage({ params }: PageProps<"/[module]">) {
   const { module: segment } = await params;
-  const { module, user } = await requireModule(segment);
+  const { module, user, access } = await requireFormModule(segment);
   const meta = MODULES[module];
   const submissions = await listMySubmissions(user, module);
+  const final = submissions.filter((s) => !s._draft).length;
+  const faculty = submissions.reduce((sum, s) => sum + (s.faculty_submission_count ?? 0), 0);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="max-w-2xl">
-          <h1 className="text-2xl font-semibold">{meta.label}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{meta.description}</p>
-        </div>
-        <Button asChild>
-          <Link href={`/${module}/form`}>
-            <Plus />
-            New submission
-          </Link>
-        </Button>
+    <>
+      <PageHeader
+        title={meta.label}
+        description={meta.description}
+        actions={
+          access.canWrite && (
+            <Button asChild>
+              <Link href={`/${module}/form`}>
+                <Plus />
+                New submission
+              </Link>
+            </Button>
+          )
+        }
+      />
+      <DeadlineBanner access={access} isAdmin={user.isAdmin} />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Stat label="Submissions" value={submissions.length} />
+        <Stat label="Submitted" value={final} tone="success" />
+        <Stat label="Drafts" value={submissions.length - final} tone="warning" />
+        <Stat label="Faculty responses" value={faculty} />
       </div>
-
-      {submissions.length === 0 ? (
-        <div className="rounded-xl border border-dashed bg-card p-12 text-center">
-          <p className="font-medium">No {meta.short.toLowerCase()} submissions yet</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Start one for the current semester. You can save a draft and come back any time.
-          </p>
-          <Button asChild className="mt-5">
-            <Link href={`/${module}/form`}>
-              <Plus />
-              Start {meta.short.toLowerCase()} submission
-            </Link>
-          </Button>
-        </div>
-      ) : (
-        <SubmissionList submissions={submissions} currentEmail={user.email} isAdmin={user.isAdmin} />
-      )}
-    </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>{meta.short} submissions</CardTitle>
+          <CardDescription>Yours, and those from your department.</CardDescription>
+        </CardHeader>
+        <SubmissionTable
+          submissions={submissions}
+          currentEmail={user.email}
+          isAdmin={user.isAdmin}
+          canWrite={access.canWrite}
+          emptyText={`No ${meta.short.toLowerCase()} submissions yet. Use "New submission" to start one; you can save a draft and return later.`}
+        />
+      </Card>
+    </>
   );
 }

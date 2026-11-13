@@ -3,43 +3,77 @@
  * existing submissions in the database line up with these checklists.
  */
 
-export type ModuleKey = "readiness" | "closure";
+export type ModuleKey = "readiness" | "closure" | "iea";
+/** The two modules that share the HOD-submission + faculty-checklist flow. */
+export type FormModuleKey = "readiness" | "closure";
 
-export const MODULES: Record<
-  ModuleKey,
-  {
-    key: ModuleKey;
-    label: string;
-    short: string;
-    description: string;
-    enabledKey: "readiness_enabled" | "closure_enabled";
-    permissionField: "can_readiness" | "can_closure";
-  }
-> = {
+export type ModuleMeta = {
+  key: ModuleKey;
+  label: string;
+  short: string;
+  href: string;
+  description: string;
+  enabledKey: "readiness_enabled" | "closure_enabled" | "iea_enabled";
+  deadlineKey: "readiness_deadline" | "closure_deadline" | "iea_deadline";
+  permissionField: "can_readiness" | "can_closure" | "can_iea";
+  overrideField: "readiness_access_override" | "closure_access_override" | "iea_access_override";
+};
+
+export const MODULES: Record<ModuleKey, ModuleMeta> = {
   readiness: {
     key: "readiness",
     label: "Semester Readiness",
     short: "Readiness",
-    description:
-      "Confirm the department is ready before the semester starts: curriculum, faculty allocation, timetable, LMS and approvals.",
+    href: "/readiness",
+    description: "Pre-semester readiness: curriculum, faculty allocation, timetable, LMS and approvals.",
     enabledKey: "readiness_enabled",
+    deadlineKey: "readiness_deadline",
     permissionField: "can_readiness",
+    overrideField: "readiness_access_override",
   },
   closure: {
     key: "closure",
     label: "Semester Closure",
     short: "Closure",
-    description:
-      "Report how the semester went: course completion, student performance, events, audits and action items.",
+    href: "/closure",
+    description: "End-of-semester report: course completion, student performance, events, audits and action items.",
     enabledKey: "closure_enabled",
+    deadlineKey: "closure_deadline",
     permissionField: "can_closure",
+    overrideField: "closure_access_override",
+  },
+  iea: {
+    key: "iea",
+    label: "Innovation & Emerging Areas",
+    short: "IEA",
+    href: "/iea",
+    description: "Programmes and courses in innovation and emerging areas, AY 2022-23 to AY 2026-27 (UGC data collection).",
+    enabledKey: "iea_enabled",
+    deadlineKey: "iea_deadline",
+    permissionField: "can_iea",
+    overrideField: "iea_access_override",
   },
 };
 
-export const MODULE_KEYS: ModuleKey[] = ["readiness", "closure"];
+export const MODULE_KEYS: ModuleKey[] = ["readiness", "closure", "iea"];
+export const FORM_MODULE_KEYS: FormModuleKey[] = ["readiness", "closure"];
 
 export function isModuleKey(value: unknown): value is ModuleKey {
+  return value === "readiness" || value === "closure" || value === "iea";
+}
+export function isFormModuleKey(value: unknown): value is FormModuleKey {
   return value === "readiness" || value === "closure";
+}
+
+/** Map a stored access-request label (e.g. "Semester Readiness") back to its module. */
+export function moduleFromLabel(label: string): ModuleMeta | null {
+  const text = label.trim().toLowerCase();
+  if (!text) return null;
+  for (const key of MODULE_KEYS) if (text === MODULES[key].label.toLowerCase()) return MODULES[key];
+  if (text.includes("readiness")) return MODULES.readiness;
+  if (text.includes("closure")) return MODULES.closure;
+  if (["iea", "innovation", "emerging"].some((alias) => text.includes(alias))) return MODULES.iea;
+  return null;
 }
 
 export const CAMPUSES = ["Bangalore", "Kochi", "ODL", "Online"];
@@ -266,8 +300,175 @@ export const FACULTY_CLOSURE_SECTIONS: ChecklistSection[] = [
   },
 ];
 
-export function facultySectionsFor(module: ModuleKey): ChecklistSection[] {
+export function facultySectionsFor(module: FormModuleKey): ChecklistSection[] {
   return module === "closure" ? FACULTY_CLOSURE_SECTIONS : FACULTY_SECTIONS;
 }
 
 export const STATUS_OPTIONS = ["Yes", "No", "N/A"] as const;
+
+// ── Innovation & Emerging Areas (IEA) ───────────────────────────────
+
+export const IEA_SCHOOLS: Record<string, Record<string, string[]>> = {
+  "School of Sciences": {
+    "Department of Chemistry & Biochemistry": ["UG", "PG"],
+    "Department of Computer Science & IT": ["UG", "PG"],
+    "Department of Data Analytics & Mathematical Sciences": ["UG", "PG"],
+    "Department of Forensic Science": ["UG", "PG"],
+    "Department of Microbiology & Botany": ["UG", "PG"],
+    "Department of Physics & Electronics": ["UG", "PG"],
+    "Department of Psychology & Allied Science": ["UG", "PG"],
+    "Department of Biotechnology and Genetics": ["UG", "PG"],
+  },
+  "School of Commerce": {
+    "Department of Commerce": ["UG", "PG", "Doctoral"],
+  },
+  "School of Computer Science & Information Technology": {
+    "Department of Animation & Virtual Reality": ["UG", "PG"],
+    "Department of Computer Science & Information Technology": ["UG", "PG"],
+  },
+  "School of Engineering & Technology": {
+    "Department of Civil Engineering": ["UG", "PG"],
+    "Department of Computer Science & Engineering": ["UG", "PG"],
+    "Department of Electrical & Electronics Engineering": ["UG", "PG"],
+    "Department of Electronics & Communication Engineering": ["UG", "PG"],
+    "Department of Food Technology": ["UG", "PG"],
+    "Department of Information Science & Engineering": ["UG", "PG"],
+    "Department of Mechanical Engineering": ["UG", "PG"],
+  },
+  "School of Humanities & Social Sciences": {
+    "Department of Economics": ["UG", "PG"],
+    "Department of Journalism & Mass Communication": ["UG", "PG"],
+    "Department of Languages": ["UG", "PG"],
+    "Department of Psychology & Allied Science": ["UG", "PG"],
+    "Department of CERSSE": ["UG", "PG", "Doctoral"],
+    "Department of Humanities & Social Sciences": ["UG", "PG", "Doctoral"],
+    "Department of Performing Arts & Cultural Studies": ["UG", "PG"],
+  },
+  "School of Design, Media & Creative Arts": {
+    "Department of Art & Design": ["UG", "PG"],
+    "Department of Design": ["UG", "PG"],
+    "Department of Performing Arts & Cultural Studies": ["UG", "PG"],
+  },
+  "School of Law": {
+    "Department of Law": ["Integrated UG", "UG", "PG"],
+  },
+  "School of Allied Healthcare & Sciences": {
+    "Department of Allied Healthcare & Sciences": ["UG", "PG"],
+  },
+  "Center for Management Studies (CMS)": {
+    "Department of Management Studies": ["UG", "PG"],
+  },
+  "CMS Business School": {
+    "Department of Management": ["UG", "PG"],
+  },
+  "School of Aerospace Engineering": {
+    "Department of Aerospace Engineering": ["UG", "PG"],
+  },
+  "School for Aviation & Aerospace Management": {
+    "Department of Aviation & Aerospace Management": ["UG", "PG", "Executive Programme", "Executive Postgraduate"],
+  },
+  "School of Sports Science & Research": {
+    "Department of Physical Education & Sports": ["UG", "PG"],
+    "Department of Sports Science": ["UG", "PG"],
+  },
+};
+
+export function isValidIeaUnit(school: string, department: string, level: string): boolean {
+  return Boolean(IEA_SCHOOLS[school]?.[department]?.includes(level));
+}
+
+export const IEA_YEARS = ["AY 2022-23", "AY 2023-24", "AY 2024-25", "AY 2025-26", "AY 2026-27"];
+
+export const IEA_EVIDENCE_TYPES = [
+  "Academic Council Approval",
+  "Curriculum & Syllabus",
+  "Programme Brochure",
+  "Industry MoUs",
+  "Professional Body Recognition",
+  "Assessment Rubrics",
+  "Student Project Reports",
+  "Relevant Web Links",
+  "Google Drive link (shared with access to Office of Academics)",
+];
+
+export type IeaField = { k: string; l: string; t: "text" | "textarea"; ph?: string };
+export type IeaSection = { key: string; color: string; title: string; sub: string; fields: IeaField[] };
+
+export const IEA_SECTIONS: IeaSection[] = [
+  {
+    key: "A", color: "#C9A227", title: "New Programmes Introduced",
+    sub: "For each new programme introduced in this academic year",
+    fields: [
+      { k: "name", l: "New programme introduced (in innovative and emerging areas)", t: "text" },
+      { k: "area", l: "Innovation / Emerging area addressed", t: "text", ph: "e.g., AI, Data Science, Cyber Security, FinTech, Sustainability, Industry 4.0/5.0" },
+      { k: "newCourses", l: "New courses introduced", t: "textarea" },
+      { k: "uniqueFeatures", l: "Unique programme features", t: "textarea" },
+      { k: "collaborations", l: "Industry / Academic collaborations", t: "textarea" },
+    ],
+  },
+  {
+    key: "B", color: "#2F6F4E", title: "Innovations in Existing Programmes & Courses",
+    sub: "Significant innovations, course-level enhancements, and curriculum enhancements",
+    fields: [
+      { k: "programme", l: "Programme Name", t: "text", ph: "e.g., B.Tech CSE / M.Sc Data Science" },
+      { k: "courseCode", l: "Course Code", t: "text", ph: "e.g., 22CSE301 / MAT102" },
+      { k: "courseName", l: "Course Name", t: "text", ph: "e.g., Advanced AI & Machine Learning" },
+      { k: "curriculumRevisions", l: "Curriculum revisions", t: "textarea" },
+      { k: "newElectives", l: "New electives / minors / majors / specialisations", t: "textarea" },
+      { k: "interdisciplinary", l: "Interdisciplinary pathways", t: "textarea" },
+      { k: "experiential", l: "Experiential learning", t: "textarea" },
+    ],
+  },
+  {
+    key: "C", color: "#2C5F8A", title: "Recognition by Global Professional Bodies",
+    sub: "Accreditations, benchmarking, and their impact",
+    fields: [
+      { k: "programme", l: "Programme Name", t: "text" },
+      { k: "accreditations", l: "Accreditations", t: "textarea" },
+      { k: "recognitions", l: "Recognitions", t: "textarea" },
+      { k: "certifications", l: "Certifications", t: "textarea" },
+      { k: "curriculumMapping", l: "Curriculum mapping", t: "textarea" },
+      { k: "benchmarking", l: "International benchmarking", t: "textarea" },
+      { k: "impact", l: "Impact on student outcomes", t: "textarea" },
+    ],
+  },
+  {
+    key: "D", color: "#A85C2C", title: "Industry-Integrated Skilling",
+    sub: "Industry-linked courses, certifications, and work-integrated learning",
+    fields: [
+      { k: "programme", l: "Programme Name", t: "text" },
+      { k: "industryIntegrated", l: "Industry-integrated courses", t: "textarea" },
+      { k: "embeddedCerts", l: "Embedded certifications", t: "textarea" },
+      { k: "internships", l: "Internships / Apprenticeships", t: "textarea" },
+      { k: "skillModules", l: "Skill-based modules", t: "textarea" },
+      { k: "jointDelivery", l: "Joint delivery with industry", t: "textarea" },
+      { k: "industryAssessment", l: "Industry assessment", t: "textarea" },
+    ],
+  },
+  {
+    key: "E", color: "#6B4A8A", title: "Competency-Based Learning",
+    sub: "OBE, competency design, capstones, and assessment reform",
+    fields: [
+      { k: "programme", l: "Programme Name", t: "text" },
+      { k: "obe", l: "OBE implementation", t: "textarea" },
+      { k: "competencyCurriculum", l: "Competency-based curriculum", t: "textarea" },
+      { k: "capstone", l: "Capstone / Innovation projects", t: "textarea" },
+      { k: "fieldImmersion", l: "Field immersion / Clinical training", t: "textarea" },
+      { k: "assessmentReforms", l: "Assessment reforms", t: "textarea" },
+    ],
+  },
+  {
+    key: "F", color: "#E11D48", title: "Any Other Dimensions",
+    sub: "Any other dimensions the School may deem fit to highlight in support of Innovation and Emerging Areas",
+    fields: [
+      { k: "dimensionTitle", l: "Dimension / Highlight", t: "text", ph: "e.g., Patents & IPR, Student startups, Faculty innovation, MoUs, Awards & Recognitions" },
+      { k: "dimensionDetails", l: "Details & contribution to Innovation and Emerging Areas", t: "textarea", ph: "Describe this dimension and how it supports Innovation and Emerging Areas" },
+    ],
+  },
+];
+
+export const IEA_DEFINITION =
+  "Programmes and Courses in Innovation and Emerging Areas are academic offerings that address new, evolving, or rapidly advancing domains of knowledge, skills, technologies, professions, and societal needs. Such offerings are characterized by their relevance to contemporary and future developments, interdisciplinary and multidisciplinary approaches, integration of research and innovation, responsiveness to industry and societal requirements, and alignment with global trends and national priorities. They may encompass emerging fields, transformative technologies, novel applications of existing disciplines, and innovative pedagogical approaches that prepare learners for future opportunities, challenges, and lifelong learning.";
+
+/** A finalised HOD submission may be edited this many times before admin approval is needed. */
+export const FREE_EDIT_LIMIT = 2;

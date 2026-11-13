@@ -1,0 +1,14 @@
+{
+  "name": "Jain Sarathi — Office of Academics",
+  "short_name": "Jain Sarathi",
+  "description": "Semester Readiness, Semester Closure and Innovation & Emerging Areas portal.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f1f3f7",
+  "theme_color": "#0a2558",
+  "icons": [
+    { "src": "/brand/jgi-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/jgi-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

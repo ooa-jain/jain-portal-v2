@@ -79,6 +79,10 @@ export const env = {
   get uploadDir() {
     return optional("UPLOAD_DIR", "uploads");
   },
+  /** Shared secret for the scheduled reminder endpoint (/api/cron/deadline-reminders). Unset = endpoint disabled. */
+  get cronSecret() {
+    return optional("CRON_SECRET");
+  },
   /** Local testing only: enables /api/auth/dev. Ignored in production builds. */
   get devLogin() {
     return process.env.NODE_ENV !== "production" && optional("DEV_LOGIN") === "1";

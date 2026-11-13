@@ -6,11 +6,15 @@ import {
   DEFAULT_SEMESTERS,
   DEFAULT_YEARS,
   HOD_CLOSURE_SECTIONS,
-  isModuleKey,
-  type ModuleKey,
+  isFormModuleKey,
+  moduleFromLabel,
+  type FormModuleKey,
 } from "./constants";
 import type {
+  AccessRequest,
   Checklist,
+  EditRequest,
+  PortalNotification,
   FacultySubmission,
   GlobalSettings,
   Identity,
@@ -30,6 +34,10 @@ export const getSettings = cache(async (): Promise<GlobalSettings> => {
   return {
     readiness_enabled: doc.readiness_enabled !== false,
     closure_enabled: doc.closure_enabled !== false,
+    iea_enabled: doc.iea_enabled !== false,
+    readiness_deadline: str(doc.readiness_deadline),
+    closure_deadline: str(doc.closure_deadline),
+    iea_deadline: str(doc.iea_deadline),
     enabled_years: list(doc.enabled_years, DEFAULT_YEARS),
     enabled_semesters: list(doc.enabled_semesters, DEFAULT_SEMESTERS),
     admin_emails: list(doc.admin_emails, []).map((e) => e.toLowerCase()),
@@ -89,10 +97,17 @@ function normalizeReport(raw: unknown): Report {
   return out;
 }
 
+function normalizeEditRequest(raw: unknown): EditRequest | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const status = r.status === "approved" ? "approved" : r.status === "pending" || r.pending === true ? "pending" : null;
+  return status ? { status, comment: str(r.comment), timestamp: str(r.timestamp) } : null;
+}
+
 export function normalizeSubmission(doc: Document): Submission {
   return {
     _id: String(doc._id),
-    form_type: isModuleKey(doc.form_type) ? doc.form_type : "readiness",
+    form_type: isFormModuleKey(doc.form_type) ? doc.form_type : "readiness",
     identity: normalizeIdentity(doc.identity),
     hodChecklist: normalizeChecklist(doc.hodChecklist),
     hodReport: normalizeReport(doc.hodReport),
@@ -100,6 +115,7 @@ export function normalizeSubmission(doc: Document): Submission {
     timestamp: str(doc.timestamp),
     share_token: str(doc.share_token),
     edit_count: typeof doc.edit_count === "number" ? doc.edit_count : 0,
+    edit_request: normalizeEditRequest(doc.edit_request),
   };
 }
 
@@ -107,7 +123,7 @@ export function normalizeFaculty(doc: Document): FacultySubmission {
   return {
     _id: String(doc._id),
     parent_submission_id: str(doc.parent_submission_id),
-    form_type: isModuleKey(doc.form_type) ? doc.form_type : "readiness",
+    form_type: isFormModuleKey(doc.form_type) ? doc.form_type : "readiness",
     dept: str(doc.dept),
     campus: str(doc.campus),
     semester: str(doc.semester),
@@ -140,6 +156,10 @@ export function normalizeUser(doc: Document, adminEmails: Set<string>): PortalUs
     is_admin: adminEmails.has(email) || doc.is_admin === true || doc.role === "admin",
     can_readiness: doc.can_readiness !== false,
     can_closure: doc.can_closure !== false,
+    can_iea: doc.can_iea !== false,
+    readiness_access_override: doc.readiness_access_override === true,
+    closure_access_override: doc.closure_access_override === true,
+    iea_access_override: doc.iea_access_override === true,
     created_at: str(doc.created_at),
     last_login: str(doc.last_login),
   };
@@ -197,7 +217,7 @@ async function listSubmissions(filter: Filter<Document>): Promise<Submission[]> 
 }
 
 /** Submissions the user made, plus those from their department. */
-export function listMySubmissions(user: CurrentUser, module?: ModuleKey) {
+export function listMySubmissions(user: CurrentUser, module?: FormModuleKey) {
   const scope: Filter<Document> = user.department
     ? { $or: [{ "identity.submitterEmail": user.email }, { "identity.dept": user.department }] }
     : { "identity.submitterEmail": user.email };
@@ -233,4 +253,51 @@ export async function listFacultyForParents(
     map.set(fac.parent_submission_id, list);
   }
   return map;
+}
+
+// ── Late-access requests and notifications ──────────────────────────
+
+export function normalizeAccessRequest(doc: Document): AccessRequest {
+  return {
+    _id: String(doc._id),
+    user_email: str(doc.user_email).toLowerCase(),
+    user_name: str(doc.user_name),
+    module: str(doc.module),
+    module_key: moduleFromLabel(str(doc.module))?.key ?? "",
+    comment: str(doc.comment),
+    status: str(doc.status) || "pending",
+    admin_comment: str(doc.admin_comment),
+    timestamp: str(doc.timestamp),
+  };
+}
+
+export async function listAccessRequests(email?: string): Promise<AccessRequest[]> {
+  const docs = await collections
+    .accessRequests()
+    .find(email ? { user_email: email } : {})
+    .sort({ timestamp: -1 })
+    .toArray();
+  return docs.map(normalizeAccessRequest);
+}
+
+export async function listNotifications(limit = 10): Promise<PortalNotification[]> {
+  const docs = await collections.notifications().find().sort({ created_at: -1 }).limit(limit).toArray();
+  return docs.map((doc) => ({
+    _id: String(doc._id),
+    title: str(doc.title),
+    body: str(doc.body),
+    created_at: str(doc.created_at),
+    type: str(doc.type) || "custom",
+  }));
+}
+
+export async function addNotification(title: string, body: string, type: "broadcast" | "custom") {
+  await collections.notifications().insertOne({ title, body, type, created_at: new Date().toISOString().replace("Z", "") });
+}
+
+/** Faculty responses across every submission the user made (for the analysis page). */
+export async function listFacultyForOwner(email: string) {
+  const parents = (await collections.submissions().find({ "identity.submitterEmail": email }).toArray()).map(normalizeSubmission);
+  const byParent = await listFacultyForParents(parents.map((p) => p._id));
+  return parents.flatMap((parent) => (byParent.get(parent._id) ?? []).map((faculty) => ({ faculty, parent })));
 }

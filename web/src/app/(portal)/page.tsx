@@ -1,113 +1,167 @@
 import Link from "next/link";
-import { ArrowRight, ClipboardCheck, FileCheck2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { getSettings, listMySubmissions } from "@/lib/data";
-import { moduleOpenFor } from "@/lib/access";
+import { listMySubmissions, listNotifications } from "@/lib/data";
+import { allModuleAccess } from "@/lib/access";
+import { listMyIea } from "@/lib/iea";
 import { MODULES, MODULE_KEYS } from "@/lib/constants";
 import { DepartmentForm } from "@/components/department-form";
-import { SubmissionList } from "@/components/submission-list";
+import { SubmissionTable } from "@/components/submission-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate } from "@/lib/utils";
-
-const ICONS = { readiness: ClipboardCheck, closure: FileCheck2 };
+import { Notice, PageHeader, Stat } from "@/components/ui/page";
+import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { formatDateTime, formatDeadline, parseDeadline } from "@/lib/utils";
 
 export default async function DashboardPage() {
-  const [user, settings] = await Promise.all([requireUser(), getSettings()]);
-  const submissions = await listMySubmissions(user);
-  // Skip a leading title such as "Dr." so the greeting uses the actual name.
-  const firstName = user.name.replace(/^(dr|prof|mr|mrs|ms)\.?\s+/i, "").split(" ")[0] || user.name;
+  const user = await requireUser();
+  const [access, submissions, iea, notifications] = await Promise.all([
+    allModuleAccess(user),
+    listMySubmissions(user),
+    listMyIea(user.email),
+    listNotifications(5),
+  ]);
+
+  const drafts = submissions.filter((s) => s._draft).length + iea.filter((s) => !s.submitted).length;
+  const submitted = submissions.filter((s) => !s._draft).length + iea.filter((s) => s.submitted).length;
+  const facultyTotal = submissions.reduce((sum, s) => sum + (s.faculty_submission_count ?? 0), 0);
+  const upcoming = MODULE_KEYS.filter((k) => access[k].open && access[k].deadline && !access[k].deadlinePassed)
+    .map((k) => ({ key: k, at: parseDeadline(access[k].deadline)! }))
+    .sort((a, b) => a.at.getTime() - b.at.getTime())[0];
+
+  const rows = MODULE_KEYS.map((key) => {
+    const a = access[key];
+    if (key === "iea") {
+      const latest = [...iea].sort((x, y) => y.lastUpdated.localeCompare(x.lastUpdated))[0];
+      return {
+        key, a,
+        status: latest ? (latest.submitted ? "Submitted" : "Draft") : "Not started",
+        last: latest?.lastUpdated ?? "",
+        href: "/iea",
+        action: latest ? "Open" : "Start",
+      };
+    }
+    const latest = submissions.find((s) => s.form_type === key);
+    return {
+      key, a,
+      status: latest ? (latest._draft ? "Draft" : "Submitted") : "Not started",
+      last: latest?.timestamp ?? "",
+      href: latest ? `/${key}/form/${latest._id}` : a.canWrite ? `/${key}/form` : `/${key}`,
+      action: latest ? (latest._draft && a.canWrite ? "Continue" : "Open") : "Start",
+    };
+  });
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-semibold">Welcome, {firstName}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {user.department || "Choose your department to get started."}
-        </p>
-      </div>
+    <>
+      <PageHeader
+        title="Dashboard"
+        description={`${user.name}${user.department ? ` · ${user.department}` : ""}`}
+      />
 
       {!user.department && (
-        <Card className="border-accent bg-accent-soft">
+        <Notice tone="warning" title="Select your department">
+          <p className="mb-2">It pre-fills your forms and shows you submissions from your department.</p>
+          <DepartmentForm current="" />
+        </Notice>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Submitted" value={submitted} tone="success" hint="Across all modules" />
+        <Stat label="Drafts in progress" value={drafts} tone="warning" hint={drafts ? "Finish and submit before the deadline" : "Nothing pending"} />
+        <Stat label="Faculty responses" value={facultyTotal} hint="Received through your share links" />
+        <Stat
+          label="Next deadline"
+          value={<span className="text-base">{upcoming ? formatDeadline(access[upcoming.key].deadline) : "None set"}</span>}
+          tone={upcoming ? "danger" : "default"}
+          hint={upcoming ? MODULES[upcoming.key].label : "No upcoming deadlines"}
+        />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
+        <Card>
           <CardHeader>
-            <CardTitle>Which department are you in?</CardTitle>
-            <CardDescription className="text-foreground/70">
-              It pre-fills your forms and shows you submissions from your department.
-            </CardDescription>
+            <CardTitle>Modules</CardTitle>
+            <CardDescription>Your status in each module for the current cycle.</CardDescription>
+          </CardHeader>
+          <Table>
+            <THead>
+              <tr>
+                <TH>Module</TH><TH>Window</TH><TH>Deadline (IST)</TH><TH>Your status</TH><TH>Last activity</TH><TH className="text-right">Action</TH>
+              </tr>
+            </THead>
+            <TBody>
+              {rows.map(({ key, a, status, last, href, action }) => (
+                <TR key={key}>
+                  <TD>
+                    <span className="font-semibold text-primary">{MODULES[key].label}</span>
+                    <span className="block max-w-md text-xs text-muted-foreground">{MODULES[key].description}</span>
+                  </TD>
+                  <TD>
+                    {!a.open ? <Badge variant="muted">Closed</Badge>
+                      : a.canWrite ? <Badge variant="success">{a.deadlinePassed ? "Late access" : "Open"}</Badge>
+                      : <Badge variant="destructive">Deadline passed</Badge>}
+                  </TD>
+                  <TD className="whitespace-nowrap">{a.deadline ? formatDeadline(a.deadline) : "—"}</TD>
+                  <TD>
+                    <Badge variant={status === "Submitted" ? "success" : status === "Draft" ? "warning" : "muted"}>{status}</Badge>
+                  </TD>
+                  <TD className="whitespace-nowrap text-xs text-muted-foreground">{last ? formatDateTime(last) : "—"}</TD>
+                  <TD className="text-right">
+                    {a.open ? (
+                      <Button size="sm" variant={status === "Submitted" ? "outline" : "default"} asChild>
+                        <Link href={href}>{action}<ArrowRight /></Link>
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not available</span>
+                    )}
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Announcements</CardTitle>
+            <CardDescription>From the Office of Academics.</CardDescription>
+          </CardHeader>
+          {notifications.length === 0 ? (
+            <CardContent className="text-[13px] text-muted-foreground">No announcements.</CardContent>
+          ) : (
+            <ul className="divide-y">
+              {notifications.map((n) => (
+                <li key={n._id} className="px-4 py-2.5">
+                  <p className="text-[13px] font-semibold">{n.title}</p>
+                  <p className="text-[13px] text-muted-foreground">{n.body}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{formatDateTime(n.created_at)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent readiness and closure submissions</CardTitle>
+        </CardHeader>
+        <SubmissionTable submissions={submissions.slice(0, 8)} currentEmail={user.email} isAdmin={user.isAdmin} showModule />
+      </Card>
+
+      {user.department && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile</CardTitle>
+            <CardDescription>{user.email}</CardDescription>
           </CardHeader>
           <CardContent>
-            <DepartmentForm current="" />
+            <p className="mb-1.5 text-xs font-semibold text-foreground/80">Department</p>
+            <DepartmentForm current={user.department} />
           </CardContent>
         </Card>
       )}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {MODULE_KEYS.map((key) => {
-          const meta = MODULES[key];
-          const Icon = ICONS[key];
-          const open = moduleOpenFor(user, settings, key);
-          const mine = submissions.filter((s) => s.form_type === key);
-          const latest = mine[0];
-          return (
-            <Card key={key} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="flex size-11 items-center justify-center rounded-lg bg-secondary text-primary">
-                    <Icon className="size-5" />
-                  </span>
-                  {!open ? (
-                    <Badge variant="muted">Closed</Badge>
-                  ) : latest ? (
-                    <Badge variant={latest._draft ? "warning" : "success"}>
-                      {latest._draft ? "Draft in progress" : `Submitted ${formatDate(latest.timestamp)}`}
-                    </Badge>
-                  ) : (
-                    <Badge variant="muted">Not started</Badge>
-                  )}
-                </div>
-                <CardTitle className="mt-3 text-lg">{meta.label}</CardTitle>
-                <CardDescription>{meta.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="mt-auto flex flex-wrap gap-2">
-                {open ? (
-                  <>
-                    <Button asChild>
-                      <Link href={latest ? `/${key}/form/${latest._id}` : `/${key}/form`}>
-                        {latest ? (latest._draft ? "Continue draft" : "Open latest") : "Start"}
-                        <ArrowRight />
-                      </Link>
-                    </Button>
-                    {mine.length > 0 && (
-                      <Button variant="outline" asChild>
-                        <Link href={`/${key}`}>All submissions ({mine.length})</Link>
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    This module is not open right now. The Office of Academics will announce when it opens.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {submissions.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold">Recent submissions</h2>
-          <SubmissionList submissions={submissions.slice(0, 5)} currentEmail={user.email} isAdmin={user.isAdmin} showModule />
-        </section>
-      )}
-
-      {user.department && (
-        <section className="flex flex-col gap-3 border-t pt-6">
-          <h2 className="text-sm font-semibold">Your department</h2>
-          <DepartmentForm current={user.department} />
-        </section>
-      )}
-    </div>
+    </>
   );
 }

@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
 const MAX_BYTES = 16 * 1024 * 1024;
 const ALLOWED = new Set([
   ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".csv", ".txt",
-  ".png", ".jpg", ".jpeg", ".webp", ".zip",
+  ".png", ".jpg", ".jpeg", ".webp", ".zip", ".rar",
 ]);
 
 function fail(error: string, status = 400) {
@@ -39,10 +39,12 @@ export async function POST(request: Request) {
   const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
   const name = `${stamp}_${base}${ext}`;
 
-  const dir = path.resolve(env.uploadDir);
+  // IEA evidence lives in its own subfolder, as it did in the old portal.
+  const sub = form.get("folder") === "iea" ? "iea" : "";
+  const dir = path.resolve(env.uploadDir, sub);
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, name), Buffer.from(await file.arrayBuffer()));
 
   // Same URL shape as the old portal, so links already stored in submissions keep working.
-  return Response.json({ ok: true, url: `/static/uploads/${name}` });
+  return Response.json({ ok: true, url: `/static/uploads/${sub ? `${sub}/` : ""}${name}`, filename: file.name });
 }

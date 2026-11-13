@@ -9,14 +9,19 @@ import type { Checklist, ChecklistAnswer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /** Upload an evidence file; returns its URL path, or null after showing the error. */
-export async function uploadEvidence(file: File, shareToken?: string): Promise<string | null> {
+export async function uploadEvidence(
+  file: File,
+  shareToken?: string,
+  folder?: string,
+): Promise<{ url: string; name: string } | null> {
   const body = new FormData();
   body.append("file", file);
   if (shareToken) body.append("share_token", shareToken);
+  if (folder) body.append("folder", folder);
   try {
     const response = await fetch("/api/upload-evidence", { method: "POST", body });
     const result = await response.json();
-    if (result.ok) return result.url as string;
+    if (result.ok) return { url: result.url as string, name: (result.filename as string) ?? file.name };
     toast.error(result.error ?? "Upload failed.");
   } catch {
     toast.error("Upload failed. Check your connection and try again.");
@@ -27,11 +32,13 @@ export async function uploadEvidence(file: File, shareToken?: string): Promise<s
 export function UploadButton({
   onUploaded,
   shareToken,
+  folder,
   disabled,
   label = "Attach file",
 }: {
-  onUploaded: (url: string) => void;
+  onUploaded: (url: string, name: string) => void;
   shareToken?: string;
+  folder?: string;
   disabled?: boolean;
   label?: string;
 }) {
@@ -49,10 +56,10 @@ export function UploadButton({
           event.target.value = "";
           if (!file) return;
           setBusy(true);
-          const url = await uploadEvidence(file, shareToken);
+          const uploaded = await uploadEvidence(file, shareToken, folder);
           setBusy(false);
-          if (url) {
-            onUploaded(url);
+          if (uploaded) {
+            onUploaded(uploaded.url, uploaded.name);
             toast.success("File attached.");
           }
         }}
@@ -61,7 +68,7 @@ export function UploadButton({
         type="button"
         disabled={disabled || busy}
         onClick={() => input.current?.click()}
-        className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded border border-input bg-card px-3 text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
       >
         {busy ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
         {label}
@@ -88,7 +95,7 @@ export function StatusPicker({
   name: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={name} className="inline-flex shrink-0 overflow-hidden rounded-md border border-input">
+    <div role="radiogroup" aria-label={name} className="inline-flex shrink-0 overflow-hidden rounded border border-input">
       {STATUS_OPTIONS.map((option) => {
         const selected = value === option;
         return (
@@ -101,7 +108,7 @@ export function StatusPicker({
             // Clicking the selected option again clears the answer.
             onClick={() => onChange(selected ? "" : option)}
             className={cn(
-              "h-10 min-w-12 border-r border-input px-3 text-[13px] font-medium last:border-r-0 disabled:cursor-not-allowed",
+              "h-9 min-w-11 border-r border-input px-3 text-[13px] font-medium last:border-r-0 disabled:cursor-not-allowed",
               selected ? STATUS_STYLE[option] : "bg-card text-muted-foreground hover:bg-muted",
             )}
           >
@@ -121,7 +128,7 @@ export function StatusBadge({ status }: { status: string }) {
       : status === "No"
         ? "bg-destructive-soft text-destructive"
         : "bg-muted text-muted-foreground";
-  return <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", style)}>{status}</span>;
+  return <span className={cn("rounded-sm px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide", style)}>{status}</span>;
 }
 
 /** Turn any uploaded-file path or URL inside a remark into a link. */
@@ -164,15 +171,15 @@ export function ChecklistEditor({
     onChange({ ...value, [id]: { ...answer(id), ...patch } });
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-5">
       {sections.map((section) => (
         <section key={section.title}>
-          <h3 className="border-b-2 border-accent pb-2 text-sm font-semibold text-primary">{section.title}</h3>
+          <h3 className="rounded-sm border-l-[3px] border-accent bg-secondary px-3 py-1.5 text-[13px] font-semibold text-primary">{section.title}</h3>
           <ul className="divide-y">
             {section.items.map((item) => {
               const current = answer(item.id);
               return (
-                <li key={item.id} className="flex flex-col gap-3 py-4">
+                <li key={item.id} className="flex flex-col gap-2 py-3">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="flex gap-3 text-sm">
                       <span className="w-9 shrink-0 font-mono text-xs leading-5 text-muted-foreground">{item.id}</span>
@@ -225,7 +232,7 @@ export function ChecklistReadOnly({ sections, value }: { sections: ChecklistSect
     <div className="flex flex-col gap-6">
       {sections.map((section) => (
         <section key={section.title}>
-          <h4 className="border-b pb-2 text-sm font-semibold text-primary">{section.title}</h4>
+          <h4 className="rounded-sm border-l-[3px] border-accent bg-secondary px-3 py-1.5 text-[13px] font-semibold text-primary">{section.title}</h4>
           <ul className="divide-y">
             {section.items.map((item) => {
               const current = value[item.id] ?? { status: "", remark: "" };

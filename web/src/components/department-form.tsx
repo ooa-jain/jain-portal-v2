@@ -27,7 +27,7 @@ export function DepartmentForm({ current }: { current: string }) {
         });
       }}
     >
-      <Select aria-label="Your department" value={value} onChange={(e) => setValue(e.target.value)} className="sm:max-w-md">
+      <Select aria-label="Your department" value={value} onChange={(e) => setValue(e.target.value)} className="bg-card sm:max-w-md">
         <option value="">Select your department</option>
         {DEPARTMENTS.map((d) => (
           <option key={d}>{d}</option>

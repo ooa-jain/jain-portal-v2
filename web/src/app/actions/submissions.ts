@@ -5,19 +5,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { collections } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import {
-  canEditSubmission,
-  getSettings,
-  getSubmission,
-  toObjectId,
-} from "@/lib/data";
-import {
-  CAMPUSES,
-  DEPARTMENTS,
-  HOD_CLOSURE_SECTIONS,
-  HOD_SECTIONS,
-  MODULES,
-} from "@/lib/constants";
+import { canEditSubmission, getSubmission, toObjectId } from "@/lib/data";
+import { CAMPUSES, DEPARTMENTS, FREE_EDIT_LIMIT, HOD_CLOSURE_SECTIONS, HOD_SECTIONS } from "@/lib/constants";
+import { writeBlockedReason } from "@/lib/access";
 import type { ActionResult } from "@/lib/types";
 import { nowStamp } from "@/lib/utils";
 
@@ -57,10 +47,8 @@ export async function saveSubmission(
   if (!parsed.success) return { ok: false, error: "Some fields are invalid. Please review the form." };
   const data = parsed.data;
 
-  const meta = MODULES[data.form_type];
-  const settings = await getSettings();
-  const allowed = user.isAdmin || (settings[meta.enabledKey] && (data.form_type === "readiness" ? user.canReadiness : user.canClosure));
-  if (!allowed) return { ok: false, error: `${meta.label} is not open for you right now.` };
+  const blocked = await writeBlockedReason(user, data.form_type);
+  if (blocked) return { ok: false, error: blocked };
 
   // A final submission needs the identifying details; a draft can be partial.
   if (!data.draft) {
@@ -98,6 +86,19 @@ export async function saveSubmission(
 
     const shareToken = existing.share_token || randomBytes(16).toString("base64url");
     const wasFinal = !existing._draft;
+
+    // A submitted form changes only through "resubmit"; background draft saves leave it untouched.
+    if (wasFinal && data.draft) return { ok: true, id: existing._id, shareToken };
+
+    // After the free edits are used up, each further edit needs admin approval.
+    const approved = existing.edit_request?.status === "approved";
+    if (wasFinal && !user.isAdmin && existing.edit_count >= FREE_EDIT_LIMIT && !approved) {
+      return {
+        ok: false,
+        error: `This submission has already been edited ${FREE_EDIT_LIMIT} times. Request edit approval from the Office of Academics.`,
+      };
+    }
+
     await submissions.updateOne(
       { _id: toObjectId(existing._id)! },
       {
@@ -111,11 +112,12 @@ export async function saveSubmission(
           programs: [],
           ...(data.form_type === "readiness" ? { hodChecklist } : { hodReport }),
           form_type: data.form_type,
-          // Once submitted, a later "save draft" must not turn it back into a draft.
-          _draft: wasFinal ? false : data.draft,
+          _draft: data.draft,
           timestamp,
           share_token: shareToken,
-          edit_count: existing.edit_count + (wasFinal && !data.draft ? 1 : 0),
+          edit_count: existing.edit_count + (wasFinal ? 1 : 0),
+          // An approval is used up by the edit it allowed.
+          ...(wasFinal && approved ? { edit_request: null } : {}),
         },
       },
     );
@@ -148,6 +150,22 @@ export async function deleteSubmission(id: string): Promise<ActionResult> {
   }
   await collections.submissions().deleteOne({ _id: toObjectId(id)! });
   await collections.facultySubmissions().deleteMany({ parent_submission_id: id });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Ask an admin to allow another edit once the free edits are used up. */
+export async function requestEdit(id: string, comment: string): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Your session has expired. Please sign in again." };
+  const existing = await getSubmission(id);
+  if (!existing || !canEditSubmission(user, existing)) return { ok: false, error: "Submission not found." };
+  if (!comment.trim()) return { ok: false, error: "Say briefly what you need to change." };
+
+  await collections.submissions().updateOne(
+    { _id: toObjectId(id)! },
+    { $set: { edit_request: { pending: true, status: "pending", comment: comment.trim().slice(0, 2000), timestamp: nowStamp() } } },
+  );
   revalidatePath("/", "layout");
   return { ok: true };
 }

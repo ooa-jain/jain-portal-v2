@@ -5,22 +5,25 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Copy, Download, Loader2, Mail, RefreshCw, Save, Send } from "lucide-react";
 import { toast } from "sonner";
-import { saveSubmission } from "@/app/actions/submissions";
+import { requestEdit, saveSubmission } from "@/app/actions/submissions";
 import { sendFacultyLink } from "@/app/actions/faculty";
 import { ChecklistEditor, ChecklistReadOnly, RemarkText, UploadButton } from "@/components/checklist";
 import { FacultyResponses } from "@/components/faculty-responses";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
+import { Notice } from "@/components/ui/page";
 import {
   CAMPUSES,
   DEPARTMENTS,
   HOD_CLOSURE_SECTIONS,
   HOD_SECTIONS,
   MID_SEM_ITEM_ID,
+  FREE_EDIT_LIMIT,
   MODULES,
-  type ModuleKey,
+  type FormModuleKey as ModuleKey,
 } from "@/lib/constants";
 import type { Checklist, FacultySubmission, Report, Submission } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -46,6 +49,9 @@ export type WizardProps = {
   defaults: { name: string; email: string; department: string };
   mailEnabled: boolean;
   initialStep?: number;
+  /** Why the form is read-only, when the user owns it but may not change it right now. */
+  lockReason?: "deadline" | "edit-limit" | null;
+  isAdmin?: boolean;
 };
 
 function emptyReport(): Report {
@@ -59,7 +65,7 @@ function today() {
 }
 
 export function SubmissionWizard(props: WizardProps) {
-  const { module, submission, faculty, canEdit, years, semesters, defaults, mailEnabled, initialStep = 0 } = props;
+  const { module, submission, faculty, canEdit, years, semesters, defaults, mailEnabled, initialStep = 0, lockReason = null, isAdmin = false } = props;
   const router = useRouter();
   const meta = MODULES[module];
   const steps = [
@@ -153,7 +159,8 @@ export function SubmissionWizard(props: WizardProps) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
     // Autosave when leaving a step with changes, or when the faculty link is needed.
-    if (canEdit && (dirty || (next === 2 && !shareToken))) {
+    // A submitted form is only written by "resubmit", so it is never autosaved.
+    if (canEdit && isDraft && (dirty || (next === 2 && !shareToken))) {
       startSaving(async () => {
         if ((await persist(true, next)) === "saved") move();
       });
@@ -190,15 +197,15 @@ export function SubmissionWizard(props: WizardProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link href={`/${module}`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="size-4" />
+          <Link href={`/${module}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="size-3.5" />
             All {meta.short.toLowerCase()} submissions
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold">{meta.label}</h1>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <h1 className="mt-1 text-xl font-semibold text-primary">{meta.label}</h1>
+          <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
             {identity.dept || "New submission"}
             {identity.semester && <span>· {identity.semester}</span>}
             {id ? (
@@ -209,36 +216,71 @@ export function SubmissionWizard(props: WizardProps) {
             {!canEdit && <Badge variant="muted">View only</Badge>}
           </p>
         </div>
-        {canEdit && (
-          <Button variant="outline" onClick={saveDraft} disabled={saving}>
-            {saving ? <Loader2 className="animate-spin" /> : <Save />}
-            {isDraft ? "Save draft" : "Save changes"}
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {id && (
+            <Button variant="outline" asChild>
+              <a href={`/api/export/${id}`}>
+                <Download />
+                Excel
+              </a>
+            </Button>
+          )}
+          {canEdit && isDraft && (
+            <Button variant="outline" onClick={saveDraft} disabled={saving}>
+              {saving ? <Loader2 className="animate-spin" /> : <Save />}
+              Save draft
+            </Button>
+          )}
+        </div>
       </div>
 
-      <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {lockReason === "deadline" && (
+        <Notice tone="danger" title="The deadline has passed">
+          This submission is read-only. Request late access from the {meta.label} page to make changes.
+        </Notice>
+      )}
+      {lockReason === "edit-limit" && submission && (
+        <Notice
+          tone="warning"
+          title={`Edit limit reached (${FREE_EDIT_LIMIT} edits used)`}
+          action={submission.edit_request?.status === "pending" ? undefined : <EditRequestDialog id={submission._id} />}
+        >
+          {submission.edit_request?.status === "pending"
+            ? "Your edit request is waiting for approval by the Office of Academics."
+            : "Further changes need approval from the Office of Academics."}
+        </Notice>
+      )}
+      {canEdit && !isDraft && !isAdmin && submission && (
+        <Notice tone="info" title="This form is already submitted">
+          Changes are saved only when you choose &ldquo;Save and resubmit&rdquo; on the last step.{" "}
+          {submission.edit_request?.status === "approved"
+            ? "An admin has approved one more edit."
+            : `Edits used: ${Math.min(submission.edit_count, FREE_EDIT_LIMIT)} of ${FREE_EDIT_LIMIT}.`}
+        </Notice>
+      )}
+
+      <ol className="grid grid-cols-2 overflow-hidden rounded-md border bg-card sm:grid-cols-4">
         {steps.map((label, index) => (
-          <li key={label}>
+          <li key={label} className="border-b border-r last:border-r-0 sm:border-b-0">
             <button
               type="button"
               onClick={() => goTo(index)}
               disabled={saving}
               aria-current={index === step ? "step" : undefined}
               className={cn(
-                "flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition-colors",
+                "flex w-full items-center gap-2.5 border-b-[3px] px-3 py-2.5 text-left text-[13px] font-medium transition-colors",
                 index === step
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "bg-card text-muted-foreground hover:text-foreground",
+                  ? "border-accent bg-secondary text-primary"
+                  : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <span
                 className={cn(
-                  "flex size-6 shrink-0 items-center justify-center rounded-full text-xs",
-                  index === step ? "bg-accent text-accent-foreground" : index < step ? "bg-success-soft text-success" : "bg-muted",
+                  "flex size-5 shrink-0 items-center justify-center rounded-sm text-[11px] font-semibold",
+                  index === step ? "bg-primary text-primary-foreground" : index < step ? "bg-success-soft text-success" : "bg-muted",
                 )}
               >
-                {index < step ? <Check className="size-3.5" /> : index + 1}
+                {index < step ? <Check className="size-3" /> : index + 1}
               </span>
               <span className="truncate">{label}</span>
             </button>
@@ -337,13 +379,13 @@ export function SubmissionWizard(props: WizardProps) {
             return (
               <Card key={section.id}>
                 <CardHeader>
-                  <CardTitle className="flex gap-3">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-secondary text-xs text-primary">
+                  <CardTitle className="flex gap-2.5">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-sm bg-primary text-[11px] text-primary-foreground">
                       {section.id}
                     </span>
                     {section.title}
                   </CardTitle>
-                  <CardDescription className="pl-9">{section.hint}</CardDescription>
+                  <CardDescription className="pl-[30px]">{section.hint}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
                   <Textarea
@@ -512,7 +554,7 @@ function FacultyStep({
       </Card>
 
       <Card>
-        <CardHeader className="flex-row items-start justify-between gap-3">
+        <CardHeader className="flex-row items-center justify-between gap-3">
           <div className="flex flex-col gap-1">
             <CardTitle>Faculty responses ({faculty.length})</CardTitle>
             <CardDescription>
@@ -595,18 +637,18 @@ function ReviewStep({
                 { label: "N/A", value: na, tone: "" },
                 { label: "Not answered", value: blank, tone: blank ? "text-warning" : "" },
               ].map((stat) => (
-                <div key={stat.label} className="rounded-lg bg-muted/60 p-3">
+                <div key={stat.label} className="rounded border bg-muted/40 px-3 py-2">
                   <dt className="text-xs text-muted-foreground">{stat.label}</dt>
-                  <dd className={cn("text-2xl font-semibold", stat.tone)}>{stat.value}</dd>
+                  <dd className={cn("text-xl font-semibold tabular-nums", stat.tone)}>{stat.value}</dd>
                 </div>
               ))}
-              <div className="col-span-2 rounded-lg bg-muted/60 p-3 sm:col-span-1">
+              <div className="col-span-2 rounded border bg-muted/40 px-3 py-2 sm:col-span-1">
                 <dt className="text-xs text-muted-foreground">Mid Sem Review</dt>
                 <dd className="text-sm font-semibold leading-8">{status(MID_SEM_ITEM_ID) || "Not set"}</dd>
               </div>
             </dl>
             {no.length > 0 && (
-              <div className="rounded-lg bg-destructive-soft p-4">
+              <div className="rounded border border-destructive/20 bg-destructive-soft p-3">
                 <p className="text-sm font-semibold text-destructive">
                   {no.length} item{no.length > 1 ? "s" : ""} marked No
                 </p>
@@ -620,7 +662,7 @@ function ReviewStep({
               </div>
             )}
             {blank > 0 && (
-              <p className="rounded-lg bg-warning-soft p-4 text-sm text-warning">
+              <p className="rounded border border-accent/40 bg-warning-soft p-3 text-sm text-warning">
                 {blank} item{blank > 1 ? "s are" : " is"} not answered. You can still submit, and edit later.
               </p>
             )}
@@ -637,7 +679,7 @@ function ReviewStep({
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             {unfilled.length > 0 && (
-              <p className="rounded-lg bg-warning-soft p-4 text-sm text-warning">
+              <p className="rounded border border-accent/40 bg-warning-soft p-3 text-sm text-warning">
                 Not filled yet: {unfilled.map((s) => s.id).join(", ")}. You can still submit, and edit later.
               </p>
             )}
@@ -663,13 +705,41 @@ function ReviewStep({
   );
 }
 
-export function ExportLinks({ id }: { id: string }) {
+function EditRequestDialog({ id }: { id: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [comment, setComment] = useState("");
+  const [pending, startTransition] = useTransition();
   return (
-    <Button variant="outline" size="sm" asChild>
-      <a href={`/api/export/${id}`}>
-        <Download />
-        Excel
-      </a>
-    </Button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">Request edit approval</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Request edit approval</DialogTitle>
+          <DialogDescription>Say what you need to change. An admin will review the request.</DialogDescription>
+        </DialogHeader>
+        <Textarea aria-label="What needs to change" rows={4} placeholder="What needs to change, and why" value={comment} onChange={(e) => setComment(e.target.value)} />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button
+            disabled={pending}
+            onClick={() =>
+              startTransition(async () => {
+                const result = await requestEdit(id, comment);
+                if (!result.ok) return void toast.error(result.error);
+                toast.success("Edit request sent.");
+                setOpen(false);
+                router.refresh();
+              })
+            }
+          >
+            {pending && <Loader2 className="animate-spin" />}
+            Send request
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

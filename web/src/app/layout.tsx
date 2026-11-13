@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: { default: "Jain Sarathi — Office of Academics", template: "%s · Jain Sarathi" },
   description: "Semester Readiness and Semester Closure portal, Office of Academics, JAIN (Deemed-to-be University).",
   icons: { icon: "/brand/favicon-32.png", apple: "/brand/jgi-icon-192.png" },
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = { themeColor: "#0a2558" };

@@ -40,4 +40,10 @@ export const collections = {
   facultySubmissions: () => col<Document>("faculty_submissions"),
   users: () => col<Document>("users"),
   settings: () => col<{ _id: string } & Document>("settings"),
+  iea: () => col<Document>("iea_submissions"),
+  ieaFeedback: () => col<Document>("iea_feedback"),
+  accessRequests: () => col<Document>("access_requests"),
+  notifications: () => col<Document>("notifications"),
+  sentReminders: () => col<{ _id: string } & Document>("sent_reminders"),
+  pwaAnalytics: () => col<{ _id: string } & Document>("pwa_analytics"),
 };
