@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth";
-import { listAllIea, listIeaFeedback } from "@/lib/iea";
+import { listAllIea, listIeaFeedback, recentIea } from "@/lib/iea";
 import { IEA_SCHOOLS, IEA_SECTIONS, IEA_YEARS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyRow, PageHeader, Stat } from "@/components/ui/page";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { formatDateTime, parseStamp } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "IEA Analysis" };
 
@@ -53,10 +53,7 @@ export default async function IeaAnalysisPage() {
     };
   });
 
-  const cutoff = Date.now() - 48 * 3_600_000;
-  const recent = submissions
-    .filter((s) => (parseStamp(s.lastUpdated)?.getTime() ?? 0) >= cutoff)
-    .sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated));
+  const recent = recentIea(submissions);
 
   return (
     <>

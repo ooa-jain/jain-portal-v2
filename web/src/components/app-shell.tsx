@@ -43,7 +43,7 @@ function Sidebar({ groups, pathname, onNavigate }: { groups: NavGroup[]; pathnam
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <Link href="/" onClick={onNavigate} className="flex h-14 shrink-0 items-center gap-2.5 border-b border-white/10 px-4">
-        <Image src="/brand/jgi-icon-192.png" alt="" width={30} height={30} className="rounded" />
+        <Image src="/brand/jgi-icon-192.png" alt="" width={30} height={30} className="rounded bg-white" />
         <span className="leading-tight">
           <span className="block text-sm font-semibold text-white">Jain Sarathi</span>
           <span className="block text-[10px] uppercase tracking-[0.14em] text-sidebar-muted">Office of Academics</span>

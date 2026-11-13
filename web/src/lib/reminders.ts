@@ -67,12 +67,12 @@ export async function allRecipients(): Promise<Recipient[]> {
 export async function remindPending(recipients: Recipient[], modules: ModuleKey[]): Promise<number> {
   const settings = await getSettings();
   let sent = 0;
-  for (const module of modules) {
-    if (!settings[MODULES[module].enabledKey]) continue;
-    const deadline = settings[MODULES[module].deadlineKey];
+  for (const key of modules) {
+    if (!settings[MODULES[key].enabledKey]) continue;
+    const deadline = settings[MODULES[key].deadlineKey];
     for (const person of recipients) {
-      if (await hasSubmitted(module, person.email)) continue;
-      if (await sendReminderEmail(person.email, person.name, module, deadline, "manual")) sent++;
+      if (await hasSubmitted(key, person.email)) continue;
+      if (await sendReminderEmail(person.email, person.name, key, deadline, "manual")) sent++;
     }
   }
   return sent;
@@ -84,13 +84,15 @@ export async function remindPending(recipients: Recipient[], modules: ModuleKey[
  * recorded so a reminder is never sent twice, however often this runs.
  */
 export async function runDeadlineReminders(now = new Date()): Promise<{ sent: number; checked: string[] }> {
+  const checked: string[] = [];
+  // Without SMTP nothing can be sent; do not record anything as sent.
+  if (!env.mail) return { sent: 0, checked };
   const settings = await getSettings();
   const recipients = await allRecipients();
-  const checked: string[] = [];
   let sent = 0;
 
-  for (const module of MODULE_KEYS) {
-    const meta = MODULES[module];
+  for (const key of MODULE_KEYS) {
+    const meta = MODULES[key];
     const deadline = settings[meta.deadlineKey];
     const due = parseDeadline(deadline);
     if (!settings[meta.enabledKey] || !due) continue;
@@ -99,17 +101,22 @@ export async function runDeadlineReminders(now = new Date()): Promise<{ sent: nu
 
     for (const [window, limit] of [["2day", 48], ["1hour", 1]] as const) {
       if (hoursLeft > limit) continue;
-      checked.push(`${module}:${window}`);
+      checked.push(`${key}:${window}`);
       for (const person of recipients) {
-        if (await hasSubmitted(module, person.email)) continue;
-        const key = `reminder_${module}_${window}_${deadline}_${person.email}`;
+        if (await hasSubmitted(key, person.email)) continue;
+        const reminderId = `reminder_${key}_${window}_${deadline}_${person.email}`;
         // Claim the key first: if two runs overlap, only one inserts and sends.
         try {
-          await collections.sentReminders().insertOne({ _id: key, sent_at: new Date().toISOString().replace("Z", "") });
+          await collections.sentReminders().insertOne({ _id: reminderId, sent_at: new Date().toISOString().replace("Z", "") });
         } catch {
           continue; // already sent
         }
-        if (await sendReminderEmail(person.email, person.name, module, deadline, window)) sent++;
+        if (await sendReminderEmail(person.email, person.name, key, deadline, window)) {
+          sent++;
+        } else {
+          // Sending failed: release the claim so the next run tries again.
+          await collections.sentReminders().deleteOne({ _id: reminderId });
+        }
       }
     }
   }

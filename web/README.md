@@ -9,16 +9,18 @@ carries over with no migration.
 ## What it includes
 
 - Google sign-in (Firebase), limited to `@jainuniversity.ac.in`; the token is verified on the server
-- Semester Readiness: details, 27-item HOD checklist, faculty checklists, review and submit
-- Semester Closure: details, 14-section HOD report, faculty checklists, review and submit
-- Public faculty checklist link (no sign-in), HOD review of each response
-- Evidence file uploads
-- Excel exports: one submission, HOD checklist, everything (admin)
-- Admin: department status, all submissions, users and access, module and semester settings
+- ERP-style layout: sidebar navigation, notification bell, data tables, admin section
+- Semester Readiness and Semester Closure: details, HOD checklist / report, faculty checklist link, HOD review, submit
+- Innovation & Emerging Areas (IEA): per-person submissions by school / department / level, five academic years, sections A–F, evidence, versions, feedback, analysis
+- Deadlines per module (India time), late-access requests and approvals
+- Edit limit: a submitted form can be edited 2 times, then needs admin approval
+- Announcements, manual reminder emails, and scheduled deadline reminders
+- Admin: overview, all submissions, IEA, users and access, "view as" a user, requests, notifications, settings
+- Excel exports for every module; installable as an app (PWA)
 
-Not included (dropped from the old app): IEA module, deadlines and extension
-requests, reminder emails, notifications, edit-request approvals,
-impersonation, PWA install, password login.
+Not carried over from the old app: email/password login and the separate
+admin username/password + OTP login (sign-in is Google only), the guided
+tour, and the idle-timeout / screen-lock preference.
 
 ## Run locally
 
@@ -75,6 +77,16 @@ Start it with `systemctl enable --now jain-sarathi-web.service` (the `enable`
 matters: it is what brings the service back after a reboot). Then change the
 Nginx `proxy_pass` from port 8087 to 8088 and reload Nginx. The old Flask
 service can stay installed as a fallback until the new one is confirmed.
+
+### Scheduled deadline reminders
+
+Set `CRON_SECRET` in `.env`, then call the endpoint every 10 minutes from
+root's crontab (`crontab -e`). It emails people who have not submitted, 2 days
+and 1 hour before each module deadline, and never sends the same reminder twice.
+
+```
+*/10 * * * * . /var/www/jain-ooa-portal/web/.env; curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8088/api/cron/deadline-reminders >/dev/null
+```
 
 Before switching over:
 

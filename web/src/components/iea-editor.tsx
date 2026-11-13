@@ -329,7 +329,7 @@ export function IeaEditor({
                 <span className="font-semibold">Version {v.version}</span>
                 {v.current && <Badge variant="success">Current</Badge>}
                 <span className="text-muted-foreground">{formatDateTime(v.at)}</span>
-                <span className="text-muted-foreground">{v.entries} entries</span>
+                <span className="text-muted-foreground">{v.entries} {v.entries === 1 ? "entry" : "entries"}</span>
                 <span className="text-muted-foreground">{v.by}</span>
               </li>
             ))}

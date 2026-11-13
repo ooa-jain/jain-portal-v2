@@ -39,7 +39,7 @@ export default async function DashboardPage() {
         status: latest ? (latest.submitted ? "Submitted" : "Draft") : "Not started",
         last: latest?.lastUpdated ?? "",
         href: "/iea",
-        action: latest ? "Open" : "Start",
+          action: latest ? "Open" : a.canWrite ? "Start" : "View",
       };
     }
     const latest = submissions.find((s) => s.form_type === key);
@@ -48,7 +48,7 @@ export default async function DashboardPage() {
       status: latest ? (latest._draft ? "Draft" : "Submitted") : "Not started",
       last: latest?.timestamp ?? "",
       href: latest ? `/${key}/form/${latest._id}` : a.canWrite ? `/${key}/form` : `/${key}`,
-      action: latest ? (latest._draft && a.canWrite ? "Continue" : "Open") : "Start",
+      action: latest ? (latest._draft && a.canWrite ? "Continue" : "Open") : a.canWrite ? "Start" : "View",
     };
   });
 
@@ -93,9 +93,9 @@ export default async function DashboardPage() {
             <TBody>
               {rows.map(({ key, a, status, last, href, action }) => (
                 <TR key={key}>
-                  <TD>
+                  <TD className="min-w-72">
                     <span className="font-semibold text-primary">{MODULES[key].label}</span>
-                    <span className="block max-w-md text-xs text-muted-foreground">{MODULES[key].description}</span>
+                    <span className="block text-xs text-muted-foreground">{MODULES[key].description}</span>
                   </TD>
                   <TD>
                     {!a.open ? <Badge variant="muted">Closed</Badge>
@@ -109,7 +109,7 @@ export default async function DashboardPage() {
                   <TD className="whitespace-nowrap text-xs text-muted-foreground">{last ? formatDateTime(last) : "—"}</TD>
                   <TD className="text-right">
                     {a.open ? (
-                      <Button size="sm" variant={status === "Submitted" ? "outline" : "default"} asChild>
+                      <Button size="sm" variant={action === "Start" || action === "Continue" ? "default" : "outline"} asChild>
                         <Link href={href}>{action}<ArrowRight /></Link>
                       </Button>
                     ) : (

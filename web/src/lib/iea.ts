@@ -3,7 +3,7 @@ import type { Document, Filter } from "mongodb";
 import { collections } from "./db";
 import { IEA_SECTIONS, IEA_YEARS } from "./constants";
 import type { IeaEntry, IeaFeedback, IeaSubmission, IeaVersion, IeaYears } from "./types";
-import { str } from "./utils";
+import { parseStamp, str } from "./utils";
 
 /** Old documents sometimes used en/em dashes in year labels. */
 export function normYear(year: unknown): string {
@@ -174,4 +174,12 @@ export async function listIeaFeedback(): Promise<IeaFeedback[]> {
     submitterName: str(doc.submitterName),
     createdAt: str(doc.createdAt),
   }));
+}
+
+/** Submissions saved or submitted within the last `hours`, newest first. */
+export function recentIea(submissions: IeaSubmission[], hours = 48): IeaSubmission[] {
+  const cutoff = Date.now() - hours * 3_600_000;
+  return submissions
+    .filter((s) => (parseStamp(s.lastUpdated)?.getTime() ?? 0) >= cutoff)
+    .sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated));
 }
