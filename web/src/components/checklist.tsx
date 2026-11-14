@@ -20,9 +20,14 @@ export async function uploadEvidence(
   if (folder) body.append("folder", folder);
   try {
     const response = await fetch("/api/upload-evidence", { method: "POST", body });
-    const result = await response.json();
-    if (result.ok) return { url: result.url as string, name: (result.filename as string) ?? file.name };
-    toast.error(result.error ?? "Upload failed.");
+    const result = await response.json().catch(() => null);
+    if (result?.ok) return { url: result.url as string, name: (result.filename as string) ?? file.name };
+    toast.error(
+      result?.error ??
+        (response.status === 413
+          ? "This file is larger than the server currently allows. Upload a smaller file or ask the administrator to raise the limit."
+          : `Upload failed (error ${response.status}).`),
+    );
   } catch {
     toast.error("Upload failed. Check your connection and try again.");
   }

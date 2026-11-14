@@ -90,11 +90,19 @@ function UploadDialog({
     body.append("file", file);
     try {
       const response = await fetch("/api/documents", { method: "POST", body });
-      const data = await response.json();
-      if (!data.ok) setError(data.error ?? "Upload failed.");
-      else {
+      const data = await response.json().catch(() => null);
+      if (data?.ok) {
         setResult(data.document);
         router.refresh();
+      } else if (data?.error) {
+        setError(data.error);
+      } else if (response.status === 413) {
+        // The web server refused the file before the portal saw it.
+        setError("This file is larger than the server currently allows. Ask the portal administrator to raise the upload limit, or upload a smaller file.");
+      } else if (response.status === 401) {
+        setError("Your session has expired. Sign in again and retry.");
+      } else {
+        setError(`The server could not accept the upload (error ${response.status}). Please try again; if it keeps failing, contact the Office of Academic Affairs.`);
       }
     } catch {
       setError("Upload failed. Check your connection and try again.");
