@@ -14,7 +14,7 @@ export function esc(value: string): string {
 function wrap(bodyHtml: string): string {
   return `
   <div style="font-family:Roboto,'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f4f5f7;padding:32px">
-    <div style="background:#0e2a5c;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
+    <div style="background:#23263f;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
       <div style="color:#fff;font-size:20px;font-weight:700">Jain OOA Portal</div>
       <div style="color:#c7d0e6;font-size:12px;margin-top:4px">Office of Academic Affairs · JAIN (Deemed-to-be University)</div>
     </div>

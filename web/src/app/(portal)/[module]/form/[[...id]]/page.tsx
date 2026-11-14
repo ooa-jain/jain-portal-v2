@@ -6,6 +6,10 @@ import { FREE_EDIT_LIMIT } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { SubmissionWizard } from "@/components/submission-wizard";
 
+export function generateStaticParams() {
+  return [{ module: "readiness", id: [] }, { module: "closure", id: [] }];
+}
+
 export const metadata: Metadata = { title: "Submission" };
 
 export default async function FormPage({ params, searchParams }: PageProps<"/[module]/form/[[...id]]">) {

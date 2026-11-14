@@ -50,7 +50,7 @@ export async function sendReminderEmail(
      <p>This is a reminder that ${lead}</p>
      ${deadline ? `<p style="font-weight:700;color:#b42318">Deadline: ${esc(when)} (IST)</p>` : ""}
      <p>Please sign in and complete your submission. If you have already submitted, ignore this email.</p>
-     ${url ? `<p><a href="${url}" style="display:inline-block;background:#0a2558;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:700">Open the portal</a></p>` : ""}`,
+     ${url ? `<p><a href="${url}" style="display:inline-block;background:#23263f;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:700">Open the portal</a></p>` : ""}`,
   );
 }
 

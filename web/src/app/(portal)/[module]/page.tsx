@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader, Stat } from "@/components/ui/page";
 
+/** Only /readiness and /closure exist here; any other address is a 404, even when signed out. */
+export function generateStaticParams() {
+  return [{ module: "readiness" }, { module: "closure" }];
+}
+export const dynamicParams = false;
+
 export async function generateMetadata({ params }: PageProps<"/[module]">): Promise<Metadata> {
   const { module } = await params;
   return { title: isFormModuleKey(module) ? MODULES[module].label : "Not found" };

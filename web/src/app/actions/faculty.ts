@@ -210,7 +210,7 @@ export async function sendFacultyLink(
       `<p>Dear ${esc(recipient.name || "Faculty")},</p>
        <p><strong>${esc(sub.identity.hodName)}</strong>, Head of <strong>${esc(sub.identity.dept)}</strong>, has asked you to fill the faculty
        ${esc(label)} checklist for <strong>${esc(sub.identity.semester)}</strong>${sub.identity.hodDeadline ? ` by <strong>${esc(sub.identity.hodDeadline)}</strong>` : ""}.</p>
-       <p><a href="${url}" style="display:inline-block;background:#0a2558;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700">Open checklist</a></p>
+       <p><a href="${url}" style="display:inline-block;background:#23263f;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700">Open checklist</a></p>
        <p style="font-size:12px;color:#5b6785;word-break:break-all">${url}</p>`,
     );
     (ok ? sent : failed).push(recipient.email);

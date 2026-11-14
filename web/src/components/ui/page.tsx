@@ -69,7 +69,7 @@ export function Stat({
   progress?: number;
 }) {
   return (
-    <div className="rounded-[10px] border bg-card px-4 py-3.5 shadow-[0_1px_2px_rgba(16,24,40,.04)]">
+    <div className="rounded-2xl border border-white/80 bg-card px-4 py-3.5 shadow-[0_10px_30px_-18px_rgba(35,38,63,.35)]">
       <p className="text-[13px] font-semibold text-[#344054]">{label}</p>
       <p className={cn("mt-1.5 text-[28px] font-bold tabular-nums leading-none text-primary", TONES[tone])}>{value}</p>
       {progress !== undefined && (

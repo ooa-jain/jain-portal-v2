@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
-import "@fontsource/roboto/900.css";
+import "@fontsource-variable/manrope";
 import "@fontsource/roboto-mono/500.css";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -14,7 +11,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
-export const viewport: Viewport = { themeColor: "#0a2558" };
+export const viewport: Viewport = { themeColor: "#a9cdee" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

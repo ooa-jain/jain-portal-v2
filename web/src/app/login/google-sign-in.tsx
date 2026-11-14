@@ -74,8 +74,8 @@ export function GoogleSignIn({ config, domain }: { config: FirebaseConfig; domai
 
   return (
     <div className="flex flex-col gap-3">
-      <Button size="lg" className="h-[46px] w-full rounded-[10px] text-[15px]" onClick={handleClick} disabled={busy}>
-        {busy ? <Loader2 className="animate-spin" /> : <span className="flex size-6 items-center justify-center rounded-full bg-white"><GoogleMark /></span>}
+      <Button variant="outline" size="lg" className="h-11 w-full rounded-xl border-[#dbe6f2] text-[14px] text-[#23263f]" onClick={handleClick} disabled={busy}>
+        {busy ? <Loader2 className="animate-spin" /> : <GoogleMark />}
         {busy ? "Signing in…" : "Sign in with Google"}
       </Button>
       {error && (
