@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signInWithGoogle } from "@/app/actions/auth";
 
-type FirebaseConfig = {
+export type FirebaseConfig = {
   apiKey: string;
   authDomain: string;
   projectId: string;

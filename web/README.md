@@ -8,7 +8,8 @@ carries over with no migration.
 
 ## What it includes
 
-- Google sign-in (Firebase), limited to `@jainuniversity.ac.in`; the token is verified on the server
+- Sign-in with email and password, or Google (Firebase, limited to `@jainuniversity.ac.in`, token verified on the server)
+- Admins register users with a generated or typed password and can reset it; users can change their own. Five wrong attempts lock an account for 15 minutes. Passwords saved by the old Flask app keep working (same Werkzeug hash format)
 - ERP-style layout: sidebar navigation, notification bell, data tables, admin section
 - Semester Readiness and Semester Closure: details, HOD checklist / report, faculty checklist link, HOD review, submit
 - Innovation & Emerging Areas (IEA): per-person submissions by school / department / level, five academic years, sections A–F, evidence, versions, feedback, analysis
@@ -18,9 +19,9 @@ carries over with no migration.
 - Admin: overview, all submissions, IEA, users and access, "view as" a user, requests, notifications, settings
 - Excel exports for every module; installable as an app (PWA)
 
-Not carried over from the old app: email/password login and the separate
-admin username/password + OTP login (sign-in is Google only), the guided
-tour, and the idle-timeout / screen-lock preference.
+Not carried over from the old app: self-registration, the emailed
+password-reset code, the separate admin username/password + OTP login, the
+guided tour, and the idle-timeout / screen-lock preference.
 
 ## Run locally
 

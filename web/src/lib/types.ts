@@ -87,6 +87,9 @@ export type PortalUser = {
   readiness_access_override: boolean;
   closure_access_override: boolean;
   iea_access_override: boolean;
+  /** Can sign in with email and password. */
+  has_password: boolean;
+  locked: boolean;
   created_at: string;
   last_login: string;
 };

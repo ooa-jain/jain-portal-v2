@@ -160,6 +160,8 @@ export function normalizeUser(doc: Document, adminEmails: Set<string>): PortalUs
     readiness_access_override: doc.readiness_access_override === true,
     closure_access_override: doc.closure_access_override === true,
     iea_access_override: doc.iea_access_override === true,
+    has_password: Boolean(doc.password),
+    locked: Boolean(doc.lock_until) && new Date(str(doc.lock_until)).getTime() > Date.now(),
     created_at: str(doc.created_at),
     last_login: str(doc.last_login),
   };

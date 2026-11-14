@@ -3,11 +3,11 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Download, Loader2, Mail, Plus, Search, Send, Trash2, Undo2, UserRound, X } from "lucide-react";
+import { Check, Copy, Download, KeyRound, Loader2, Mail, Plus, Search, Send, Trash2, Undo2, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   approveAccess, approveEdit, deleteNotification, deleteUser, impersonate, revokeAccess, saveSettings, saveUser,
-  sendNotification, sendReminders, setUserAdmin, setUserPermission,
+  sendNotification, sendReminders, setUserAdmin, setUserPassword, setUserPermission,
 } from "@/app/actions/admin";
 import { deleteSubmission } from "@/app/actions/submissions";
 import { IeaTable } from "@/components/iea-list";
@@ -180,60 +180,183 @@ export function IeaAdmin({ submissions }: { submissions: IeaSubmission[] }) {
 
 // ── Users ───────────────────────────────────────────────────────────
 
-function AddUserDialog() {
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", department: "", isAdmin: false });
-  const { pending, run } = useAction();
-
+/** Shows a password once, with a copy button. */
+function PasswordReveal({ email, password, onClose }: { email: string; password: string; onClose: () => void }) {
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button><Plus />Add user</Button>
-      </DialogTrigger>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add a user</DialogTitle>
+          <DialogTitle>Password for {email}</DialogTitle>
           <DialogDescription>
-            Set a person&apos;s department and role before they first sign in with Google. Anyone with a university
-            account can also sign in without being added here.
+            Give this to the user now. It is not shown again; if it is lost, set a new one. They can change it after
+            signing in, from their Home page.
           </DialogDescription>
         </DialogHeader>
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            run(() => saveUser(form), "User saved.", () => {
-              setOpen(false);
-              setForm({ name: "", email: "", department: "", isAdmin: false });
-            });
-          }}
-        >
-          <Field label="Full name" required>
-            <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          </Field>
-          <Field label="University email" required>
-            <Input required type="email" placeholder="name@jainuniversity.ac.in" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </Field>
-          <Field label="Department">
-            <Select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
-              <option value="">Let them choose at first sign-in</option>
-              {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
-            </Select>
-          </Field>
-          <label className="flex items-center justify-between gap-4 rounded border p-3 text-[13px]">
-            <span>
-              <span className="block font-semibold">Admin access</span>
-              <span className="block text-xs text-muted-foreground">Can see every submission and change settings.</span>
-            </span>
-            <Switch checked={form.isAdmin} onCheckedChange={(isAdmin) => setForm({ ...form, isAdmin })} />
-          </label>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={pending}>{pending && <Loader2 className="animate-spin" />}Save user</Button>
-          </DialogFooter>
-        </form>
+        <div className="flex items-center gap-2 rounded-lg border bg-[#f9fafb] p-3">
+          <code className="flex-1 font-mono text-[18px] font-semibold tracking-wide text-primary">{password}</code>
+          <Button variant="outline" size="sm" onClick={async () => {
+            try { await navigator.clipboard.writeText(password); toast.success("Password copied."); } catch { toast.error("Copy it by hand."); }
+          }}>
+            <Copy />Copy
+          </Button>
+        </div>
+        <DialogFooter>
+          <Button onClick={onClose}>Done</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+type PasswordMode = "none" | "generate" | "set";
+
+function PasswordChoice({ mode, setMode, password, setPassword, noneLabel }: {
+  mode: PasswordMode; setMode: (m: PasswordMode) => void; password: string; setPassword: (v: string) => void; noneLabel: string;
+}) {
+  const options: { value: PasswordMode; label: string; hint: string }[] = [
+    { value: "generate", label: "Generate a password", hint: "Shown once after saving, for you to hand over." },
+    { value: "set", label: "Type a password", hint: "At least 8 characters, letters and numbers." },
+    { value: "none", label: noneLabel, hint: "They sign in with their university Google account." },
+  ];
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-1.5 text-[13px] font-semibold text-[#344054]">Email and password sign-in</legend>
+      {options.map((o) => (
+        <label key={o.value} className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 text-[13px] ${mode === o.value ? "border-primary bg-secondary" : ""}`}>
+          <input type="radio" name="password-mode" className="mt-0.5 accent-[var(--primary)]" checked={mode === o.value} onChange={() => setMode(o.value)} />
+          <span>
+            <span className="block font-semibold text-primary">{o.label}</span>
+            <span className="block text-xs text-muted-foreground">{o.hint}</span>
+          </span>
+        </label>
+      ))}
+      {mode === "set" && (
+        <Input aria-label="New password" type="text" autoComplete="new-password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      )}
+    </fieldset>
+  );
+}
+
+function AddUserDialog() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const empty = { name: "", email: "", department: "", isAdmin: false };
+  const [form, setForm] = useState(empty);
+  const [mode, setMode] = useState<PasswordMode>("generate");
+  const [password, setPassword] = useState("");
+  const [reveal, setReveal] = useState<{ email: string; password: string } | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button><Plus />Register user</Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Register a user</DialogTitle>
+            <DialogDescription>
+              Create an account with a department and role. Give it a password to allow email and password sign-in;
+              every university account can also sign in with Google.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="flex flex-col gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              startTransition(async () => {
+                const result = await saveUser({ ...form, passwordMode: mode, password });
+                if (!result.ok) return void toast.error(result.error);
+                toast.success("User registered.");
+                setOpen(false);
+                if (result.password) setReveal({ email: form.email.trim().toLowerCase(), password: result.password });
+                setForm(empty);
+                setPassword("");
+                setMode("generate");
+                router.refresh();
+              });
+            }}
+          >
+            <Field label="Full name" required>
+              <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </Field>
+            <Field label="University email" required>
+              <Input required type="email" placeholder="name@jainuniversity.ac.in" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </Field>
+            <Field label="Department">
+              <Select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
+                <option value="">Let them choose at first sign-in</option>
+                {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
+              </Select>
+            </Field>
+            <PasswordChoice mode={mode} setMode={setMode} password={password} setPassword={setPassword} noneLabel="No password (Google only)" />
+            <label className="flex items-center justify-between gap-4 rounded-lg border p-3 text-[13px]">
+              <span>
+                <span className="block font-semibold">Admin access</span>
+                <span className="block text-xs text-muted-foreground">Can see every submission and change settings.</span>
+              </span>
+              <Switch checked={form.isAdmin} onCheckedChange={(isAdmin) => setForm({ ...form, isAdmin })} />
+            </label>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={pending}>{pending && <Loader2 className="animate-spin" />}Register user</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      {reveal && <PasswordReveal {...reveal} onClose={() => setReveal(null)} />}
+    </>
+  );
+}
+
+function PasswordDialog({ user }: { user: PortalUser }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<PasswordMode>("generate");
+  const [password, setPassword] = useState("");
+  const [reveal, setReveal] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function save() {
+    startTransition(async () => {
+      const result = await setUserPassword(user.email, mode === "set" ? password : "", mode === "none");
+      if (!result.ok) return void toast.error(result.error);
+      toast.success(mode === "none" ? "Password removed; Google sign-in only." : "Password updated.");
+      setOpen(false);
+      setPassword("");
+      if (result.password) setReveal(result.password);
+      router.refresh();
+    });
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="icon" title={user.has_password ? "Reset password" : "Set a password"} aria-label={`${user.has_password ? "Reset" : "Set"} password for ${user.email}`}>
+            <KeyRound />
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{user.has_password ? "Reset password" : "Set a password"}</DialogTitle>
+            <DialogDescription>
+              For {user.name || user.email}. {user.locked ? "This account is locked after wrong attempts; saving a new password unlocks it." : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <PasswordChoice mode={mode} setMode={setMode} password={password} setPassword={setPassword}
+            noneLabel={user.has_password ? "Remove the password (Google only)" : "Keep Google only"} />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button disabled={pending || (mode === "none" && !user.has_password)} onClick={save}>
+              {pending && <Loader2 className="animate-spin" />}Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {reveal && <PasswordReveal email={user.email} password={reveal} onClose={() => setReveal(null)} />}
+    </>
   );
 }
 
@@ -266,7 +389,7 @@ export function UsersAdmin({ users, currentEmail, fixedAdmins }: { users: Portal
       <Table>
         <THead>
           <tr>
-            <TH>User</TH><TH>Department</TH><TH>Last sign-in</TH>
+            <TH>User</TH><TH>Department</TH><TH>Sign-in</TH><TH>Last sign-in</TH>
             {MODULE_KEYS.map((k) => <TH key={k}>{MODULES[k].short}</TH>)}
             <TH>Late access</TH><TH>Admin</TH><TH className="text-right">Actions</TH>
           </tr>
@@ -282,7 +405,14 @@ export function UsersAdmin({ users, currentEmail, fixedAdmins }: { users: Portal
                   <span className="font-semibold">{u.name || "—"}</span>
                   <span className="block text-xs text-muted-foreground">{u.email}</span>
                 </TD>
-                <TD className="max-w-56">{u.department || <span className="text-muted-foreground">Not set</span>}</TD>
+                <TD className="min-w-40 max-w-52 text-[13px]">{u.department || <span className="text-muted-foreground">Not set</span>}</TD>
+                <TD>
+                  <span className="flex flex-col items-start gap-1">
+                    {u.has_password ? <Badge>Password</Badge> : null}
+                    <Badge variant="muted">Google</Badge>
+                    {u.locked && <Badge variant="destructive">Locked</Badge>}
+                  </span>
+                </TD>
                 <TD className="whitespace-nowrap text-xs text-muted-foreground">{u.last_login ? formatDateTime(u.last_login) : "Never"}</TD>
                 {MODULE_KEYS.map((k) => (
                   <TD key={k}>
@@ -309,12 +439,13 @@ export function UsersAdmin({ users, currentEmail, fixedAdmins }: { users: Portal
                 </TD>
                 <TD>
                   <div className="flex justify-end gap-1">
-                    <Button variant="outline" size="sm" disabled={self || viewing} title="Open the portal as this user"
+                    <PasswordDialog user={u} />
+                    <Button variant="outline" size="icon" aria-label={`View the portal as ${u.email}`} disabled={self || viewing} title="View the portal as this user"
                       onClick={() => startView(async () => {
                         const result = await impersonate(u.email);
                         if (result && !result.ok) toast.error(result.error);
                       })}>
-                      <UserRound />View as
+                      <UserRound />
                     </Button>
                     <Button variant="ghost" size="icon" className="text-destructive" aria-label={`Delete ${u.email}`} title="Delete user" disabled={pending || self}
                       onClick={() => {
@@ -328,7 +459,7 @@ export function UsersAdmin({ users, currentEmail, fixedAdmins }: { users: Portal
               </TR>
             );
           })}
-          {filtered.length === 0 && <EmptyRow colSpan={9}>No users match this search.</EmptyRow>}
+          {filtered.length === 0 && <EmptyRow colSpan={10}>No users match this search.</EmptyRow>}
         </TBody>
       </Table>
     </Card>

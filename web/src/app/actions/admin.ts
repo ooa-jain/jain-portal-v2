@@ -13,6 +13,7 @@ import { allRecipients, remindPending } from "@/lib/reminders";
 import { createSession, readSession } from "@/lib/session";
 import type { ActionResult } from "@/lib/types";
 import { formatDeadline, nowStamp, str } from "@/lib/utils";
+import { generatePassword, hashPassword, passwordProblem } from "@/lib/password";
 
 /** The signed-in admin, or null. An admin viewing as another user is not acting as admin. */
 async function admin() {
@@ -103,10 +104,17 @@ const userSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(200),
   department: z.string().trim().max(200),
   isAdmin: z.boolean(),
+  /** "none" = Google only; "generate" = make one; "set" = use `password`. */
+  passwordMode: z.enum(["none", "generate", "set"]).default("none"),
+  password: z.string().max(200).default(""),
 });
 
-/** Pre-register a user (or update one) so their department and role are set before first sign-in. */
-export async function saveUser(input: z.input<typeof userSchema>): Promise<ActionResult> {
+/**
+ * Register a user (or update one). With a password they can sign in with
+ * email and password; without one they sign in with Google. Returns the
+ * password when one was generated, so the admin can hand it over once.
+ */
+export async function saveUser(input: z.input<typeof userSchema>): Promise<ActionResult<{ password?: string }>> {
   if (!(await admin())) return DENIED;
   const parsed = userSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Enter a name and a valid email address." };
@@ -115,8 +123,18 @@ export async function saveUser(input: z.input<typeof userSchema>): Promise<Actio
     return { ok: false, error: "Choose a department from the list." };
   }
   if (!data.email.endsWith(`@${env.allowedDomain}`) && !env.adminEmails.has(data.email)) {
-    return { ok: false, error: `Only @${env.allowedDomain} accounts can sign in.` };
+    return { ok: false, error: `Only @${env.allowedDomain} accounts can be registered.` };
   }
+  let plain = "";
+  if (data.passwordMode === "generate") plain = generatePassword();
+  if (data.passwordMode === "set") {
+    const problem = passwordProblem(data.password);
+    if (problem) return { ok: false, error: `Password: ${problem}` };
+    plain = data.password;
+  }
+  const passwordFields = plain
+    ? { password: await hashPassword(plain), password_changed_at: nowStamp(), failed_logins: 0, lock_until: null }
+    : {};
   await collections.users().updateOne(
     { email: data.email },
     {
@@ -126,6 +144,7 @@ export async function saveUser(input: z.input<typeof userSchema>): Promise<Actio
         is_admin: data.isAdmin,
         role: data.isAdmin ? "admin" : "user",
         first_time_login: !data.department,
+        ...passwordFields,
       },
       $setOnInsert: { email: data.email, created_at: nowStamp(), auth_provider: "admin_created" },
     },
@@ -133,7 +152,38 @@ export async function saveUser(input: z.input<typeof userSchema>): Promise<Actio
   );
   if (data.isAdmin) await setAdminListed(data.email, true);
   revalidatePath("/admin", "layout");
-  return { ok: true };
+  return { ok: true, ...(data.passwordMode === "generate" ? { password: plain } : {}) };
+}
+
+/**
+ * Set or reset a user's password. An empty `password` generates one, which is
+ * returned once for the admin to hand over. `remove` makes the account Google-only.
+ */
+export async function setUserPassword(
+  email: string,
+  password: string,
+  remove = false,
+): Promise<ActionResult<{ password?: string }>> {
+  const me = await admin();
+  if (!me) return DENIED;
+  const target = email.trim().toLowerCase();
+  const user = await collections.users().findOne({ email: target });
+  if (!user) return { ok: false, error: "User not found." };
+
+  if (remove) {
+    await collections.users().updateOne({ email: target }, { $unset: { password: "" }, $set: { failed_logins: 0, lock_until: null } });
+    revalidatePath("/admin", "layout");
+    return { ok: true };
+  }
+  const plain = password || generatePassword();
+  const problem = passwordProblem(plain);
+  if (problem) return { ok: false, error: problem };
+  await collections.users().updateOne(
+    { email: target },
+    { $set: { password: await hashPassword(plain), password_changed_at: nowStamp(), failed_logins: 0, lock_until: null } },
+  );
+  revalidatePath("/admin", "layout");
+  return { ok: true, ...(password ? {} : { password: plain }) };
 }
 
 export async function deleteUser(userId: string): Promise<ActionResult> {

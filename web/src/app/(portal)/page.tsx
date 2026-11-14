@@ -5,6 +5,7 @@ import { listMySubmissions, listNotifications } from "@/lib/data";
 import { allModuleAccess } from "@/lib/access";
 import { listMyIea } from "@/lib/iea";
 import { MODULES, MODULE_KEYS } from "@/lib/constants";
+import { ChangePasswordForm } from "@/components/change-password-form";
 import { DepartmentForm } from "@/components/department-form";
 import { SubmissionTable } from "@/components/submission-list";
 import { Badge } from "@/components/ui/badge";
@@ -150,18 +151,26 @@ export default async function DashboardPage() {
         <SubmissionTable submissions={submissions.slice(0, 8)} currentEmail={user.email} isAdmin={user.isAdmin} showModule />
       </Card>
 
-      {user.department && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile</CardTitle>
-            <CardDescription>{user.email}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-1.5 text-xs font-semibold text-foreground/80">Department</p>
-            <DepartmentForm current={user.department} />
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>{user.email}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          {user.department && (
+            <div>
+              <p className="mb-1.5 text-[13px] font-semibold text-[#344054]">Department</p>
+              <DepartmentForm current={user.department} />
+            </div>
+          )}
+          {!user.impersonatedBy && (
+            <div className="border-t pt-4">
+              <p className="mb-2 text-[13px] font-semibold text-[#344054]">Password</p>
+              <ChangePasswordForm hasPassword={user.hasPassword} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </>
   );
 }

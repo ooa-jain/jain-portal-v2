@@ -21,6 +21,8 @@ export type CurrentUser = {
   overrides: { readiness: boolean; closure: boolean; iea: boolean };
   /** Set while an admin is viewing the portal as this user. */
   impersonatedBy: string | null;
+  /** Can also sign in with email and password. */
+  hasPassword: boolean;
 };
 
 /** Admin = listed in ADMIN_EMAILS, listed in settings.admin_emails, or flagged on the user document. */
@@ -67,6 +69,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       iea: doc.iea_access_override === true,
     },
     impersonatedBy: session.impersonator ?? null,
+    hasPassword: Boolean(doc.password),
   };
 });
 
