@@ -13,11 +13,16 @@ function key() {
   return new TextEncoder().encode(env.sessionSecret);
 }
 
-export async function createSession(data: SessionData) {
+/**
+ * `remember: false` makes a browser-session cookie (gone when the browser
+ * closes); the signed token itself still expires after at most 12 hours.
+ */
+export async function createSession(data: SessionData, remember = true) {
+  const lifetime = remember ? MAX_AGE_SECONDS : 60 * 60 * 12;
   const token = await new SignJWT({ email: data.email, name: data.name, ...(data.impersonator ? { impersonator: data.impersonator } : {}) })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime(`${MAX_AGE_SECONDS}s`)
+    .setExpirationTime(`${lifetime}s`)
     .sign(key());
 
   const store = await cookies();
@@ -26,7 +31,7 @@ export async function createSession(data: SessionData) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: MAX_AGE_SECONDS,
+    ...(remember ? { maxAge: MAX_AGE_SECONDS } : {}),
   });
 }
 

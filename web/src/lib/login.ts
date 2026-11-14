@@ -5,7 +5,7 @@ import { createSession } from "./session";
 import { nowStamp, str } from "./utils";
 
 /** Create the user on first sign-in, otherwise record the login. Starts the session. */
-export async function startSessionFor(identity: { email: string; name: string; picture: string }) {
+export async function startSessionFor(identity: { email: string; name: string; picture: string }, remember = true) {
   const users = collections.users();
   const existing = await users.findOne({ email: identity.email });
   let name = identity.name;
@@ -27,5 +27,5 @@ export async function startSessionFor(identity: { email: string; name: string; p
       is_admin: await isAdminEmail(identity.email),
     });
   }
-  await createSession({ email: identity.email, name });
+  await createSession({ email: identity.email, name }, remember);
 }

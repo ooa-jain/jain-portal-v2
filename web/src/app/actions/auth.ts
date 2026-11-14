@@ -59,6 +59,7 @@ const LOCK_MINUTES = 15;
 export async function signInWithPassword(
   emailInput: string,
   password: string,
+  remember = true,
 ): Promise<ActionResult<{ redirectTo: string }>> {
   const email = str(emailInput).trim().toLowerCase();
   if (!email || !password) return { ok: false, error: "Enter your email and password." };
@@ -93,7 +94,7 @@ export async function signInWithPassword(
   }
 
   await users.updateOne({ _id: user._id }, { $set: { failed_logins: 0, lock_until: null } });
-  await startSessionFor({ email, name: str(user.name) || email.split("@")[0], picture: "" });
+  await startSessionFor({ email, name: str(user.name) || email.split("@")[0], picture: "" }, remember);
   return { ok: true, redirectTo: (await isAdminEmail(email)) ? "/admin" : "/" };
 }
 
