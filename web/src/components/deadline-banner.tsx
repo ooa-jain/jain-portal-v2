@@ -29,7 +29,7 @@ function RequestDialog({ access }: { access: ModuleAccess }) {
         <DialogHeader>
           <DialogTitle>Request late access</DialogTitle>
           <DialogDescription>
-            The deadline for {label} has passed. Tell the Office of Academics why you need more time; you will be
+            The deadline for {label} has passed. Tell the Office of Academic Affairs why you need more time; you will be
             able to submit once an admin approves.
           </DialogDescription>
         </DialogHeader>
@@ -42,7 +42,7 @@ function RequestDialog({ access }: { access: ModuleAccess }) {
               startTransition(async () => {
                 const result = await requestExtension(access.key, comment);
                 if (!result.ok) return void toast.error(result.error);
-                toast.success("Request sent to the Office of Academics.");
+                toast.success("Request sent to the Office of Academic Affairs.");
                 setOpen(false);
                 router.refresh();
               })
@@ -75,7 +75,7 @@ export function DeadlineBanner({ access, isAdmin }: { access: ModuleAccess; isAd
   if (access.request?.status === "pending") {
     return (
       <Notice tone="warning" title="Late access requested">
-        The deadline ({when}) has passed. Your request is waiting for approval by the Office of Academics.
+        The deadline ({when}) has passed. Your request is waiting for approval by the Office of Academic Affairs.
       </Notice>
     );
   }

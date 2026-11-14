@@ -8,7 +8,7 @@ function Switch({ className, ...props }: React.ComponentProps<typeof SwitchPrimi
   return (
     <SwitchPrimitive.Root
       className={cn(
-        "inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-input transition-colors disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-success",
+        "inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-input transition-colors disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary",
         className,
       )}
       {...props}

@@ -49,7 +49,7 @@ export async function writeBlockedReason(user: CurrentUser, key: ModuleKey): Pro
   const access = moduleAccess(user, await getSettings(), key);
   const label = MODULES[key].label;
   if (!access.open) return `${label} is not open for you right now.`;
-  if (!access.canWrite) return `The deadline for ${label} has passed. Request late access from the Office of Academics.`;
+  if (!access.canWrite) return `The deadline for ${label} has passed. Request late access from the Office of Academic Affairs.`;
   return null;
 }
 

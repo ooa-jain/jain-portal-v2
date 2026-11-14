@@ -1,4 +1,4 @@
-# Jain Sarathi (new build)
+# Jain OOA Portal
 
 Semester Readiness and Semester Closure portal for the Office of Academics,
 rebuilt with Next.js 16, TypeScript, Tailwind and shadcn-style components.
@@ -54,7 +54,7 @@ Example unit (`/etc/systemd/system/jain-sarathi-web.service`):
 
 ```
 [Unit]
-Description=Jain Sarathi (Next.js)
+Description=Jain OOA Portal (Next.js)
 After=network.target
 StartLimitIntervalSec=0
 

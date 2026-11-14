@@ -55,7 +55,7 @@ export default async function DashboardPage() {
   return (
     <>
       <PageHeader
-        title="Dashboard"
+        highlight={`Welcome, ${user.name.replace(/^(dr|prof|mr|mrs|ms)\.?\s+/i, "").split(" ")[0] || user.name}`}
         description={`${user.name}${user.department ? ` · ${user.department}` : ""}`}
       />
 
@@ -93,7 +93,7 @@ export default async function DashboardPage() {
             <TBody>
               {rows.map(({ key, a, status, last, href, action }) => (
                 <TR key={key}>
-                  <TD className="min-w-72">
+                  <TD className="min-w-56">
                     <span className="font-semibold text-primary">{MODULES[key].label}</span>
                     <span className="block text-xs text-muted-foreground">{MODULES[key].description}</span>
                   </TD>
@@ -125,7 +125,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Announcements</CardTitle>
-            <CardDescription>From the Office of Academics.</CardDescription>
+            <CardDescription>From the Office of Academic Affairs.</CardDescription>
           </CardHeader>
           {notifications.length === 0 ? (
             <CardContent className="text-[13px] text-muted-foreground">No announcements.</CardContent>

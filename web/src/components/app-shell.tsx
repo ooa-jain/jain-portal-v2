@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DropdownMenu, Popover } from "radix-ui";
+import { Popover } from "radix-ui";
 import {
-  BarChart3, Bell, BellRing, ChevronDown, ChevronRight, ClipboardCheck, FileCheck2, Inbox, LayoutDashboard,
-  Lightbulb, ListChecks, LogOut, Menu, PieChart, Settings, ShieldCheck, Users, X, type LucideIcon,
+  BarChart3, Bell, BellRing, ClipboardCheck, FileCheck2, Home, Inbox, Lightbulb, ListChecks, LogOut, Menu,
+  PanelLeftClose, PieChart, Settings, ShieldCheck, Users, X, type LucideIcon,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import { stopImpersonating } from "@/app/actions/admin";
@@ -15,7 +15,7 @@ import type { PortalNotification } from "@/lib/types";
 import { cn, formatDateTime, initials } from "@/lib/utils";
 
 const ICONS: Record<string, LucideIcon> = {
-  dashboard: LayoutDashboard, readiness: ClipboardCheck, closure: FileCheck2, iea: Lightbulb, analysis: BarChart3,
+  dashboard: Home, readiness: ClipboardCheck, closure: FileCheck2, iea: Lightbulb, analysis: BarChart3,
   ieaAnalysis: PieChart, admin: ShieldCheck, submissions: ListChecks, users: Users, requests: Inbox,
   notifications: BellRing, settings: Settings,
 };
@@ -28,6 +28,8 @@ export type ShellProps = {
   user: { name: string; email: string; department: string; isAdmin: boolean };
   impersonatedBy: string | null;
   notifications: PortalNotification[];
+  /** Shown in the top bar after the portal name, e.g. "2026–27". */
+  cycle: string;
   children: React.ReactNode;
 };
 
@@ -38,96 +40,112 @@ function isActive(pathname: string, href: string, all: string[]) {
   return !all.some((other) => other.length > href.length && (pathname === other || pathname.startsWith(`${other}/`)));
 }
 
-function Sidebar({ groups, pathname, onNavigate }: { groups: NavGroup[]; pathname: string; onNavigate?: () => void }) {
+const COLLAPSE_KEY = "ooa:side-collapsed";
+
+function SideNav({
+  groups,
+  pathname,
+  collapsed,
+  onNavigate,
+}: {
+  groups: NavGroup[];
+  pathname: string;
+  collapsed: boolean;
+  onNavigate?: () => void;
+}) {
   const hrefs = groups.flatMap((g) => g.items.map((i) => i.href));
   return (
-    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <Link href="/" onClick={onNavigate} className="flex h-14 shrink-0 items-center gap-2.5 border-b border-white/10 px-4">
-        <Image src="/brand/jgi-icon-192.png" alt="" width={30} height={30} className="rounded bg-white" />
-        <span className="leading-tight">
-          <span className="block text-sm font-semibold text-white">Jain Sarathi</span>
-          <span className="block text-[10px] uppercase tracking-[0.14em] text-sidebar-muted">Office of Academics</span>
-        </span>
-      </Link>
-      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Main">
-        {groups.map((group) => (
-          <div key={group.title} className="mb-4">
-            <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-muted">{group.title}</p>
-            <ul className="flex flex-col gap-0.5">
-              {group.items.map((item) => {
-                const Icon = ICONS[item.icon] ?? LayoutDashboard;
-                const active = isActive(pathname, item.href, hrefs);
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={onNavigate}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-2.5 rounded border-l-[3px] px-2.5 py-2 text-[13px] font-medium transition-colors",
-                        active
-                          ? "border-accent bg-sidebar-active text-white"
-                          : "border-transparent hover:bg-white/5 hover:text-white",
-                      )}
-                    >
-                      <Icon className="size-4 shrink-0" />
-                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                      {item.badge ? (
-                        <span className="rounded-sm bg-accent px-1.5 text-[11px] font-bold leading-5 text-accent-foreground">{item.badge}</span>
-                      ) : null}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
-      <p className="border-t border-white/10 px-4 py-3 text-[11px] text-sidebar-muted">JAIN (Deemed-to-be University)</p>
-    </div>
-  );
-}
-
-function Breadcrumbs({ groups, pathname }: { groups: NavGroup[]; pathname: string }) {
-  const items = groups.flatMap((g) => g.items);
-  const hrefs = items.map((i) => i.href);
-  const current = items.find((i) => isActive(pathname, i.href, hrefs));
-  const group = current && groups.find((g) => g.items.includes(current));
-  const deeper = current && pathname !== current.href;
-  return (
-    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted-foreground">
-      <span className="hidden sm:inline">{group?.title ?? "Portal"}</span>
-      <ChevronRight className="hidden size-3.5 sm:inline" />
-      {current ? (
-        deeper ? (
-          <Link href={current.href} className="truncate hover:text-foreground">{current.label}</Link>
-        ) : (
-          <span className="truncate font-semibold text-foreground">{current.label}</span>
-        )
-      ) : (
-        <span className="font-semibold text-foreground">Page</span>
-      )}
-      {deeper && (
-        <>
-          <ChevronRight className="size-3.5 shrink-0" />
-          <span className="truncate font-semibold text-foreground">
-            {pathname.includes("/form") ? "Submission" : pathname.split("/").pop()?.replace(/-/g, " ")}
-          </span>
-        </>
-      )}
+    <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 pb-3 pt-1" aria-label="Main">
+      {groups.map((group, index) => (
+        <div key={group.title} className={cn(index > 0 && "mt-2 border-t border-border pt-2")}>
+          {!collapsed && index > 0 && (
+            <p className="px-3 pb-1 pt-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#9aa3b2]">{group.title}</p>
+          )}
+          <ul className="flex flex-col gap-0.5">
+            {group.items.map((item) => {
+              const Icon = ICONS[item.icon] ?? Home;
+              const active = isActive(pathname, item.href, hrefs);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={onNavigate}
+                    title={collapsed ? item.label : undefined}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "group relative flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-[9px] text-[13.5px] font-medium text-[#374151] transition-colors",
+                      collapsed && "justify-center px-0",
+                      active
+                        ? "bg-white font-semibold text-primary shadow-[0_1px_2px_rgba(16,24,40,.06),0_0_0_1px_var(--border)] before:absolute before:-left-2.5 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r before:bg-primary"
+                        : "hover:bg-hover hover:text-primary",
+                    )}
+                  >
+                    <Icon className="size-5 shrink-0" strokeWidth={1.8} />
+                    {!collapsed && (
+                      <span className="min-w-0 flex-1 truncate transition-transform group-hover:translate-x-[3px]">{item.label}</span>
+                    )}
+                    {item.badge ? (
+                      <span
+                        className={cn(
+                          "rounded-full bg-primary px-1.5 text-[11px] font-bold leading-5 text-white",
+                          collapsed && "absolute right-1 top-0.5 px-1 text-[10px] leading-4",
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
     </nav>
   );
 }
 
-const SEEN_KEY = "sarathi:notifications-seen";
+function SideFoot({ user, collapsed }: { user: ShellProps["user"]; collapsed: boolean }) {
+  return (
+    <div className={cn("flex items-center gap-2.5 border-t border-border px-3.5 py-3", collapsed && "flex-col px-0")}>
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-white">
+        {initials(user.name)}
+      </span>
+      {!collapsed && (
+        <span className="min-w-0 flex-1 leading-tight">
+          <strong className="block truncate text-[13px] font-semibold text-primary">{user.name}</strong>
+          <small className="block truncate text-[11.5px] text-[#5b6474]">
+            {user.isAdmin ? "Office of Academic Affairs" : user.department || user.email}
+          </small>
+        </span>
+      )}
+      <form action={signOut}>
+        <button
+          type="submit"
+          title="Sign out"
+          aria-label="Sign out"
+          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-hover hover:text-primary"
+        >
+          <LogOut className="size-[18px]" strokeWidth={1.8} />
+        </button>
+      </form>
+    </div>
+  );
+}
+
+const SEEN_KEY = "ooa:notifications-seen";
 
 function NotificationBell({ notifications }: { notifications: PortalNotification[] }) {
   const latest = notifications[0]?.created_at ?? "";
   const [seen, setSeen] = useState<string | null>(null);
   useEffect(() => {
     // Read after mount: localStorage is not available during server rendering.
+    let stored = "";
+    try {
+      stored = window.localStorage.getItem(SEEN_KEY) ?? "";
+    } catch {}
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSeen(window.localStorage.getItem(SEEN_KEY) ?? "");
+    setSeen(stored);
   }, []);
   const unread = seen === null ? 0 : notifications.filter((n) => n.created_at > seen).length;
 
@@ -135,34 +153,36 @@ function NotificationBell({ notifications }: { notifications: PortalNotification
     <Popover.Root
       onOpenChange={(open) => {
         if (open && latest) {
-          window.localStorage.setItem(SEEN_KEY, latest);
+          try {
+            window.localStorage.setItem(SEEN_KEY, latest);
+          } catch {}
           setSeen(latest);
         }
       }}
     >
       <Popover.Trigger
-        className="relative flex size-9 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="relative flex size-9 items-center justify-center rounded-full border bg-white text-[#475467] hover:bg-hover hover:text-primary"
         aria-label={unread ? `Notifications, ${unread} new` : "Notifications"}
       >
-        <Bell className="size-[18px]" />
+        <Bell className="size-[18px]" strokeWidth={1.8} />
         {unread > 0 && (
-          <span className="absolute right-1 top-1 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-4 text-white">
+          <span className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-[18px] text-white">
             {unread}
           </span>
         )}
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content align="end" sideOffset={6} className="z-50 w-80 max-w-[calc(100vw-1rem)] rounded-md border bg-card shadow-lg">
-          <p className="border-b px-4 py-2.5 text-sm font-semibold text-primary">Notifications</p>
+        <Popover.Content align="end" sideOffset={8} className="z-50 w-80 max-w-[calc(100vw-1rem)] overflow-hidden rounded-xl border bg-card shadow-lg">
+          <p className="border-b px-4 py-3 text-[14px] font-bold text-primary">Updates</p>
           {notifications.length === 0 ? (
-            <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">No notifications yet.</p>
+            <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">No updates yet.</p>
           ) : (
             <ul className="max-h-96 divide-y overflow-y-auto">
               {notifications.map((n) => (
                 <li key={n._id} className="px-4 py-3">
-                  <p className="text-[13px] font-semibold">{n.title}</p>
-                  <p className="mt-0.5 text-[13px] text-muted-foreground">{n.body}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">{formatDateTime(n.created_at)}</p>
+                  <p className="text-[13px] font-semibold text-primary">{n.title}</p>
+                  <p className="mt-0.5 text-[13px] text-[#475467]">{n.body}</p>
+                  <p className="mt-1 text-[11.5px] text-muted-foreground">{formatDateTime(n.created_at)}</p>
                 </li>
               ))}
             </ul>
@@ -170,45 +190,6 @@ function NotificationBell({ notifications }: { notifications: PortalNotification
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
-  );
-}
-
-function UserMenu({ user }: { user: ShellProps["user"] }) {
-  return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger className="flex items-center gap-2 rounded px-1.5 py-1 hover:bg-muted" aria-label="Account menu">
-        <span className="flex size-8 items-center justify-center rounded bg-primary text-xs font-semibold text-primary-foreground">
-          {initials(user.name)}
-        </span>
-        <span className="hidden max-w-44 text-left leading-tight md:block">
-          <span className="block truncate text-[13px] font-semibold">{user.name}</span>
-          <span className="block truncate text-[11px] text-muted-foreground">{user.isAdmin ? "Administrator" : user.department || "Department not set"}</span>
-        </span>
-        <ChevronDown className="hidden size-4 text-muted-foreground md:block" />
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content align="end" sideOffset={6} className="z-50 w-64 rounded-md border bg-card p-1 shadow-lg">
-          <div className="border-b px-3 py-2.5">
-            <p className="truncate text-[13px] font-semibold">{user.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-            {user.department && <p className="mt-1 text-xs text-muted-foreground">{user.department}</p>}
-          </div>
-          <DropdownMenu.Item asChild>
-            <Link href="/" className="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-[13px] outline-none data-[highlighted]:bg-muted">
-              <LayoutDashboard className="size-4" />
-              Dashboard and profile
-            </Link>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            className="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-[13px] text-destructive outline-none data-[highlighted]:bg-destructive-soft"
-            onSelect={() => signOut()}
-          >
-            <LogOut className="size-4" />
-            Sign out
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
   );
 }
 
@@ -221,70 +202,115 @@ function usePwa() {
       fetch("/api/pwa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event }) }).catch(() => {});
     const onInstalled = () => track("install");
     window.addEventListener("appinstalled", onInstalled);
-    if (window.matchMedia("(display-mode: standalone)").matches && !window.sessionStorage.getItem("sarathi:launch")) {
-      window.sessionStorage.setItem("sarathi:launch", "1");
-      track("launch");
-    }
+    try {
+      if (window.matchMedia("(display-mode: standalone)").matches && !window.sessionStorage.getItem("ooa:launch")) {
+        window.sessionStorage.setItem("ooa:launch", "1");
+        track("launch");
+      }
+    } catch {}
     return () => window.removeEventListener("appinstalled", onInstalled);
   }, []);
 }
 
-export function AppShell({ groups, user, impersonatedBy, notifications, children }: ShellProps) {
+export function AppShell({ groups, user, impersonatedBy, notifications, cycle, children }: ShellProps) {
   const pathname = usePathname();
   const [drawer, setDrawer] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   usePwa();
+
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
+    } catch {}
+  }, []);
+  function toggleCollapsed() {
+    setCollapsed((value) => {
+      try {
+        window.localStorage.setItem(COLLAPSE_KEY, value ? "0" : "1");
+      } catch {}
+      return !value;
+    });
+  }
+
+  const sideWidth = collapsed ? "lg:w-[68px]" : "lg:w-[248px]";
+  const mainPad = collapsed ? "lg:pl-[68px]" : "lg:pl-[248px]";
 
   return (
     <div className="flex min-h-screen flex-1">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 lg:block">
-        <Sidebar groups={groups} pathname={pathname} />
+      {/* desktop menu */}
+      <aside className={cn("fixed inset-y-0 left-0 z-30 hidden flex-col border-r bg-background transition-[width] duration-300 lg:flex", sideWidth)}>
+        <div className={cn("flex min-h-16 items-center gap-2 px-4 pb-2.5 pt-3.5", collapsed && "flex-col px-0")}>
+          <Link href="/" className="flex min-w-0 flex-1 items-center" aria-label="Jain OOA Portal home">
+            {collapsed ? (
+              <Image src="/brand/jgi-icon-192.png" alt="" width={34} height={34} className="mx-auto rounded-full" />
+            ) : (
+              <Image src="/brand/jain.png" alt="JAIN (Deemed-to-be University)" width={110} height={32} className="h-8 w-auto" priority />
+            )}
+          </Link>
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? "Expand menu" : "Collapse menu"}
+            className={cn("flex size-[34px] items-center justify-center rounded-lg text-muted-foreground transition-transform duration-300 hover:bg-hover hover:text-primary", collapsed && "rotate-180")}
+          >
+            <PanelLeftClose className="size-5" strokeWidth={1.8} />
+          </button>
+        </div>
+        <SideNav groups={groups} pathname={pathname} collapsed={collapsed} />
+        <SideFoot user={user} collapsed={collapsed} />
       </aside>
 
+      {/* phone menu */}
       {drawer && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <div className="absolute inset-0 bg-primary/50" onClick={() => setDrawer(false)} />
-          <div className="absolute inset-y-0 left-0 w-64 shadow-xl">
-            <Sidebar groups={groups} pathname={pathname} onNavigate={() => setDrawer(false)} />
-            <button
-              type="button"
-              aria-label="Close navigation"
-              className="absolute -right-10 top-3 flex size-8 items-center justify-center rounded bg-card"
-              onClick={() => setDrawer(false)}
-            >
-              <X className="size-4" />
+        <div className="fixed inset-0 z-50 flex flex-col bg-white lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+          <div className="flex h-[60px] items-center justify-between border-b px-4">
+            <Image src="/brand/jain.png" alt="JAIN (Deemed-to-be University)" width={92} height={28} className="h-7 w-auto" />
+            <button type="button" aria-label="Close menu" onClick={() => setDrawer(false)} className="flex size-10 items-center justify-center rounded-lg hover:bg-hover">
+              <X className="size-5" />
             </button>
           </div>
+          <SideNav groups={groups} pathname={pathname} collapsed={false} onNavigate={() => setDrawer(false)} />
+          <SideFoot user={user} collapsed={false} />
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
+      <div className={cn("flex min-w-0 flex-1 flex-col transition-[padding] duration-300", mainPad)}>
+        {/* phone bar */}
+        <div className="sticky top-0 z-30 flex h-[60px] items-center justify-between border-b bg-white px-4 lg:hidden">
+          <Link href="/" aria-label="Jain OOA Portal home">
+            <Image src="/brand/jain.png" alt="JAIN (Deemed-to-be University)" width={92} height={28} className="h-7 w-auto" />
+          </Link>
+          <button type="button" aria-label="Open menu" onClick={() => setDrawer(true)} className="flex size-10 items-center justify-center rounded-lg text-[#374151] hover:bg-hover">
+            <Menu className="size-5" />
+          </button>
+        </div>
+
+        {/* institution bar */}
+        <header className="sticky top-[60px] z-20 flex h-11 items-center gap-4 border-b bg-white/90 px-4 backdrop-blur-md sm:px-5 lg:top-0">
+          <span className="hidden min-w-0 truncate text-[12.5px] text-muted-foreground md:block">
+            JAIN (Deemed-to-be University) · Office of Academic Affairs
+          </span>
+          <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-primary md:mx-auto">
+            Jain OOA Portal{cycle && <span className="hidden sm:inline"> | {cycle}</span>}
+          </span>
+          <span className="ml-auto md:ml-0">
+            <NotificationBell notifications={notifications} />
+          </span>
+        </header>
+
         {impersonatedBy && (
-          <form action={stopImpersonating} className="flex flex-wrap items-center justify-center gap-3 bg-accent px-4 py-1.5 text-[13px] font-medium text-accent-foreground">
+          <form action={stopImpersonating} className="flex flex-wrap items-center justify-center gap-3 border-b border-[#f2cd73] bg-[#fdf6e3] px-4 py-2 text-[13px] text-[#7a5e05]">
             <span>
               You are viewing the portal as <strong>{user.name}</strong> ({user.email}). Changes you make are made as this user.
             </span>
-            <button type="submit" className="rounded bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">
+            <button type="submit" className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-white">
               Return to admin
             </button>
           </form>
         )}
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-card px-3 sm:px-5">
-          <button
-            type="button"
-            className="flex size-9 items-center justify-center rounded text-muted-foreground hover:bg-muted lg:hidden"
-            aria-label="Open navigation"
-            onClick={() => setDrawer(true)}
-          >
-            <Menu className="size-5" />
-          </button>
-          <Breadcrumbs groups={groups} pathname={pathname} />
-          <div className="ml-auto flex items-center gap-1.5">
-            <Image src="/brand/jain.png" alt="JAIN (Deemed-to-be University)" width={104} height={30} className="mr-2 hidden h-7 w-auto xl:block" />
-            <NotificationBell notifications={notifications} />
-            <UserMenu user={user} />
-          </div>
-        </header>
-        <main className="flex-1 px-3 py-5 sm:px-5">
+
+        <main className="flex-1 px-4 py-5 sm:px-6">
           <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4">{children}</div>
         </main>
       </div>

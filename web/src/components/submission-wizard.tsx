@@ -246,8 +246,8 @@ export function SubmissionWizard(props: WizardProps) {
           action={submission.edit_request?.status === "pending" ? undefined : <EditRequestDialog id={submission._id} />}
         >
           {submission.edit_request?.status === "pending"
-            ? "Your edit request is waiting for approval by the Office of Academics."
-            : "Further changes need approval from the Office of Academics."}
+            ? "Your edit request is waiting for approval by the Office of Academic Affairs."
+            : "Further changes need approval from the Office of Academic Affairs."}
         </Notice>
       )}
       {canEdit && !isDraft && !isAdmin && submission && (

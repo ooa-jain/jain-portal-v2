@@ -52,7 +52,7 @@ export default async function AdminOverviewPage() {
           </Button>
         }
       />
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Readiness" value={final.filter((s) => s.form_type === "readiness").length} tone="success" hint="Submitted" />
         <Stat label="Closure" value={final.filter((s) => s.form_type === "closure").length} tone="success" hint="Submitted" />
         <Stat label="IEA" value={iea.filter((s) => s.submitted).length} tone="success" hint="Submitted" />

@@ -15,5 +15,5 @@ export async function GET(request: Request) {
   const faculty = await listFacultyForParents(subs.map((s) => s._id));
   const buffer = await buildWorkbook(subs.map((s) => ({ ...s, faculty: faculty.get(s._id) ?? [] })));
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  return xlsxResponse(buffer, `JainSarathi_${isModuleKey(type) ? type : "ALL"}_${stamp}.xlsx`);
+  return xlsxResponse(buffer, `JainOOAPortal_${isModuleKey(type) ? type : "ALL"}_${stamp}.xlsx`);
 }

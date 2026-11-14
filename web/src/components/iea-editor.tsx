@@ -159,7 +159,7 @@ function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () => void 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Submitted. How was this form?</DialogTitle>
-          <DialogDescription>Optional. Your feedback helps the Office of Academics improve the portal.</DialogDescription>
+          <DialogDescription>Optional. Your feedback helps the Office of Academic Affairs improve the portal.</DialogDescription>
         </DialogHeader>
         <div>
           <p className="text-xs font-semibold text-foreground/80">Rating (1 = poor, 10 = excellent)</p>

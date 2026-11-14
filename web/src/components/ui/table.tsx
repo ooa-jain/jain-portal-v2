@@ -9,24 +9,24 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   );
 }
 function THead(props: React.ComponentProps<"thead">) {
-  return <thead className="border-b bg-muted/60" {...props} />;
+  return <thead className="border-y bg-[#f9fafb]" {...props} />;
 }
 function TBody(props: React.ComponentProps<"tbody">) {
   return <tbody className="[&_tr:last-child]:border-0" {...props} />;
 }
 function TR({ className, ...props }: React.ComponentProps<"tr">) {
-  return <tr className={cn("border-b transition-colors even:bg-muted/30 hover:bg-secondary/60", className)} {...props} />;
+  return <tr className={cn("border-b transition-colors hover:bg-[#f9fafb]", className)} {...props} />;
 }
 function TH({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
-      className={cn("h-9 whitespace-nowrap border-r px-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground last:border-r-0", className)}
+      className={cn("h-10 whitespace-nowrap px-[18px] text-left text-[12.5px] font-semibold text-[#475467]", className)}
       {...props}
     />
   );
 }
 function TD({ className, ...props }: React.ComponentProps<"td">) {
-  return <td className={cn("px-3 py-2 align-middle", className)} {...props} />;
+  return <td className={cn("px-[18px] py-3 align-middle", className)} {...props} />;
 }
 
 export { Table, THead, TBody, TR, TH, TD };

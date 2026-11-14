@@ -101,7 +101,7 @@ export type SubmissionWithFaculty = Submission & { faculty: FacultySubmission[] 
 /** Consolidated workbook: one or many submissions, with their faculty checklists. */
 export async function buildWorkbook(submissions: SubmissionWithFaculty[]): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Jain Sarathi — Office of Academics";
+  wb.creator = "Jain OOA Portal — Office of Academic Affairs";
 
   // 1. Dashboard
   const dash = wb.addWorksheet("Dashboard");
@@ -314,7 +314,7 @@ export async function buildHodChecklistWorkbook(sub: Submission): Promise<Buffer
 /** IEA report: one sheet per academic year, sections A–F stacked inside each sheet. */
 export async function buildIeaWorkbook(docs: IeaSubmission[], year?: string): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Jain Sarathi — Office of Academics";
+  wb.creator = "Jain OOA Portal — Office of Academic Affairs";
   const maxCols = Math.max(...IEA_SECTIONS.map((s) => 4 + s.fields.length + 3));
 
   for (const y of year ? [year] : IEA_YEARS) {

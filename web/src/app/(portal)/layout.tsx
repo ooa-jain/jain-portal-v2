@@ -9,12 +9,15 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
   const [settings, notifications] = await Promise.all([getSettings(), listNotifications(10)]);
 
-  const workspace: NavGroup = { title: "Workspace", items: [{ href: "/", label: "Dashboard", icon: "dashboard" }] };
+  const workspace: NavGroup = { title: "Workspace", items: [{ href: "/", label: "Home", icon: "dashboard" }] };
   for (const key of MODULE_KEYS) {
     if (moduleAccess(user, settings, key).open) {
       workspace.items.push({ href: MODULES[key].href, label: MODULES[key].label, icon: key });
     }
   }
+  // The latest academic year offered in forms, e.g. "2027-28" -> "2027–28".
+  const cycle = [...settings.enabled_years].sort().pop()?.replace("-", "–") ?? "";
+
   const reports: NavGroup = {
     title: "Reports",
     items: [
@@ -49,6 +52,7 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
       user={{ name: user.name, email: user.email, department: user.department, isAdmin: user.isAdmin }}
       impersonatedBy={user.impersonatedBy}
       notifications={notifications}
+      cycle={cycle}
     >
       {children}
     </AppShell>

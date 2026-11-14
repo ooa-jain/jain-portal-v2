@@ -95,7 +95,7 @@ export async function saveSubmission(
     if (wasFinal && !user.isAdmin && existing.edit_count >= FREE_EDIT_LIMIT && !approved) {
       return {
         ok: false,
-        error: `This submission has already been edited ${FREE_EDIT_LIMIT} times. Request edit approval from the Office of Academics.`,
+        error: `This submission has already been edited ${FREE_EDIT_LIMIT} times. Request edit approval from the Office of Academic Affairs.`,
       };
     }
 

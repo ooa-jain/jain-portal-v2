@@ -9,7 +9,7 @@ const Tabs = TabsPrimitive.Root;
 function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) {
   return (
     <TabsPrimitive.List
-      className={cn("flex max-w-full items-end gap-0 overflow-x-auto border-b", className)}
+      className={cn("inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border bg-card p-1", className)}
       {...props}
     />
   );
@@ -19,7 +19,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        "-mb-px inline-flex items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-3.5 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-accent data-[state=active]:text-primary [&_svg]:size-4",
+        "inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-[#344054] transition-colors hover:bg-hover data-[state=active]:bg-primary data-[state=active]:text-white [&_svg]:size-4",
         className,
       )}
       {...props}
