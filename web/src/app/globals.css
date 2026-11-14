@@ -164,6 +164,10 @@
 .mascot .mascot-scratch { animation: mascot-scratch 0.9s ease-in-out infinite; transform-box: view-box; }
 .mascot .mascot-question { animation: mascot-question 2.2s ease-in-out infinite; transform-origin: 244px 44px; transform-box: view-box; }
 .mascot .mascot-tassel { animation: mascot-tassel 3s ease-in-out infinite; transform-origin: 130px 44px; transform-box: view-box; }
+@keyframes login-chip { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes login-ring { 0% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.7; } 50% { transform: translate(-50%, -50%) scale(1.03); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.7; } }
+.login-chip { animation: login-chip 5s ease-in-out infinite; }
+.login-ring { animation: login-ring 6s ease-in-out infinite; }
 .cloud-drift { animation: cloud-drift 18s ease-in-out infinite alternate; }
 .cloud-drift-slow { animation: cloud-drift 28s ease-in-out infinite alternate-reverse; }
 
