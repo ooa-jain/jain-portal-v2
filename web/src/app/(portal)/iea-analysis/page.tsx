@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { requireUser } from "@/lib/auth";
+import { requireDepartmentUser } from "@/lib/auth";
 import { listAllIea, listIeaFeedback, recentIea } from "@/lib/iea";
 import { IEA_SCHOOLS, IEA_SECTIONS, IEA_YEARS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ function Bars({ rows }: { rows: { label: string; value: number; color?: string }
 }
 
 export default async function IeaAnalysisPage() {
-  const user = await requireUser();
+  const user = await requireDepartmentUser();
   const [submissions, feedback] = await Promise.all([listAllIea(), user.isAdmin ? listIeaFeedback() : Promise.resolve([])]);
 
   const totalUnits = Object.values(IEA_SCHOOLS).reduce((n, depts) => n + Object.values(depts).reduce((m, levels) => m + levels.length, 0), 0);

@@ -89,6 +89,17 @@ and 1 hour before each module deadline, and never sends the same reminder twice.
 */10 * * * * . /var/www/jain-ooa-portal/web/.env; curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8088/api/cron/deadline-reminders >/dev/null
 ```
 
+### Uploads
+
+Library files are saved under `UPLOAD_DIR/library/` and are only served to
+signed-in members of the department and admins. Nginx allows 1 MB uploads by
+default; documents can be up to 20 MB, so add this inside the site's
+`server { }` block and reload Nginx:
+
+```
+client_max_body_size 25m;
+```
+
 Before switching over:
 
 - Set `UPLOAD_DIR=/var/www/jain-ooa-portal/static/uploads` so files uploaded in the old app still open.

@@ -20,7 +20,8 @@ export function moduleAccess(
   requests: AccessRequest[] = [],
 ): ModuleAccess {
   const meta = MODULES[key];
-  const open = user.isAdmin || (settings[meta.enabledKey] && user[PERMISSION[key]]);
+  // Faculty accounts work through the document library and checklist links, not the HOD modules.
+  const open = !user.isFaculty && (user.isAdmin || (settings[meta.enabledKey] && user[PERMISSION[key]]));
   const deadline = settings[meta.deadlineKey];
   const deadlinePassed = isDeadlinePassed(deadline);
   const hasOverride = user.overrides[key];

@@ -7,6 +7,7 @@ import { listMyIea } from "@/lib/iea";
 import { MODULES, MODULE_KEYS } from "@/lib/constants";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { DepartmentForm } from "@/components/department-form";
+import { FacultyHome } from "@/components/faculty-home";
 import { SubmissionTable } from "@/components/submission-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { formatDateTime, formatDeadline, parseDeadline } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const user = await requireUser();
+  if (user.isFaculty) return <FacultyHome user={user} />;
   const [access, submissions, iea, notifications] = await Promise.all([
     allModuleAccess(user),
     listMySubmissions(user),

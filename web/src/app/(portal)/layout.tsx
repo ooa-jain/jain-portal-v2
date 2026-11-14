@@ -18,14 +18,26 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
   // The latest academic year offered in forms, e.g. "2027-28" -> "2027–28".
   const cycle = [...settings.enabled_years].sort().pop()?.replace("-", "–") ?? "";
 
-  const reports: NavGroup = {
-    title: "Reports",
-    items: [
-      { href: "/analysis", label: "Faculty Responses", icon: "analysis" },
-      { href: "/iea-analysis", label: "IEA Analysis", icon: "ieaAnalysis" },
-    ],
-  };
-  const groups = [workspace, reports];
+  // Documents waiting for this user: HODs see ones to review; uploaders see ones to fix.
+  const docFilter = user.isAdmin
+    ? { "review.status": "pending" }
+    : user.isFaculty || !user.department
+      ? { uploaded_by_email: user.email, "review.status": { $in: ["returned", "not_sent"] } }
+      : { dept: user.department, "review.status": "pending" };
+  const docBadge = await collections.documents().countDocuments(docFilter);
+  workspace.items.push({ href: "/documents", label: "Document Library", icon: "documents", badge: docBadge });
+
+  const reports: NavGroup = user.isFaculty
+    ? { title: "Reports", items: [] }
+    : {
+        title: "Reports",
+        items: [
+          { href: "/analytics", label: "Analytics", icon: "analytics" },
+          { href: "/analysis", label: "Faculty Responses", icon: "analysis" },
+          { href: "/iea-analysis", label: "IEA Analysis", icon: "ieaAnalysis" },
+        ],
+      };
+  const groups = reports.items.length ? [workspace, reports] : [workspace];
 
   if (user.isAdmin && !user.impersonatedBy) {
     const [accessPending, editPending] = await Promise.all([
@@ -49,7 +61,7 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
   return (
     <AppShell
       groups={groups}
-      user={{ name: user.name, email: user.email, department: user.department, isAdmin: user.isAdmin }}
+      user={{ name: user.name, email: user.email, department: user.department, isAdmin: user.isAdmin, isFaculty: user.isFaculty }}
       impersonatedBy={user.impersonatedBy}
       notifications={notifications}
       cycle={cycle}

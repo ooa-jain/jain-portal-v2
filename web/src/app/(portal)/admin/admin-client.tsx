@@ -240,7 +240,7 @@ function PasswordChoice({ mode, setMode, password, setPassword, noneLabel }: {
 function AddUserDialog() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const empty = { name: "", email: "", department: "", isAdmin: false };
+  const empty = { name: "", email: "", department: "", isAdmin: false, isFaculty: false };
   const [form, setForm] = useState(empty);
   const [mode, setMode] = useState<PasswordMode>("generate");
   const [password, setPassword] = useState("");
@@ -291,13 +291,18 @@ function AddUserDialog() {
               </Select>
             </Field>
             <PasswordChoice mode={mode} setMode={setMode} password={password} setPassword={setPassword} noneLabel="No password (Google only)" />
-            <label className="flex items-center justify-between gap-4 rounded-lg border p-3 text-[13px]">
-              <span>
-                <span className="block font-semibold">Admin access</span>
-                <span className="block text-xs text-muted-foreground">Can see every submission and change settings.</span>
-              </span>
-              <Switch checked={form.isAdmin} onCheckedChange={(isAdmin) => setForm({ ...form, isAdmin })} />
-            </label>
+            <Field label="Role" required hint={
+              form.isAdmin ? "Sees every submission and changes settings." : form.isFaculty ? "Uploads course documents and fills checklists; cannot file HOD submissions." : "Files the department's Readiness, Closure and IEA submissions and reviews documents."
+            }>
+              <Select
+                value={form.isAdmin ? "admin" : form.isFaculty ? "faculty" : "user"}
+                onChange={(e) => setForm({ ...form, isAdmin: e.target.value === "admin", isFaculty: e.target.value === "faculty" })}
+              >
+                <option value="user">HOD / department user</option>
+                <option value="faculty">Faculty</option>
+                <option value="admin">Admin (Office of Academic Affairs)</option>
+              </Select>
+            </Field>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={pending}>{pending && <Loader2 className="animate-spin" />}Register user</Button>
@@ -369,7 +374,9 @@ export function UsersAdmin({ users, currentEmail, fixedAdmins }: { users: Portal
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users.filter((u) => {
-      if (role && (role === "admin") !== u.is_admin) return false;
+      if (role === "admin" && !u.is_admin) return false;
+      if (role === "faculty" && !u.is_faculty) return false;
+      if (role === "user" && (u.is_admin || u.is_faculty)) return false;
       return !q || [u.name, u.email, u.department].some((v) => v.toLowerCase().includes(q));
     });
   }, [users, query, role]);
@@ -381,7 +388,8 @@ export function UsersAdmin({ users, currentEmail, fixedAdmins }: { users: Portal
         <Select aria-label="Role" className="w-auto" value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="">All roles</option>
           <option value="admin">Admins</option>
-          <option value="user">Users</option>
+          <option value="faculty">Faculty</option>
+          <option value="user">HOD / department users</option>
         </Select>
         <span className="text-xs text-muted-foreground">{filtered.length} of {users.length}</span>
         <span className="ml-auto"><AddUserDialog /></span>
@@ -403,6 +411,7 @@ export function UsersAdmin({ users, currentEmail, fixedAdmins }: { users: Portal
               <TR key={u._id}>
                 <TD>
                   <span className="font-semibold">{u.name || "—"}</span>
+                  {u.is_faculty && <Badge variant="muted" className="ml-1.5">Faculty</Badge>}
                   <span className="block text-xs text-muted-foreground">{u.email}</span>
                 </TD>
                 <TD className="min-w-40 max-w-52 text-[13px]">{u.department || <span className="text-muted-foreground">Not set</span>}</TD>

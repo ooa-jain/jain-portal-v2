@@ -16,7 +16,7 @@ import { env } from "@/lib/env";
 import { publicBaseUrl } from "@/lib/base-url";
 import { esc, sendEmail } from "@/lib/mail";
 import type { ActionResult } from "@/lib/types";
-import { nowStamp } from "@/lib/utils";
+import { nowStamp, str } from "@/lib/utils";
 
 const text = (max: number) => z.string().trim().max(max).default("");
 
@@ -44,7 +44,7 @@ export type FacultyPayload = z.input<typeof facultySchema>;
 /** Public: faculty submit their checklist through the HOD's share link. No sign-in. */
 export async function submitFacultyChecklist(
   input: FacultyPayload,
-): Promise<ActionResult<{ saved: number }>> {
+): Promise<ActionResult<{ saved: number; autoTicked: number }>> {
   const parsed = facultySchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Enter your name, a valid email, and a name and code for every course." };
@@ -60,7 +60,22 @@ export async function submitFacultyChecklist(
   }
 
   const faculty = collections.facultySubmissions();
+  const { documentsForCourse } = await import("@/lib/documents");
+  const { docType } = await import("@/lib/constants");
+  const autoTicked: string[] = [];
   for (const course of data.courses) {
+    // Documents already in the library answer their checklist items, so nothing is uploaded twice.
+    const courseChecklist = structuredClone(checklist);
+    const onFile = await documentsForCourse(parent.identity.dept, course.courseCode, parent.identity.semester);
+    for (const libraryDoc of onFile) {
+      for (const itemId of docType(libraryDoc.doc_type)?.answers ?? []) {
+        const answer = courseChecklist[itemId];
+        if (answer && !answer.status) {
+          courseChecklist[itemId] = { status: "Yes", remark: `On file in the document library: ${libraryDoc.file_name}` };
+          autoTicked.push(itemId);
+        }
+      }
+    }
     const doc = {
       parent_submission_id: parent._id,
       share_token: data.shareToken,
@@ -78,7 +93,7 @@ export async function submitFacultyChecklist(
       program: course.program,
       year_sem: course.yearSem,
       no_of_students: course.noOfStudents,
-      checklist,
+      checklist: courseChecklist,
       hod_remarks: "",
       hod_review_status: "pending",
       timestamp: nowStamp(),
@@ -116,7 +131,7 @@ export async function submitFacultyChecklist(
     ),
   ]);
 
-  return { ok: true, saved: data.courses.length };
+  return { ok: true, saved: data.courses.length, autoTicked: [...new Set(autoTicked)].length };
 }
 
 async function loadFacultyForUser(facultyId: string) {
@@ -201,4 +216,77 @@ export async function sendFacultyLink(
     (ok ? sent : failed).push(recipient.email);
   }
   return { ok: true, sent, failed };
+}
+
+const inviteSchema = z
+  .array(z.object({ name: text(200), email: z.string().trim().toLowerCase().email().max(200) }))
+  .min(1)
+  .max(100);
+
+export type InviteResult = { email: string; name: string; status: "created" | "exists" | "not_faculty"; password?: string; emailed?: boolean };
+
+/**
+ * HOD: create faculty logins for their department. Each new account gets a
+ * generated password. When email is set up, the login and the checklist link
+ * are emailed; otherwise the passwords are returned for the HOD to hand over.
+ */
+export async function inviteFaculty(
+  submissionId: string,
+  people: { name: string; email: string }[],
+): Promise<ActionResult<{ results: InviteResult[] }>> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Your session has expired. Please sign in again." };
+  if (user.isFaculty) return { ok: false, error: "Only the HOD can create faculty logins." };
+  const sub = await getSubmission(submissionId);
+  if (!sub || !canEditSubmission(user, sub)) return { ok: false, error: "Submission not found." };
+  if (!sub.identity.dept) return { ok: false, error: "Set the department on the Details step first." };
+
+  const parsed = inviteSchema.safeParse(people);
+  if (!parsed.success) return { ok: false, error: "Enter at least one valid email address." };
+  if (parsed.data.some((p) => !p.email.endsWith(`@${env.allowedDomain}`))) {
+    return { ok: false, error: `Faculty logins must use @${env.allowedDomain} addresses.` };
+  }
+
+  const { generatePassword, hashPassword } = await import("@/lib/password");
+  const base = await publicBaseUrl();
+  const link = sub.share_token ? `${base}/faculty-form/${sub.share_token}` : "";
+  const results: InviteResult[] = [];
+
+  for (const person of parsed.data) {
+    const existing = await collections.users().findOne({ email: person.email });
+    if (existing) {
+      results.push({ email: person.email, name: str(existing.name), status: existing.role === "faculty" ? "exists" : "not_faculty" });
+      continue;
+    }
+    const password = generatePassword();
+    const name = person.name || person.email.split("@")[0];
+    await collections.users().insertOne({
+      name,
+      email: person.email,
+      role: "faculty",
+      department: sub.identity.dept,
+      password: await hashPassword(password),
+      auth_provider: "faculty_invite",
+      invited_by: user.email,
+      created_at: nowStamp(),
+      first_time_login: false,
+      can_readiness: false,
+      can_closure: false,
+      can_iea: false,
+    });
+    const emailed = env.mail
+      ? await sendEmail(
+          person.email,
+          `Your Jain OOA Portal faculty login — ${sub.identity.dept}`,
+          `<p>Dear ${esc(name)},</p>
+           <p>${esc(sub.identity.hodName || "Your HOD")} has created a faculty login for you on the Jain OOA Portal, for <strong>${esc(sub.identity.dept)}</strong>.</p>
+           <p><strong>Email:</strong> ${esc(person.email)}<br><strong>Password:</strong> <code>${esc(password)}</code></p>
+           <p>Sign in at <a href="${base}/login">${base}/login</a> to upload your course documents. You can change the password from your Home page.${link ? ` Your ${esc(MODULES[sub.form_type].label)} checklist: <a href="${link}">${link}</a>.` : ""}</p>`,
+        )
+      : false;
+    // The password is shown to the HOD only when it could not be emailed.
+    results.push({ email: person.email, name, status: "created", emailed, ...(emailed ? {} : { password }) });
+  }
+  revalidatePath("/admin/users");
+  return { ok: true, results };
 }

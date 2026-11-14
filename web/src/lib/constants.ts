@@ -472,3 +472,96 @@ export const IEA_DEFINITION =
 
 /** A finalised HOD submission may be edited this many times before admin approval is needed. */
 export const FREE_EDIT_LIMIT = 2;
+
+// ── Document library ────────────────────────────────────────────────
+
+export type DocPhase = "readiness" | "closure";
+
+export type DocType = {
+  key: string;
+  label: string;
+  phase: DocPhase;
+  /** Every group must have at least one word found in the document's text. */
+  expect: { label: string; any: string[] }[];
+  /** Faculty checklist items this document answers, ticked automatically once it is on file. */
+  answers: string[];
+};
+
+/**
+ * The documents each course needs every semester. One current copy per
+ * department, course, semester and type: the single source of truth.
+ */
+export const DOC_TYPES: DocType[] = [
+  {
+    key: "tlep", label: "TLEP (Teaching-Learning-Evaluation Plan)", phase: "readiness",
+    expect: [
+      { label: "course outcomes", any: ["course outcome", "co1", "co 1", "co-1", "learning outcome"] },
+      { label: "assessment / evaluation plan", any: ["assessment", "evaluation", "cie", "see", "internal"] },
+      { label: "teaching schedule", any: ["week", "session", "lecture", "hour", "module", "unit"] },
+    ],
+    answers: ["F1"],
+  },
+  {
+    key: "session_plan", label: "Session plan", phase: "readiness",
+    expect: [
+      { label: "session / lecture schedule", any: ["session", "lecture", "class", "week"] },
+      { label: "topics", any: ["topic", "unit", "module", "chapter"] },
+    ],
+    answers: ["F2", "F5"],
+  },
+  {
+    key: "co_po", label: "CO-PO mapping", phase: "readiness",
+    expect: [
+      { label: "course outcomes (CO)", any: ["co1", "co 1", "course outcome", "co-1"] },
+      { label: "programme outcomes (PO/PSO)", any: ["po1", "po 1", "programme outcome", "program outcome", "pso"] },
+    ],
+    answers: ["F3", "FC14"],
+  },
+  {
+    key: "assessment_plan", label: "Assessment plan (CIE / SEE)", phase: "readiness",
+    expect: [{ label: "assessment components", any: ["cie", "see", "assessment", "internal", "marks", "test"] }],
+    answers: ["F4"],
+  },
+  {
+    key: "course_material", label: "Course material (notes / PPTs)", phase: "readiness",
+    expect: [],
+    answers: ["F6", "FC9", "FC10"],
+  },
+  {
+    key: "attendance_report", label: "Attendance analysis report", phase: "closure",
+    expect: [{ label: "attendance", any: ["attendance", "present", "absent", "%"] }],
+    answers: ["FC1"],
+  },
+  {
+    key: "ca_marks", label: "Consolidated CA marks list", phase: "closure",
+    expect: [{ label: "marks", any: ["marks", "ca", "internal", "total", "score"] }],
+    answers: ["FC2", "FC4"],
+  },
+  {
+    key: "experiential", label: "Experiential learning record with rubrics", phase: "closure",
+    expect: [{ label: "rubric / evaluation criteria", any: ["rubric", "criteria", "evaluation", "score"] }],
+    answers: ["FC11", "FC12"],
+  },
+  {
+    key: "course_end_survey", label: "Course end survey", phase: "closure",
+    expect: [{ label: "survey / feedback", any: ["survey", "feedback", "response", "rating"] }],
+    answers: ["FC15"],
+  },
+  {
+    key: "result_analysis", label: "Result analysis with backlog list", phase: "closure",
+    expect: [{ label: "results", any: ["result", "pass", "fail", "grade", "backlog"] }],
+    answers: ["FC20"],
+  },
+  {
+    key: "mentoring_report", label: "Mentoring report", phase: "closure",
+    expect: [{ label: "mentoring", any: ["mentor", "mentee", "counsel"] }],
+    answers: ["FC21"],
+  },
+];
+
+export function docType(key: string): DocType | undefined {
+  return DOC_TYPES.find((t) => t.key === key);
+}
+
+export const DOC_EXTENSIONS = [".pdf", ".docx", ".pptx", ".xlsx", ".png", ".jpg", ".jpeg"];
+export const DOC_MAX_BYTES = 20 * 1024 * 1024;

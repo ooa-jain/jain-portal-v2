@@ -46,4 +46,5 @@ export const collections = {
   notifications: () => col<Document>("notifications"),
   sentReminders: () => col<{ _id: string } & Document>("sent_reminders"),
   pwaAnalytics: () => col<{ _id: string } & Document>("pwa_analytics"),
+  documents: () => col<Document>("documents"),
 };

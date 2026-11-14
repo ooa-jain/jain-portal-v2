@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
+import { requireDepartmentUser } from "@/lib/auth";
 import { listFacultyForOwner } from "@/lib/data";
 import { MODULES } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import { formatDateTime } from "@/lib/utils";
 export const metadata: Metadata = { title: "Faculty Responses" };
 
 export default async function AnalysisPage() {
-  const user = await requireUser();
+  const user = await requireDepartmentUser();
   const rows = (await listFacultyForOwner(user.email)).sort((a, b) => b.faculty.timestamp.localeCompare(a.faculty.timestamp));
 
   const pending = rows.filter((r) => r.faculty.hod_review_status === "pending").length;

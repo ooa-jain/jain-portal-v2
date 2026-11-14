@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Excel generation and the MongoDB driver run on the server only.
-  serverExternalPackages: ["exceljs", "mongodb", "nodemailer"],
+  serverExternalPackages: ["exceljs", "mongodb", "nodemailer", "unpdf"],
   experimental: {
     // Evidence uploads go through a route handler; actions only carry form JSON.
     serverActions: { bodySizeLimit: "2mb" },

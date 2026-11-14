@@ -161,6 +161,7 @@ export function normalizeUser(doc: Document, adminEmails: Set<string>): PortalUs
     closure_access_override: doc.closure_access_override === true,
     iea_access_override: doc.iea_access_override === true,
     has_password: Boolean(doc.password),
+    is_faculty: doc.role === "faculty" && !(adminEmails.has(email) || doc.is_admin === true),
     locked: Boolean(doc.lock_until) && new Date(str(doc.lock_until)).getTime() > Date.now(),
     created_at: str(doc.created_at),
     last_login: str(doc.last_login),

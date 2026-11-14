@@ -104,6 +104,8 @@ const userSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(200),
   department: z.string().trim().max(200),
   isAdmin: z.boolean(),
+  /** Faculty accounts upload documents and fill checklists, but cannot file HOD submissions. */
+  isFaculty: z.boolean().default(false),
   /** "none" = Google only; "generate" = make one; "set" = use `password`. */
   passwordMode: z.enum(["none", "generate", "set"]).default("none"),
   password: z.string().max(200).default(""),
@@ -142,7 +144,7 @@ export async function saveUser(input: z.input<typeof userSchema>): Promise<Actio
         name: data.name,
         department: data.department,
         is_admin: data.isAdmin,
-        role: data.isAdmin ? "admin" : "user",
+        role: data.isAdmin ? "admin" : data.isFaculty ? "faculty" : "user",
         first_time_login: !data.department,
         ...passwordFields,
       },

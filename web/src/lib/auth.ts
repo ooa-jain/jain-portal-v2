@@ -23,6 +23,8 @@ export type CurrentUser = {
   impersonatedBy: string | null;
   /** Can also sign in with email and password. */
   hasPassword: boolean;
+  /** Faculty accounts upload documents and fill checklists; they cannot file HOD submissions. */
+  isFaculty: boolean;
 };
 
 /** Admin = listed in ADMIN_EMAILS, listed in settings.admin_emails, or flagged on the user document. */
@@ -70,6 +72,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     },
     impersonatedBy: session.impersonator ?? null,
     hasPassword: Boolean(doc.password),
+    isFaculty: !isAdmin && doc.role === "faculty",
   };
 });
 
@@ -120,4 +123,11 @@ export async function verifyFirebaseToken(idToken: string): Promise<VerifiedIden
 
 export function isAllowedEmail(email: string): boolean {
   return email.endsWith(`@${env.allowedDomain}`) || env.adminEmails.has(email);
+}
+
+/** HOD / department pages: signed in and not a faculty account. */
+export async function requireDepartmentUser(): Promise<CurrentUser> {
+  const user = await requireUser();
+  if (user.isFaculty) redirect("/");
+  return user;
 }

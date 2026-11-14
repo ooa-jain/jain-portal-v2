@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Popover } from "radix-ui";
 import {
-  BarChart3, Bell, BellRing, ClipboardCheck, FileCheck2, Home, Inbox, Lightbulb, ListChecks, LogOut, Menu,
+  BarChart3, Bell, BellRing, FolderOpen, LineChart, ClipboardCheck, FileCheck2, Home, Inbox, Lightbulb, ListChecks, LogOut, Menu,
   PanelLeftClose, PieChart, Settings, ShieldCheck, Users, X, type LucideIcon,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
@@ -17,7 +17,7 @@ import { cn, formatDateTime, initials } from "@/lib/utils";
 const ICONS: Record<string, LucideIcon> = {
   dashboard: Home, readiness: ClipboardCheck, closure: FileCheck2, iea: Lightbulb, analysis: BarChart3,
   ieaAnalysis: PieChart, admin: ShieldCheck, submissions: ListChecks, users: Users, requests: Inbox,
-  notifications: BellRing, settings: Settings,
+  notifications: BellRing, settings: Settings, documents: FolderOpen, analytics: LineChart,
 };
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS | string; badge?: number };
@@ -25,7 +25,7 @@ export type NavGroup = { title: string; items: NavItem[] };
 
 export type ShellProps = {
   groups: NavGroup[];
-  user: { name: string; email: string; department: string; isAdmin: boolean };
+  user: { name: string; email: string; department: string; isAdmin: boolean; isFaculty: boolean };
   impersonatedBy: string | null;
   notifications: PortalNotification[];
   /** Shown in the top bar after the portal name, e.g. "2026–27". */
@@ -115,7 +115,7 @@ function SideFoot({ user, collapsed }: { user: ShellProps["user"]; collapsed: bo
         <span className="min-w-0 flex-1 leading-tight">
           <strong className="block truncate text-[13px] font-semibold text-primary">{user.name}</strong>
           <small className="block truncate text-[11.5px] text-[#5b6474]">
-            {user.isAdmin ? "Office of Academic Affairs" : user.department || user.email}
+            {user.isAdmin ? "Office of Academic Affairs" : user.isFaculty ? `Faculty · ${user.department || user.email}` : user.department || user.email}
           </small>
         </span>
       )}

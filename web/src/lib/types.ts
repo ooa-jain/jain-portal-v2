@@ -90,6 +90,7 @@ export type PortalUser = {
   /** Can sign in with email and password. */
   has_password: boolean;
   locked: boolean;
+  is_faculty: boolean;
   created_at: string;
   last_login: string;
 };
@@ -157,5 +158,41 @@ export type IeaSubmission = {
   versions: IeaVersion[];
 };
 export type IeaFeedback = { _id: string; like: string; rating: number; comments: string; submitterEmail: string; submitterName: string; createdAt: string };
+
+// ── Document library ──
+
+export type DocCheck = {
+  /** passed: readable and matches; warnings: forwarded with notes; failed: sent back to the uploader. */
+  status: "passed" | "warnings" | "failed";
+  notes: string[];
+  pages: number;
+  textChars: number;
+  courseCodeFound: boolean;
+};
+
+export type DocReview = { status: "pending" | "approved" | "returned" | "not_sent"; by: string; at: string; remarks: string };
+
+export type DocVersion = { version: number; file_name: string; sha256: string; uploaded_at: string; uploaded_by: string };
+
+export type LibraryDocument = {
+  _id: string;
+  dept: string;
+  programme: string;
+  course_code: string;
+  course_name: string;
+  semester: string;
+  doc_type: string;
+  file_name: string;
+  mime: string;
+  size: number;
+  sha256: string;
+  version: number;
+  uploaded_by_email: string;
+  uploaded_by_name: string;
+  uploaded_at: string;
+  check: DocCheck;
+  review: DocReview;
+  history: DocVersion[];
+};
 
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string };
