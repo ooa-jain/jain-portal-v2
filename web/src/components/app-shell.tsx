@@ -239,7 +239,7 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
   return (
     <div className="flex min-h-screen flex-1">
       {/* desktop menu */}
-      <aside className={cn("fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-white/60 bg-white/55 backdrop-blur-xl transition-[width] duration-300 lg:flex", sideWidth)}>
+      <aside className={cn("fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border bg-white transition-[width] duration-300 lg:flex", sideWidth)}>
         <div className={cn("flex min-h-16 items-center gap-2 px-4 pb-2.5 pt-3.5", collapsed && "flex-col px-0")}>
           <Link href="/" className="flex min-w-0 flex-1 items-center" aria-label="Jain OOA Portal home">
             {collapsed ? (
@@ -287,7 +287,7 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
         </div>
 
         {/* institution bar */}
-        <header className="sticky top-[60px] z-20 flex h-11 items-center gap-4 border-b border-white/70 bg-white/60 px-4 backdrop-blur-md sm:px-5 lg:top-0">
+        <header className="sticky top-[60px] z-20 flex h-11 items-center gap-4 border-b border-border bg-white/95 px-4 backdrop-blur-sm sm:px-5 lg:top-0">
           <span className="hidden min-w-0 truncate text-[12.5px] text-muted-foreground md:block">
             JAIN (Deemed-to-be University) · Office of Academic Affairs
           </span>

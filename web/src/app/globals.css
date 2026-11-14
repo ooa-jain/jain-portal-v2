@@ -1,38 +1,35 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Jain OOA Portal: the Office of Academic Affairs portal look, matching the
-   Board of Studies portal. A quiet light palette: white surfaces on a soft
-   grey, navy for what matters, a faint graph-paper grid behind every page. */
+/* Jain OOA Portal: a clean, professional look. White surfaces on a light
+   neutral ground, charcoal for text and actions, one quiet blue for links. */
 :root {
-  /* Sky palette: soft sky-blue ground, white surfaces, deep indigo ink. */
-  --background: #e8f1fb;
-  --foreground: #23263f;
+  /* Clean professional palette: white surfaces on a light neutral ground,
+     charcoal ink and actions, one quiet blue for links and focus. */
+  --background: #f5f6f7;
+  --foreground: #1d2330;
   --card: #ffffff;
-  --card-foreground: #23263f;
-  --primary: #23263f;
+  --card-foreground: #1d2330;
+  --primary: #283139;
   --primary-foreground: #ffffff;
-  --secondary: #e6f0fb;
-  --secondary-foreground: #23263f;
-  --muted: #f1f6fc;
-  --muted-foreground: #66708a;
-  --accent: #bfdcf6;
-  --accent-foreground: #23263f;
-  --accent-soft: #eaf4fd;
-  --link: #2f6fb8;
-  --destructive: #d64545;
-  --destructive-soft: #fdf0f0;
-  --success: #1f9d61;
-  --success-soft: #e9f8f0;
-  --warning: #2f6fb8;
-  --warning-soft: #eaf3fd;
-  --border: #dbe6f2;
-  --input: #c9d8ea;
-  --ring: #3d7ec7;
-  --hover: #e4eefa;
-  --sky-top: #a9cdee;
-  --sky-mid: #d3e6f8;
-  --sky-low: #eef5fc;
+  --secondary: #f0f1f3;
+  --secondary-foreground: #1d2330;
+  --muted: #f5f6f7;
+  --muted-foreground: #6b7280;
+  --accent: #eceef1;
+  --accent-foreground: #1d2330;
+  --accent-soft: #f3f4f6;
+  --link: #2b6cb0;
+  --destructive: #c8372d;
+  --destructive-soft: #fdf1f0;
+  --success: #1a7f52;
+  --success-soft: #ecf7f1;
+  --warning: #a15c07;
+  --warning-soft: #fdf6e9;
+  --border: #e4e6ea;
+  --input: #d4d7dd;
+  --ring: #2b6cb0;
+  --hover: #f0f1f3;
   --radius: 0.75rem;
 }
 
@@ -74,13 +71,7 @@
     border-color: var(--border);
   }
   body {
-    /* The sky, fading from blue at the top to near-white, as on the sign-in page. */
-    background-color: var(--sky-low);
-    background-image:
-      radial-gradient(60rem 22rem at 12% -4%, rgba(255, 255, 255, 0.75), transparent 70%),
-      radial-gradient(50rem 20rem at 92% 2%, rgba(255, 255, 255, 0.6), transparent 70%),
-      linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 28%, var(--sky-low) 62%, #f6faff 100%);
-    background-attachment: fixed;
+    background-color: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
     font-size: 14px;
@@ -99,15 +90,8 @@
 
 /* A painted brush-stroke highlight behind a key word or two in a title. */
 .hl {
-  display: inline-block;
-  padding: 0.06em 0.45em 0.1em;
-  margin: 0 -0.05em;
-  line-height: 1.15;
-  color: #1f2937;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20200%2040'%20preserveAspectRatio='none'%3E%3Cpath%20fill='%23bfdcf6'%20d='M5%209C40%204%2090%207%20128%205C158%204%20182%203%20196%207L191%2013L198%2019L190%2025L197%2031C160%2037%20112%2034%2072%2036C42%2037%2020%2036%206%2034L11%2028L2%2022L9%2016Z'/%3E%3Cpath%20fill='none'%20stroke='%23fff'%20stroke-opacity='.28'%20stroke-width='1.6'%20d='M14%2014C60%2011%20120%2012%20182%2011M20%2024C80%2022%20130%2024%20186%2023M30%2030C90%2029%20140%2031%20176%2029'/%3E%3C/svg%3E");
+  /* Titles stay plain: no painted highlight in the clean theme. */
+  color: inherit;
 }
 
 /* The sign-in scene: three stacked panels on a navy stage. */
@@ -168,6 +152,11 @@
 @keyframes login-ring { 0% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.7; } 50% { transform: translate(-50%, -50%) scale(1.03); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.7; } }
 .login-chip { animation: login-chip 5s ease-in-out infinite; }
 .login-ring { animation: login-ring 6s ease-in-out infinite; }
+/* Sign-in entrance (Real-Time Alerts): card, then headline, then the form, once. */
+@keyframes rta-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes rta-clip { from { opacity: 0; transform: translateY(16px); clip-path: inset(100% 0 0 0); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); } }
+.rta-in { animation: rta-in 560ms cubic-bezier(.16, 1, .3, 1) var(--d, 0ms) both; }
+.rta-clip { animation: rta-clip 760ms cubic-bezier(.16, 1, .3, 1) var(--d, 0ms) both; }
 .cloud-drift { animation: cloud-drift 18s ease-in-out infinite alternate; }
 .cloud-drift-slow { animation: cloud-drift 28s ease-in-out infinite alternate-reverse; }
 
