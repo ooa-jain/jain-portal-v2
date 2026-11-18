@@ -25,7 +25,7 @@ export type NavGroup = { title: string; items: NavItem[] };
 
 export type ShellProps = {
   groups: NavGroup[];
-  user: { name: string; email: string; department: string; isAdmin: boolean; isFaculty: boolean };
+  user: { name: string; email: string; department: string; isAdmin: boolean; isFaculty: boolean; isDemo?: boolean };
   impersonatedBy: string | null;
   notifications: PortalNotification[];
   /** Shown in the top bar after the portal name, e.g. "2026–27". */
@@ -298,6 +298,12 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
             <NotificationBell notifications={notifications} />
           </span>
         </header>
+
+        {user.isDemo && (
+          <div className="border-b border-border bg-accent-soft px-4 py-2 text-center text-[13px] text-muted-foreground">
+            <strong className="text-foreground">Demo account</strong> for testing. Anything you save here is filed under the demo department, not a real one.
+          </div>
+        )}
 
         {impersonatedBy && (
           <form action={stopImpersonating} className="flex flex-wrap items-center justify-center gap-3 border-b border-[#f2cd73] bg-[#fdf6e3] px-4 py-2 text-[13px] text-[#7a5e05]">

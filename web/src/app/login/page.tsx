@@ -27,7 +27,7 @@ export default async function LoginPage() {
   if (user) redirect(user.isAdmin ? "/admin" : "/");
 
   return (
-    <main className="login-stage-rta flex min-h-svh flex-1 flex-col bg-[#fefefe] md:flex-row">
+    <main className="flex min-h-svh flex-1 flex-col bg-[#fefefe] md:h-svh md:flex-row md:overflow-hidden">
       {/* media column */}
       <section className="relative h-[clamp(264px,36svh,320px)] shrink-0 overflow-hidden bg-[linear-gradient(160deg,#3a4250_0%,#7b828c_45%,#c9cdd2_100%)] md:h-auto md:w-[57%]">
         <video
@@ -43,22 +43,22 @@ export default async function LoginPage() {
         </video>
         {/* dark scrim on phones so the white headline reads over the video */}
         <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,10,13,.02)_18%,rgba(7,10,13,.12)_48%,rgba(7,10,13,.78)_100%)] md:hidden" />
-        <div className="absolute bottom-0 left-0 p-6 pb-12 md:p-9 lg:p-11">
-          <div className="rta-in inline-flex h-[31px] items-center gap-2.5 rounded-full bg-[rgba(24,27,30,.82)] px-3 text-[11px] text-white shadow-[0_4px_16px_rgba(0,0,0,.18)] backdrop-blur-[7px] [--d:120ms] md:h-[37px] md:bg-[#2f2a27] md:pl-[19px] md:pr-4 md:text-[13.6px]">
+        <div className="absolute bottom-0 left-0 p-6 pb-12 md:p-[clamp(24px,4.5vh,44px)]">
+          <div className="rta-in inline-flex h-[31px] items-center gap-2.5 rounded-full bg-[rgba(24,27,30,.82)] px-3 text-[11px] text-white shadow-[0_4px_16px_rgba(0,0,0,.18)] backdrop-blur-[7px] [--d:120ms] md:h-[34px] md:bg-[#2f2a27] md:pl-[19px] md:pr-4 md:text-[13.6px]">
             <BadgeGlyph />
             Built for every department
           </div>
-          <h1 className="mt-3 font-[640] leading-[0.96] tracking-[-0.035em] text-white [text-shadow:0_2px_18px_rgba(0,0,0,.32)] md:mt-5 md:text-[#000] md:[text-shadow:none]">
-            <span className="rta-in rta-clip block text-[clamp(30px,8.8vw,38px)] [--d:240ms] md:text-[clamp(44px,4.7vw,69px)]">Plan, Review &amp; Submit</span>
-            <span className="rta-in rta-clip block text-[clamp(30px,8.8vw,38px)] [--d:330ms] md:text-[clamp(44px,4.7vw,69px)]">Effortlessly</span>
+          <h1 className="mt-3 font-[640] leading-[1.02] tracking-[-0.035em] text-white [text-shadow:0_2px_18px_rgba(0,0,0,.32)] md:mt-[clamp(10px,2vh,20px)] md:text-[#000] md:[text-shadow:none]">
+            <span className="rta-in rta-clip block text-[clamp(30px,8.8vw,38px)] [--d:240ms] md:text-[min(4.6vw,8.2vh,66px)]">Plan, Review &amp; Submit</span>
+            <span className="rta-in rta-clip block text-[clamp(30px,8.8vw,38px)] [--d:330ms] md:text-[min(4.6vw,8.2vh,66px)]">Effortlessly</span>
           </h1>
         </div>
       </section>
 
       {/* sign-in pane */}
-      <section className="relative -mt-7 flex flex-1 md:mt-0 md:p-3.5 md:pl-px">
-        <div className="rta-in flex w-full flex-col justify-center rounded-t-[28px] bg-white px-[clamp(24px,7vw,38px)] pb-[max(30px,env(safe-area-inset-bottom))] pt-9 shadow-[0_-10px_28px_rgba(20,28,36,.10)] [--d:40ms] md:rounded-[26px] md:border md:border-black/[.036] md:bg-[rgba(254,254,254,.9)] md:px-[clamp(28px,6vw,62px)] md:shadow-[1px_10px_14px_rgba(10,14,20,.14),0_1px_3px_rgba(10,14,20,.05)] md:backdrop-blur-[28px]">
-          <SignInCard config={env.firebase} domain={env.allowedDomain} />
+      <section className="relative -mt-7 flex flex-1 md:mt-0 md:min-h-0 md:p-3.5 md:pl-px">
+        <div className="rta-in flex w-full flex-col justify-center rounded-t-[28px] bg-white px-[clamp(24px,7vw,38px)] pb-[max(30px,env(safe-area-inset-bottom))] pt-9 shadow-[0_-10px_28px_rgba(20,28,36,.10)] [--d:40ms] md:rounded-[26px] md:border md:border-black/[.036] md:bg-[rgba(254,254,254,.9)] md:overflow-y-auto md:px-[clamp(28px,5vw,62px)] md:py-[clamp(16px,3vh,36px)] md:shadow-[1px_10px_14px_rgba(10,14,20,.14),0_1px_3px_rgba(10,14,20,.05)] md:backdrop-blur-[28px]">
+          <SignInCard domain={env.allowedDomain} demo={env.demoLogin} />
         </div>
       </section>
     </main>

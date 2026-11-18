@@ -105,3 +105,13 @@ Before switching over:
 - Set `UPLOAD_DIR=/var/www/jain-ooa-portal/static/uploads` so files uploaded in the old app still open.
 - In the Firebase console, both domains must be listed under Authentication → Settings → Authorised domains (they already are for the old app).
 - Make sure every admin's email is in `ADMIN_EMAILS` or flagged as admin in the database; the old username/password admin login is gone.
+
+## Demo login for testers
+
+Set `DEMO_LOGIN=1` in `.env` and restart to show **Demo HOD** and **Demo Faculty**
+buttons on the sign-in page. They sign in to two test accounts
+(`demo.hod@` and `demo.faculty@` the university domain) in a separate
+"Demo Department (Testing)", so testers never see or change a real
+department's data. Demo accounts are never admins, cannot set a password,
+and their sign-in lasts only for the browser session. Remove the line (or set
+it to `0`) and restart to turn the buttons off.

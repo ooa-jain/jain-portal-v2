@@ -6,7 +6,7 @@ import { z } from "zod";
 import { collections } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { canEditSubmission, getSubmission, toObjectId } from "@/lib/data";
-import { CAMPUSES, DEPARTMENTS, FREE_EDIT_LIMIT, HOD_CLOSURE_SECTIONS, HOD_SECTIONS } from "@/lib/constants";
+import { CAMPUSES, DEMO_DEPARTMENT, DEPARTMENTS, FREE_EDIT_LIMIT, HOD_CLOSURE_SECTIONS, HOD_SECTIONS } from "@/lib/constants";
 import { writeBlockedReason } from "@/lib/access";
 import type { ActionResult } from "@/lib/types";
 import { nowStamp } from "@/lib/utils";
@@ -54,7 +54,7 @@ export async function saveSubmission(
   if (!data.draft) {
     const i = data.identity;
     if (!CAMPUSES.includes(i.campus)) return { ok: false, error: "Select a campus." };
-    if (!DEPARTMENTS.includes(i.dept)) return { ok: false, error: "Select a department." };
+    if (!DEPARTMENTS.includes(i.dept) && !(user.isDemo && i.dept === DEMO_DEPARTMENT)) return { ok: false, error: "Select a department." };
     if (!i.hodName || !i.hodEmail) return { ok: false, error: "Enter the HOD name and email." };
     if (!i.semester || !i.acYear) return { ok: false, error: "Select the semester and academic year." };
   }

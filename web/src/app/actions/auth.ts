@@ -6,7 +6,7 @@ import { collections } from "@/lib/db";
 import { getCurrentUser, isAdminEmail, isAllowedEmail, verifyFirebaseToken } from "@/lib/auth";
 import { destroySession } from "@/lib/session";
 import { env } from "@/lib/env";
-import { DEPARTMENTS } from "@/lib/constants";
+import { DEMO_ACCOUNTS, DEMO_DEPARTMENT, DEPARTMENTS, type DemoRole } from "@/lib/constants";
 import type { ActionResult } from "@/lib/types";
 import { startSessionFor } from "@/lib/login";
 import { DUMMY_HASH, hashPassword, passwordProblem, verifyPassword } from "@/lib/password";
@@ -43,6 +43,7 @@ export async function signOut() {
 export async function updateDepartment(department: string): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Please sign in again." };
+  if (user.isDemo) return { ok: false, error: "Demo accounts stay in the demo department." };
   if (!DEPARTMENTS.includes(department)) return { ok: false, error: "Choose a department from the list." };
 
   await collections
@@ -72,7 +73,7 @@ export async function signInWithPassword(
   const lockedUntil = user?.lock_until ? new Date(str(user.lock_until)) : null;
   if (lockedUntil && lockedUntil.getTime() > Date.now()) {
     const minutes = Math.ceil((lockedUntil.getTime() - Date.now()) / 60000);
-    return { ok: false, error: `Too many wrong attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}, or sign in with Google.` };
+    return { ok: false, error: `Too many wrong attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.` };
   }
 
   // Always run one hash check, so a missing account takes as long as a wrong password.
@@ -88,7 +89,7 @@ export async function signInWithPassword(
       );
     }
     if (user && !stored) {
-      return { ok: false, error: "This account has no password yet. Sign in with Google, or ask the Office of Academic Affairs to set one." };
+      return { ok: false, error: "This account has no password yet. Ask the Office of Academic Affairs to set one." };
     }
     return { ok: false, error: "Email or password is incorrect." };
   }
@@ -103,6 +104,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Your session has expired. Please sign in again." };
   if (user.impersonatedBy) return { ok: false, error: "You cannot change a password while viewing as another user." };
+  if (user.isDemo) return { ok: false, error: "Demo accounts cannot set a password." };
   const problem = passwordProblem(newPassword);
   if (problem) return { ok: false, error: problem };
 
@@ -117,4 +119,36 @@ export async function changePassword(currentPassword: string, newPassword: strin
     { $set: { password: await hashPassword(newPassword), password_changed_at: nowStamp(), failed_logins: 0, lock_until: null } },
   );
   return { ok: true };
+}
+
+/**
+ * Demo sign-in for testers, only when DEMO_LOGIN=1. Signs in to a fixed test
+ * account in the demo department (HOD or faculty, never admin), for this
+ * browser session only.
+ */
+export async function signInAsDemo(role: DemoRole): Promise<ActionResult<{ redirectTo: string }>> {
+  if (!env.demoLogin) return { ok: false, error: "Demo sign-in is turned off." };
+  const account = DEMO_ACCOUNTS[role];
+  if (!account) return { ok: false, error: "Unknown demo account." };
+  const email = `${account.local}@${env.allowedDomain}`;
+  if (await isAdminEmail(email)) return { ok: false, error: "This demo account is set up as an admin, so demo sign-in is blocked." };
+
+  await collections.users().updateOne(
+    { email },
+    {
+      $set: {
+        name: account.name,
+        department: DEMO_DEPARTMENT,
+        role: role === "faculty" ? "faculty" : "hod",
+        is_demo: true,
+        is_admin: false,
+        first_time_login: false,
+        password: "",
+      },
+      $setOnInsert: { email, created_at: nowStamp(), auth_provider: "demo", picture: "" },
+    },
+    { upsert: true },
+  );
+  await startSessionFor({ email, name: account.name, picture: "" }, false);
+  return { ok: true, redirectTo: "/" };
 }

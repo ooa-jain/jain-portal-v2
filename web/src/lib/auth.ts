@@ -25,6 +25,8 @@ export type CurrentUser = {
   hasPassword: boolean;
   /** Faculty accounts upload documents and fill checklists; they cannot file HOD submissions. */
   isFaculty: boolean;
+  /** One of the demo test accounts (DEMO_LOGIN). */
+  isDemo: boolean;
 };
 
 /** Admin = listed in ADMIN_EMAILS, listed in settings.admin_emails, or flagged on the user document. */
@@ -73,6 +75,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     impersonatedBy: session.impersonator ?? null,
     hasPassword: Boolean(doc.password),
     isFaculty: !isAdmin && doc.role === "faculty",
+    isDemo: doc.is_demo === true,
   };
 });
 

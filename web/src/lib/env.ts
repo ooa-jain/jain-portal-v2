@@ -83,6 +83,13 @@ export const env = {
   get cronSecret() {
     return optional("CRON_SECRET");
   },
+  /**
+   * DEMO_LOGIN=1 shows "Demo HOD" / "Demo Faculty" buttons on the sign-in page.
+   * They sign in to two test accounts in a separate demo department, never an admin.
+   */
+  get demoLogin() {
+    return optional("DEMO_LOGIN") === "1";
+  },
   /** Local testing only: enables /api/auth/dev. Ignored in production builds. */
   get devLogin() {
     return process.env.NODE_ENV !== "production" && optional("DEV_LOGIN") === "1";

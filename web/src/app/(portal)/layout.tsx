@@ -61,7 +61,7 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
   return (
     <AppShell
       groups={groups}
-      user={{ name: user.name, email: user.email, department: user.department, isAdmin: user.isAdmin, isFaculty: user.isFaculty }}
+      user={{ name: user.name, email: user.email, department: user.department, isAdmin: user.isAdmin, isFaculty: user.isFaculty, isDemo: user.isDemo }}
       impersonatedBy={user.impersonatedBy}
       notifications={notifications}
       cycle={cycle}

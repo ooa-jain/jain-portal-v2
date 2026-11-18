@@ -565,3 +565,11 @@ export function docType(key: string): DocType | undefined {
 
 export const DOC_EXTENSIONS = [".pdf", ".docx", ".pptx", ".xlsx", ".png", ".jpg", ".jpeg"];
 export const DOC_MAX_BYTES = 20 * 1024 * 1024;
+
+/** Department used by the demo test accounts; kept out of the real department list. */
+export const DEMO_DEPARTMENT = "Demo Department (Testing)";
+export const DEMO_ACCOUNTS = {
+  hod: { local: "demo.hod", name: "Demo HOD" },
+  faculty: { local: "demo.faculty", name: "Demo Faculty" },
+} as const;
+export type DemoRole = keyof typeof DEMO_ACCOUNTS;
