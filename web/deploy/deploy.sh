@@ -22,7 +22,18 @@ say() { printf '\n==> %s\n' "$*"; }
 die() { printf '\nDEPLOY FAILED: %s\n' "$*" >&2; exit 1; }
 
 cd "$APP_DIR" || die "no app folder at $APP_DIR"
-[ -z "$(git status --porcelain --untracked-files=no)" ] || die "the server copy has local changes; see 'git status' in $APP_DIR"
+
+# Files that builds and installs rewrite on their own (not real edits): put them back.
+for f in web/tsconfig.json web/next-env.d.ts web/package-lock.json; do
+  if git ls-files --error-unmatch "$f" >/dev/null 2>&1 && ! git diff --quiet -- "$f"; then
+    echo "Resetting $f (rewritten by a build or install)"
+    git checkout --quiet -- "$f"
+  fi
+done
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  git status --short --untracked-files=no
+  die "the server copy has the local changes listed above; they were left alone"
+fi
 
 OLD_COMMIT="$(git rev-parse HEAD)"
 say "Fetching $BRANCH (now at ${OLD_COMMIT:0:7})"
