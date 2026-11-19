@@ -49,9 +49,16 @@ if [ "$LOCK_CHANGED" = "1" ]; then
   if ! npm ci --no-audit --no-fund --loglevel=error; then rollback_code; die "npm ci failed; the site was not touched"; fi
 fi
 
+# Building into .next-new makes Next.js add that folder to tsconfig.json (and
+# may touch next-env.d.ts); put tracked files back so the copy stays clean.
+restore_tracked() { git -C "$APP_DIR" checkout --quiet -- web/tsconfig.json web/next-env.d.ts 2>/dev/null || true; }
+
 say "Building ${NEW_COMMIT:0:7} into .next-new (the site stays up)"
 rm -rf .next-new
-if ! NEXT_DIST_DIR=.next-new npx next build; then
+build_ok=1
+NEXT_DIST_DIR=.next-new npx next build || build_ok=0
+restore_tracked
+if [ "$build_ok" != "1" ]; then
   rm -rf .next-new
   rollback_code
   die "the build failed; the site keeps running the previous version"
