@@ -86,7 +86,7 @@ root's crontab (`crontab -e`). It emails people who have not submitted, 2 days
 and 1 hour before each module deadline, and never sends the same reminder twice.
 
 ```
-*/10 * * * * . /var/www/jain-ooa-portal/web/.env; curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8088/api/cron/deadline-reminders >/dev/null
+*/10 * * * * . /var/www/jain-sarathi-new/web/.env; curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8091/api/cron/deadline-reminders >/dev/null
 ```
 
 ### Uploads
