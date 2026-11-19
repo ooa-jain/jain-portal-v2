@@ -52,9 +52,8 @@ export async function submitFacultyChecklist(
   const data = parsed.data;
   // Signed in: the response is filed under the account, whatever the form says.
   const signedIn = await getCurrentUser();
-  // Faculty register or log in first; filling without a login is allowed only
-  // when the server cannot send email (and so cannot verify a new address).
-  if (!signedIn && env.mail) return { ok: false, error: "Register or log in first, then fill the checklist." };
+  // Faculty register (first time) or log in, then fill the checklist.
+  if (!signedIn) return { ok: false, error: "Register or log in first, then fill the checklist." };
   if (signedIn && !signedIn.impersonatedBy) {
     data.facultyEmail = signedIn.email;
     data.facultyName = signedIn.name || data.facultyName;

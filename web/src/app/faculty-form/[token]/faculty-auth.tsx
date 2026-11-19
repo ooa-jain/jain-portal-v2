@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { KeyRound, Loader2, MailCheck } from "lucide-react";
 import { SignInPage } from "@/components/ui/sign-in";
 import { signInWithPassword } from "@/app/actions/auth";
-import { completeFacultySignup, startFacultySignup } from "@/app/actions/faculty-signup";
+import { completeFacultySignup, registerFacultyWithoutCode, startFacultySignup } from "@/app/actions/faculty-signup";
 import { cn } from "@/lib/utils";
 
 const fieldBox =
@@ -17,7 +17,8 @@ const primaryButton =
 
 /**
  * A shared checklist link, opened signed out: the same sign-in page as HODs,
- * saying who shared which checklist, with Log in and first-time Register.
+ * saying who shared which checklist, with first-time Register and Log in.
+ * With email set up, registration proves the address with an emailed code.
  */
 export function FacultyAuth({
   token,
@@ -25,12 +26,15 @@ export function FacultyAuth({
   hodName,
   checklistName,
   domain,
+  verifyEmail,
 }: {
   token: string;
   dept: string;
   hodName: string;
   checklistName: string;
   domain: string;
+  /** Email a code to prove the address (when the server can send email). */
+  verifyEmail: boolean;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"register" | "login">("register");
@@ -74,7 +78,7 @@ export function FacultyAuth({
     });
   }
 
-  function register(event: React.FormEvent) {
+  function registerWithCode(event: React.FormEvent) {
     event.preventDefault();
     setError("");
     if (password !== confirm) return void setError("The two passwords do not match.");
@@ -86,8 +90,20 @@ export function FacultyAuth({
     });
   }
 
+  function registerDirect(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    if (password !== confirm) return void setError("The two passwords do not match.");
+    startTransition(async () => {
+      const result = await registerFacultyWithoutCode(token, name, email, password);
+      if (!result.ok) return void setError(result.error);
+      router.replace(result.redirectTo);
+      router.refresh();
+    });
+  }
+
   const switcher = (
-    <div role="tablist" aria-label="Log in or register" className="grid grid-cols-2 rounded-2xl bg-secondary p-1 text-[14px] font-semibold">
+    <div role="tablist" aria-label="Register or log in" className="grid grid-cols-2 rounded-2xl bg-secondary p-1 text-[14px] font-semibold">
       {(
         [
           ["register", "First time? Register"],
@@ -117,52 +133,75 @@ export function FacultyAuth({
     </div>
   ) : null;
 
-  const registerForm =
-    step === "details" ? (
-      <form className="space-y-[clamp(12px,2.2vh,20px)]" onSubmit={sendCode} noValidate>
-        <div>
-          <label htmlFor="reg-name" className={fieldLabel}>Full name</label>
-          <input id="reg-name" required autoComplete="name" placeholder="Dr. / Prof. your name" value={name} onChange={(e) => setName(e.target.value)} className={fieldBox} />
-        </div>
-        <div>
-          <label htmlFor="reg-email" className={fieldLabel}>University email</label>
-          <input id="reg-email" type="email" required autoComplete="email" placeholder={`you@${domain}`} value={email} onChange={(e) => setEmail(e.target.value)} className={fieldBox} />
-        </div>
-        {errorBox}
-        <button type="submit" disabled={pending || !name || !email} className={primaryButton}>
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
-          Email me a code
-        </button>
-        <p className="text-center text-[12.5px] text-muted-foreground">We send a 6-digit code to prove the address is yours.</p>
-      </form>
-    ) : (
-      <form className="space-y-[clamp(12px,2.2vh,20px)]" onSubmit={register} noValidate>
-        <p className="text-[13.5px] text-foreground">
-          We emailed a code to <strong>{email}</strong>.{" "}
-          <button type="button" className="font-semibold text-link hover:underline" onClick={() => setStep("details")}>Change</button>
-        </p>
-        <div>
-          <label htmlFor="reg-code" className={fieldLabel}>Code</label>
-          <input id="reg-code" required inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} className={cn(fieldBox, "tracking-[0.3em]")} />
-        </div>
-        <div className="grid gap-[clamp(12px,2.2vh,20px)] sm:grid-cols-2">
-          <div>
-            <label htmlFor="reg-password" className={fieldLabel}>Password</label>
-            <input id="reg-password" type="password" required autoComplete="new-password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className={fieldBox} />
-          </div>
-          <div>
-            <label htmlFor="reg-confirm" className={fieldLabel}>Confirm password</label>
-            <input id="reg-confirm" type="password" required autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={fieldBox} />
-          </div>
-        </div>
-        {errorBox}
-        <button type="submit" disabled={pending || code.length !== 6 || !password} className={primaryButton}>
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-          Register and open the checklist
-        </button>
-        <p className="text-center text-[12.5px] text-muted-foreground">At least 8 characters, with letters and numbers.</p>
-      </form>
-    );
+  const nameField = (
+    <div>
+      <label htmlFor="reg-name" className={fieldLabel}>Full name</label>
+      <input id="reg-name" required autoComplete="name" placeholder="Dr. / Prof. your name" value={name} onChange={(e) => setName(e.target.value)} className={fieldBox} />
+    </div>
+  );
+  const emailField = (
+    <div>
+      <label htmlFor="reg-email" className={fieldLabel}>University email</label>
+      <input id="reg-email" type="email" required autoComplete="email" placeholder={`you@${domain}`} value={email} onChange={(e) => setEmail(e.target.value)} className={fieldBox} />
+    </div>
+  );
+  const passwordFields = (
+    <div className="grid gap-[clamp(12px,2.2vh,20px)] sm:grid-cols-2">
+      <div>
+        <label htmlFor="reg-password" className={fieldLabel}>Password</label>
+        <input id="reg-password" type="password" required autoComplete="new-password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className={fieldBox} />
+      </div>
+      <div>
+        <label htmlFor="reg-confirm" className={fieldLabel}>Confirm password</label>
+        <input id="reg-confirm" type="password" required autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={fieldBox} />
+      </div>
+    </div>
+  );
+  const registerButton = (disabled: boolean) => (
+    <button type="submit" disabled={pending || disabled} className={primaryButton}>
+      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+      Register and open the checklist
+    </button>
+  );
+  const passwordHint = <p className="text-center text-[12.5px] text-muted-foreground">Password: at least 8 characters, with letters and numbers.</p>;
+
+  const registerForm = !verifyEmail ? (
+    // The server cannot send email: register with name, university email and password.
+    <form className="space-y-[clamp(12px,2.2vh,20px)]" onSubmit={registerDirect} noValidate>
+      {nameField}
+      {emailField}
+      {passwordFields}
+      {errorBox}
+      {registerButton(!name || !email || !password)}
+      {passwordHint}
+    </form>
+  ) : step === "details" ? (
+    <form className="space-y-[clamp(12px,2.2vh,20px)]" onSubmit={sendCode} noValidate>
+      {nameField}
+      {emailField}
+      {errorBox}
+      <button type="submit" disabled={pending || !name || !email} className={primaryButton}>
+        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
+        Email me a code
+      </button>
+      <p className="text-center text-[12.5px] text-muted-foreground">We send a 6-digit code to prove the address is yours.</p>
+    </form>
+  ) : (
+    <form className="space-y-[clamp(12px,2.2vh,20px)]" onSubmit={registerWithCode} noValidate>
+      <p className="text-[13.5px] text-foreground">
+        We emailed a code to <strong>{email}</strong>.{" "}
+        <button type="button" className="font-semibold text-link hover:underline" onClick={() => setStep("details")}>Change</button>
+      </p>
+      <div>
+        <label htmlFor="reg-code" className={fieldLabel}>Code</label>
+        <input id="reg-code" required inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} className={cn(fieldBox, "tracking-[0.3em]")} />
+      </div>
+      {passwordFields}
+      {errorBox}
+      {registerButton(code.length !== 6 || !password)}
+      {passwordHint}
+    </form>
+  );
 
   return (
     <SignInPage

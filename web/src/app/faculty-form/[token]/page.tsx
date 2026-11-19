@@ -8,8 +8,6 @@ import { env } from "@/lib/env";
 import { MODULES } from "@/lib/constants";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FacultyAuth } from "./faculty-auth";
-import { FacultySignup } from "./faculty-signup";
-import { FacultyChecklistView } from "./view";
 
 export const metadata: Metadata = { title: "Faculty checklist", robots: { index: false } };
 
@@ -52,23 +50,19 @@ export default async function FacultyFormPage({ params }: PageProps<"/faculty-fo
   }
 
   // Faculty register (first time) or log in on the same page design as HODs,
-  // then fill the checklist inside the portal. Only if the server cannot send
-  // email (and so cannot verify a new address) is the form open without a login.
-  const checklistName = `Faculty ${MODULES[parent.form_type].short} Checklist`;
-  if (env.mail) {
-    return (
-      <main className="relative flex-1 bg-background text-foreground">
-        <ThemeToggle className="absolute right-4 top-4 z-20 md:left-4 md:right-auto" />
-        <FacultyAuth token={token} dept={parent.identity.dept} hodName={parent.identity.hodName} checklistName={checklistName} domain={env.allowedDomain} />
-      </main>
-    );
-  }
+  // then fill the checklist inside the portal. With email set up, a 6-digit
+  // code proves the address; without it, they register with email and password.
   return (
-    <Shell>
-      <FacultySignup token={token} dept={parent.identity.dept} hodName={parent.identity.hodName} checklistName={checklistName} domain={env.allowedDomain} canSignUp={false} />
-      <div className="mt-8">
-        <FacultyChecklistView parent={parent} token={token} account={null} prefills={{ current: null, previous: null }} />
-      </div>
-    </Shell>
+    <main className="relative flex-1 bg-background text-foreground">
+      <ThemeToggle className="absolute right-4 top-4 z-20 md:left-4 md:right-auto" />
+      <FacultyAuth
+        token={token}
+        dept={parent.identity.dept}
+        hodName={parent.identity.hodName}
+        checklistName={`Faculty ${MODULES[parent.form_type].short} Checklist`}
+        domain={env.allowedDomain}
+        verifyEmail={Boolean(env.mail)}
+      />
+    </main>
   );
 }

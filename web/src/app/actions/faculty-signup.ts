@@ -141,3 +141,56 @@ export async function completeFacultySignup(
   await startSessionFor({ email, name, picture: "" });
   return { ok: true, redirectTo: `/faculty-form/${token}` };
 }
+
+/**
+ * Registration when the server cannot send email (no code can be sent): name,
+ * university email and password, from a valid checklist link, for an address
+ * that has no account yet. Marked unverified; once email is set up, the
+ * code-checked flow above is used instead.
+ */
+export async function registerFacultyWithoutCode(
+  token: string,
+  nameInput: string,
+  emailInput: string,
+  password: string,
+): Promise<ActionResult<{ redirectTo: string }>> {
+  if (env.mail) return { ok: false, error: "Ask for an email code to register." };
+  const name = z.string().trim().min(2).max(120).safeParse(nameInput);
+  if (!name.success) return { ok: false, error: "Enter your full name." };
+  const parsedEmail = emailSchema.safeParse(emailInput);
+  if (!parsedEmail.success) return { ok: false, error: "Enter a valid email address." };
+  const email = parsedEmail.data;
+  if (!email.endsWith(`@${env.allowedDomain}`)) return { ok: false, error: `Use your @${env.allowedDomain} email address.` };
+  const problem = passwordProblem(password);
+  if (problem) return { ok: false, error: problem };
+
+  const parent = await getSubmissionByToken(token);
+  if (!parent || !parent.identity.dept) return { ok: false, error: "This link is no longer valid. Ask your HOD for a new one." };
+  if (await collections.users().findOne({ email })) {
+    return { ok: false, error: "You already have a login. Log in with it instead; if you have forgotten the password, ask the Office of Academic Affairs." };
+  }
+
+  try {
+    await collections.users().insertOne({
+      name: name.data,
+      email,
+      role: "faculty",
+      department: parent.identity.dept,
+      password: await hashPassword(password),
+      auth_provider: "faculty_link",
+      email_verified: false,
+      invited_by: parent.identity.hodEmail,
+      invited_by_name: parent.identity.hodName,
+      created_via_submission: parent._id,
+      created_at: nowStamp(),
+      first_time_login: false,
+      can_readiness: false,
+      can_closure: false,
+      can_iea: false,
+    });
+  } catch {
+    return { ok: false, error: "You already have a login. Log in with it instead." };
+  }
+  await startSessionFor({ email, name: name.data, picture: "" });
+  return { ok: true, redirectTo: `/checklists/${encodeURIComponent(token)}` };
+}
