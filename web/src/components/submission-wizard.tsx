@@ -3,10 +3,10 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Copy, Download, Loader2, Mail, RefreshCw, Save, Send, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Copy, Download, Loader2, Mail, RefreshCw, Save, Send } from "lucide-react";
 import { toast } from "sonner";
 import { requestEdit, saveSubmission } from "@/app/actions/submissions";
-import { inviteFaculty, sendFacultyLink, type InviteResult } from "@/app/actions/faculty";
+import { sendFacultyLink } from "@/app/actions/faculty";
 import { ChecklistEditor, ChecklistReadOnly, RemarkText, UploadButton } from "@/components/checklist";
 import { FacultyResponses } from "@/components/faculty-responses";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Notice } from "@/components/ui/page";
-import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import {
   CAMPUSES,
   DEPARTMENTS,
@@ -518,8 +517,8 @@ function FacultyStep({
         <CardHeader>
           <CardTitle>Faculty checklist link</CardTitle>
           <CardDescription>
-            Share this link with your faculty. Each faculty member fills the {module === "closure" ? "closure" : "readiness"} checklist
-            for their courses; no sign-in is needed.
+            Share this link with your faculty. The first time, each faculty member registers with their university email
+            and a password; then they fill the {module === "closure" ? "closure" : "readiness"} checklist for their courses.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -553,8 +552,6 @@ function FacultyStep({
           )}
         </CardContent>
       </Card>
-
-      {canEdit && submissionId && <FacultyLogins submissionId={submissionId} mailEnabled={mailEnabled} />}
 
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-3">
@@ -748,78 +745,3 @@ function EditRequestDialog({ id }: { id: string }) {
 }
 
 /** HOD: create faculty logins for the department, so faculty can upload documents and see their checklists. */
-function FacultyLogins({ submissionId, mailEnabled }: { submissionId: string; mailEnabled: boolean }) {
-  const [text, setText] = useState("");
-  const [results, setResults] = useState<InviteResult[] | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  function create() {
-    // One person per line: "Name, email" or just "email".
-    const people = text
-      .split(/\n+/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const email = line.match(/[^\s,;<>]+@[^\s,;<>]+/)?.[0] ?? "";
-        const name = line.replace(email, "").replace(/[<>,;]+/g, " ").trim();
-        return { name, email };
-      });
-    if (people.length === 0 || people.some((p) => !p.email)) return void toast.error("Put one person per line, with their email.");
-    startTransition(async () => {
-      const result = await inviteFaculty(submissionId, people);
-      if (!result.ok) return void toast.error(result.error);
-      setResults(result.results);
-      const created = result.results.filter((r) => r.status === "created").length;
-      toast.success(created ? `${created} faculty login${created === 1 ? "" : "s"} created.` : "No new logins were needed.");
-      setText("");
-    });
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Faculty logins</CardTitle>
-        <CardDescription>
-          Give faculty their own login to upload course documents to the Document Library and see their checklists.
-          {mailEnabled ? " Each person is emailed their password and the checklist link." : " Email is not set up, so the passwords are shown here once for you to hand over."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <Textarea
-          aria-label="Faculty to create logins for"
-          rows={3}
-          placeholder={"One per line, e.g.\nDr. Asha Rao, asha.rao@jainuniversity.ac.in"}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <div>
-          <Button variant="secondary" size="sm" onClick={create} disabled={pending || !text.trim()}>
-            {pending ? <Loader2 className="animate-spin" /> : <Users />}
-            Create logins
-          </Button>
-        </div>
-        {results && results.length > 0 && (
-          <div className="overflow-hidden rounded-lg border">
-            <Table>
-              <THead><tr><TH>Faculty</TH><TH>Result</TH><TH>Password</TH></tr></THead>
-              <TBody>
-                {results.map((r) => (
-                  <TR key={r.email}>
-                    <TD>{r.name}<span className="block text-xs text-muted-foreground">{r.email}</span></TD>
-                    <TD className="text-[13px]">
-                      {r.status === "created" ? (r.emailed ? "Created, emailed" : "Created") : r.status === "exists" ? "Already has a faculty login" : "Already has an account (not faculty)"}
-                    </TD>
-                    <TD>{r.password ? <code className="font-mono font-semibold text-primary">{r.password}</code> : <span className="text-muted-foreground">—</span>}</TD>
-                  </TR>
-                ))}
-              </TBody>
-            </Table>
-            {results.some((r) => r.password) && (
-              <p className="border-t bg-warning-soft px-3 py-2 text-xs text-warning">Copy these now: passwords are not shown again. Faculty can change theirs after signing in.</p>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}

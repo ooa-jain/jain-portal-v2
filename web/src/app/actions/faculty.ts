@@ -16,7 +16,7 @@ import { env } from "@/lib/env";
 import { publicBaseUrl } from "@/lib/base-url";
 import { esc, sendEmail } from "@/lib/mail";
 import type { ActionResult } from "@/lib/types";
-import { nowStamp, str } from "@/lib/utils";
+import { nowStamp } from "@/lib/utils";
 
 const text = (max: number) => z.string().trim().max(max).default("");
 
@@ -52,6 +52,9 @@ export async function submitFacultyChecklist(
   const data = parsed.data;
   // Signed in: the response is filed under the account, whatever the form says.
   const signedIn = await getCurrentUser();
+  // Faculty register or log in first; filling without a login is allowed only
+  // when the server cannot send email (and so cannot verify a new address).
+  if (!signedIn && env.mail) return { ok: false, error: "Register or log in first, then fill the checklist." };
   if (signedIn && !signedIn.impersonatedBy) {
     data.facultyEmail = signedIn.email;
     data.facultyName = signedIn.name || data.facultyName;
@@ -216,84 +219,11 @@ export async function sendFacultyLink(
       `<p>Dear ${esc(recipient.name || "Faculty")},</p>
        <p><strong>${esc(sub.identity.hodName)}</strong>, Head of <strong>${esc(sub.identity.dept)}</strong>, has asked you to fill the faculty
        ${esc(label)} checklist for <strong>${esc(sub.identity.semester)}</strong>${sub.identity.hodDeadline ? ` by <strong>${esc(sub.identity.hodDeadline)}</strong>` : ""}.</p>
-       <p><a href="${url}" style="display:inline-block;background:#23263f;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700">Open checklist</a></p>
+       <p>The first time, register with your university email and a password; after that, sign in with them.</p>
+       <p><a href="${url}" style="display:inline-block;background:#0e2a5c;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700">Open checklist</a></p>
        <p style="font-size:12px;color:#5b6785;word-break:break-all">${url}</p>`,
     );
     (ok ? sent : failed).push(recipient.email);
   }
   return { ok: true, sent, failed };
-}
-
-const inviteSchema = z
-  .array(z.object({ name: text(200), email: z.string().trim().toLowerCase().email().max(200) }))
-  .min(1)
-  .max(100);
-
-export type InviteResult = { email: string; name: string; status: "created" | "exists" | "not_faculty"; password?: string; emailed?: boolean };
-
-/**
- * HOD: create faculty logins for their department. Each new account gets a
- * generated password. When email is set up, the login and the checklist link
- * are emailed; otherwise the passwords are returned for the HOD to hand over.
- */
-export async function inviteFaculty(
-  submissionId: string,
-  people: { name: string; email: string }[],
-): Promise<ActionResult<{ results: InviteResult[] }>> {
-  const user = await getCurrentUser();
-  if (!user) return { ok: false, error: "Your session has expired. Please sign in again." };
-  if (user.isFaculty) return { ok: false, error: "Only the HOD can create faculty logins." };
-  const sub = await getSubmission(submissionId);
-  if (!sub || !canEditSubmission(user, sub)) return { ok: false, error: "Submission not found." };
-  if (!sub.identity.dept) return { ok: false, error: "Set the department on the Details step first." };
-
-  const parsed = inviteSchema.safeParse(people);
-  if (!parsed.success) return { ok: false, error: "Enter at least one valid email address." };
-  if (parsed.data.some((p) => !p.email.endsWith(`@${env.allowedDomain}`))) {
-    return { ok: false, error: `Faculty logins must use @${env.allowedDomain} addresses.` };
-  }
-
-  const { generatePassword, hashPassword } = await import("@/lib/password");
-  const base = await publicBaseUrl();
-  const link = sub.share_token ? `${base}/faculty-form/${sub.share_token}` : "";
-  const results: InviteResult[] = [];
-
-  for (const person of parsed.data) {
-    const existing = await collections.users().findOne({ email: person.email });
-    if (existing) {
-      results.push({ email: person.email, name: str(existing.name), status: existing.role === "faculty" ? "exists" : "not_faculty" });
-      continue;
-    }
-    const password = generatePassword();
-    const name = person.name || person.email.split("@")[0];
-    await collections.users().insertOne({
-      name,
-      email: person.email,
-      role: "faculty",
-      department: sub.identity.dept,
-      password: await hashPassword(password),
-      auth_provider: "faculty_invite",
-      invited_by: user.email,
-      invited_by_name: sub.identity.hodName || user.name,
-      created_at: nowStamp(),
-      first_time_login: false,
-      can_readiness: false,
-      can_closure: false,
-      can_iea: false,
-    });
-    const emailed = env.mail
-      ? await sendEmail(
-          person.email,
-          `Your Jain OOA Portal faculty login — ${sub.identity.dept}`,
-          `<p>Dear ${esc(name)},</p>
-           <p>${esc(sub.identity.hodName || "Your HOD")} has created a faculty login for you on the Jain OOA Portal, for <strong>${esc(sub.identity.dept)}</strong>.</p>
-           <p><strong>Email:</strong> ${esc(person.email)}<br><strong>Password:</strong> <code>${esc(password)}</code></p>
-           <p>Sign in at <a href="${base}/login">${base}/login</a> to upload your course documents. You can change the password from your Home page.${link ? ` Your ${esc(MODULES[sub.form_type].label)} checklist: <a href="${link}">${link}</a>.` : ""}</p>`,
-        )
-      : false;
-    // The password is shown to the HOD only when it could not be emailed.
-    results.push({ email: person.email, name, status: "created", emailed, ...(emailed ? {} : { password }) });
-  }
-  revalidatePath("/admin/users");
-  return { ok: true, results };
 }

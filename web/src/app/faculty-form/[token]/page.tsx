@@ -5,6 +5,7 @@ import { LinkIcon } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getSubmissionByToken } from "@/lib/data";
 import { env } from "@/lib/env";
+import { MODULES } from "@/lib/constants";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FacultySignup } from "./faculty-signup";
 import { FacultyChecklistView } from "./view";
@@ -49,12 +50,24 @@ export default async function FacultyFormPage({ params }: PageProps<"/faculty-fo
     );
   }
 
+  // Faculty register (first time) or log in, then fill the checklist inside the portal.
+  // Only if the server cannot send email (so cannot verify a new address) is the form open without a login.
+  const canSignUp = Boolean(env.mail);
   return (
     <Shell>
-      <FacultySignup token={token} dept={parent.identity.dept} hodName={parent.identity.hodName} domain={env.allowedDomain} canSignUp={Boolean(env.mail)} />
-      <div className="mt-8">
-        <FacultyChecklistView parent={parent} token={token} account={null} prefills={{ current: null, previous: null }} />
-      </div>
+      <FacultySignup
+        token={token}
+        dept={parent.identity.dept}
+        hodName={parent.identity.hodName}
+        checklistName={`Faculty ${MODULES[parent.form_type].short} Checklist`}
+        domain={env.allowedDomain}
+        canSignUp={canSignUp}
+      />
+      {!canSignUp && (
+        <div className="mt-8">
+          <FacultyChecklistView parent={parent} token={token} account={null} prefills={{ current: null, previous: null }} />
+        </div>
+      )}
     </Shell>
   );
 }

@@ -9,25 +9,28 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 
 /**
- * Shown above the checklist when the visitor is not signed in: create a
- * faculty login (email proved by a code) or sign in, so their responses and
- * documents are kept together and the next checklist can start from this one.
+ * What a faculty member sees when they open a shared link signed out: who
+ * shared which checklist, then register (first time; email proved by a code)
+ * or log in. The checklist itself opens once they are signed in.
  */
 export function FacultySignup({
   token,
   dept,
   hodName,
+  checklistName,
   domain,
   canSignUp,
 }: {
   token: string;
   dept: string;
   hodName: string;
+  /** e.g. "Faculty Readiness Checklist" */
+  checklistName: string;
   domain: string;
   canSignUp: boolean;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(canSignUp);
   const [step, setStep] = useState<"details" | "code">("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -61,33 +64,31 @@ export function FacultySignup({
   }
 
   return (
-    <section className="rounded-2xl border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,.04)]">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-[16px] font-bold text-primary">Faculty of {dept}</h2>
-          <p className="mt-1 text-[13.5px] text-muted-foreground">
-            With a faculty login you get your own menu: the checklists {hodName ? `${hodName} shares` : "your HOD shares"}, what you have submitted, and
-            your course documents. Next time you can start from the answers you gave here.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {canSignUp && !open && (
-            <Button onClick={() => setOpen(true)}>
-              <UserPlus /> Create my login
-            </Button>
-          )}
-          <Button variant="outline" asChild>
-            <Link href={loginHref}>
-              <LogIn /> I have a login
-            </Link>
-          </Button>
-        </div>
+    <section className="overflow-hidden rounded-2xl border bg-card shadow-[0_1px_2px_rgba(16,24,40,.04)]">
+      <div className="bg-hero px-5 py-5 text-hero-foreground">
+        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/70">Shared with you</p>
+        <h1 className="mt-1.5 text-[20px] font-bold leading-snug sm:text-[22px]">
+          {hodName || "Your HOD"}, Head of {dept}, has shared the {checklistName} with you.
+        </h1>
+        <p className="mt-1.5 text-[13.5px] text-white/75">
+          {canSignUp
+            ? "First time here? Register with your university email and a password. Already registered? Log in. Then fill the checklist."
+            : "Fill the checklist below for the courses you teach."}
+        </p>
       </div>
-
-      {!canSignUp && (
-        <p className="mt-3 text-[13px] text-muted-foreground">Ask your HOD to create your faculty login, or fill the checklist below without one.</p>
-      )}
-
+      <div className="flex flex-wrap items-center gap-2 px-5 pt-4">
+        {canSignUp && (
+          <Button variant={open ? "default" : "outline"} onClick={() => setOpen(true)}>
+            <UserPlus /> First time? Register
+          </Button>
+        )}
+        <Button variant={open ? "outline" : "default"} asChild>
+          <Link href={loginHref}>
+            <LogIn /> Already registered? Log in
+          </Link>
+        </Button>
+      </div>
+      <div className="px-5 pb-5">
       {open && step === "details" && (
         <form onSubmit={sendCode} className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2">
           <Field label="Full name" required>
@@ -132,6 +133,7 @@ export function FacultySignup({
           {error && <p role="alert" className="text-[13px] text-destructive sm:col-span-3">{error}</p>}
         </form>
       )}
+      </div>
     </section>
   );
 }
