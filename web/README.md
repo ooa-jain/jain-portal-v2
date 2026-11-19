@@ -79,6 +79,38 @@ matters: it is what brings the service back after a reboot). Then change the
 Nginx `proxy_pass` from port 8087 to 8088 and reload Nginx. The old Flask
 service can stay installed as a fallback until the new one is confirmed.
 
+## Updating the live site
+
+After the first time (when `deploy/deploy.sh` arrives with `git pull`), one command does the whole update:
+
+```
+bash /var/www/jain-sarathi-new/web/deploy/deploy.sh
+```
+
+It fetches the branch, installs packages only if `package-lock.json` changed,
+builds into `.next-new` while the site keeps running, swaps the new build in,
+restarts `jain-sarathi-web` and checks that the site answers. If the build fails,
+or the site does not answer after the restart, it puts the previous code and
+build back and restarts on them. `FORCE=1` rebuilds even when nothing changed;
+`BRANCH`, `SERVICE`, `PORT` and `APP_DIR` can be overridden.
+
+## Reading scanned documents (OCR)
+
+Scanned PDFs (first 4 pages) and photos are read with Tesseract when the server has it:
+
+```
+apt-get install -y tesseract-ocr poppler-utils
+```
+
+Without it, scans are flagged for the HOD to check by eye. Text read by OCR is
+marked as such and never fails a document on its own.
+
+## Faculty checklist reminders
+
+The same scheduled call as the deadline reminders (below) also emails
+registered faculty who have not filled an HOD's checklist, 3 days and 1 day
+before that HOD's "submit by" date, and sends the HOD the list of who is pending.
+
 ### Scheduled deadline reminders
 
 Set `CRON_SECRET` in `.env`, then call the endpoint every 10 minutes from
