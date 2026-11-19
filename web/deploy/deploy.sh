@@ -51,7 +51,12 @@ fi
 
 # Building into .next-new makes Next.js add that folder to tsconfig.json (and
 # may touch next-env.d.ts); put tracked files back so the copy stays clean.
-restore_tracked() { git -C "$APP_DIR" checkout --quiet -- web/tsconfig.json web/next-env.d.ts 2>/dev/null || true; }
+restore_tracked() {
+  local f
+  for f in web/tsconfig.json web/next-env.d.ts; do
+    if git -C "$APP_DIR" ls-files --error-unmatch "$f" >/dev/null 2>&1; then git -C "$APP_DIR" checkout --quiet -- "$f"; fi
+  done
+}
 
 say "Building ${NEW_COMMIT:0:7} into .next-new (the site stays up)"
 rm -rf .next-new
