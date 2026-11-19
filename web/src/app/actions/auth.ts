@@ -61,6 +61,7 @@ export async function signInWithPassword(
   emailInput: string,
   password: string,
   remember = true,
+  next = "",
 ): Promise<ActionResult<{ redirectTo: string }>> {
   const email = str(emailInput).trim().toLowerCase();
   if (!email || !password) return { ok: false, error: "Enter your email and password." };
@@ -96,6 +97,8 @@ export async function signInWithPassword(
 
   await users.updateOne({ _id: user._id }, { $set: { failed_logins: 0, lock_until: null } });
   await startSessionFor({ email, name: str(user.name) || email.split("@")[0], picture: "" }, remember);
+  // Only same-site paths, e.g. back to the checklist link the user came from.
+  if (/^\/(?!\/)[\w\-./?=&%]*$/.test(next)) return { ok: true, redirectTo: next };
   return { ok: true, redirectTo: (await isAdminEmail(email)) ? "/admin" : "/" };
 }
 

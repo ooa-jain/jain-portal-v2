@@ -9,7 +9,7 @@ import { signInAsDemo, signInWithPassword } from "@/app/actions/auth";
 import type { DemoRole } from "@/lib/constants";
 
 /** The portal's sign-in, using the shared SignInPage layout. */
-export function SignInCard({ domain, demo }: { domain: string; demo: boolean }) {
+export function SignInCard({ domain, demo, next = "" }: { domain: string; demo: boolean; next?: string }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<"" | "password" | DemoRole>("");
@@ -39,7 +39,7 @@ export function SignInCard({ domain, demo }: { domain: string; demo: boolean }) 
       setError("Enter your email and password.");
       return;
     }
-    go("password", () => signInWithPassword(email, password, form.get("rememberMe") === "on"));
+    go("password", () => signInWithPassword(email, password, form.get("rememberMe") === "on", next));
   }
 
   return (

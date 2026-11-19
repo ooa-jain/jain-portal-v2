@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, Loader2, Plus, Send, Trash2 } from "lucide-react";
+import { CheckCircle2, History, Loader2, Plus, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { submitFacultyChecklist } from "@/app/actions/faculty";
 import { ChecklistEditor } from "@/components/checklist";
@@ -10,24 +10,45 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, Input } from "@/components/ui/input";
 import type { ChecklistSection } from "@/lib/constants";
 import type { Checklist } from "@/lib/types";
+import type { Prefill } from "@/lib/faculty-prefill";
 
 type Course = { key: number; courseName: string; courseCode: string; program: string; yearSem: string; noOfStudents: string };
 
 const blankCourse = (key: number): Course => ({ key, courseName: "", courseCode: "", program: "", yearSem: "", noOfStudents: "" });
 
+const toCourses = (prefill: Prefill): Course[] =>
+  prefill.courses.length ? prefill.courses.map((c, i) => ({ key: i + 1, ...c })) : [blankCourse(1)];
+
+/** Keep only answers to items this checklist asks. */
+function knownAnswers(checklist: Checklist | null, sections: ChecklistSection[]): Checklist {
+  if (!checklist) return {};
+  const ids = new Set(sections.flatMap((s) => s.items.map((i) => i.id)));
+  return Object.fromEntries(Object.entries(checklist).filter(([id]) => ids.has(id)));
+}
+
 export function FacultyForm({
   shareToken,
   sections,
   moduleLabel,
+  account = null,
+  current = null,
+  previous = null,
 }: {
   shareToken: string;
   sections: ChecklistSection[];
   moduleLabel: string;
+  /** Signed in: name and email come from the account. */
+  account?: { name: string; email: string } | null;
+  /** What this person already sent for this link (they are editing it). */
+  current?: Prefill | null;
+  /** Their latest response to an earlier link, offered as a starting point. */
+  previous?: Prefill | null;
 }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [courses, setCourses] = useState<Course[]>([blankCourse(1)]);
-  const [checklist, setChecklist] = useState<Checklist>({});
+  const [name, setName] = useState(account?.name ?? "");
+  const [email, setEmail] = useState(account?.email ?? "");
+  const [courses, setCourses] = useState<Course[]>(current ? toCourses(current) : [blankCourse(1)]);
+  const [checklist, setChecklist] = useState<Checklist>(current ? knownAnswers(current.checklist, sections) : {});
+  const [usedPrevious, setUsedPrevious] = useState(false);
   const [done, setDone] = useState(0);
   const [pending, startTransition] = useTransition();
 
@@ -80,19 +101,60 @@ export function FacultyForm({
     );
   }
 
+  function fillFromPrevious() {
+    if (!previous) return;
+    setCourses(toCourses(previous));
+    if (previous.checklist) setChecklist(knownAnswers(previous.checklist, sections));
+    setUsedPrevious(true);
+  }
+
   return (
     <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
+      {current ? (
+        <div className="rounded-xl border border-success/30 bg-success-soft px-4 py-3 text-[13.5px] text-foreground">
+          <strong className="text-success">Already submitted.</strong> Your {current.label} is loaded below. Submitting again replaces it.
+        </div>
+      ) : previous ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
+          <span className="text-[13.5px] text-foreground">
+            {usedPrevious ? (
+              <>Filled from your previous response, <strong>{previous.label}</strong>. Check each answer before you submit.</>
+            ) : (
+              <>Start from your previous response, <strong>{previous.label}</strong>{previous.checklist ? "" : " (courses only; it was a different checklist)"}?</>
+            )}
+          </span>
+          {!usedPrevious && (
+            <Button type="button" variant="outline" size="sm" onClick={fillFromPrevious}>
+              <History /> Fill from previous
+            </Button>
+          )}
+        </div>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Your details</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-5 sm:grid-cols-2">
-          <Field label="Full name" required>
-            <Input required value={name} placeholder="Dr. / Prof. your name" autoComplete="name" onChange={(e) => setName(e.target.value)} />
-          </Field>
-          <Field label="Email" required>
-            <Input required type="email" value={email} placeholder="you@jainuniversity.ac.in" autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
-          </Field>
+          {account ? (
+            <>
+              <Field label="Full name">
+                <Input value={name} readOnly />
+              </Field>
+              <Field label="Email">
+                <Input value={email} readOnly />
+              </Field>
+            </>
+          ) : (
+            <>
+              <Field label="Full name" required>
+                <Input required value={name} placeholder="Dr. / Prof. your name" autoComplete="name" onChange={(e) => setName(e.target.value)} />
+              </Field>
+              <Field label="Email" required>
+                <Input required type="email" value={email} placeholder="you@jainuniversity.ac.in" autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
+              </Field>
+            </>
+          )}
         </CardContent>
       </Card>
 

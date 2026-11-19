@@ -41,7 +41,7 @@ const facultySchema = z.object({
 
 export type FacultyPayload = z.input<typeof facultySchema>;
 
-/** Public: faculty submit their checklist through the HOD's share link. No sign-in. */
+/** Faculty submit their checklist through the HOD's share link, signed in or not. */
 export async function submitFacultyChecklist(
   input: FacultyPayload,
 ): Promise<ActionResult<{ saved: number; autoTicked: number }>> {
@@ -50,6 +50,12 @@ export async function submitFacultyChecklist(
     return { ok: false, error: "Enter your name, a valid email, and a name and code for every course." };
   }
   const data = parsed.data;
+  // Signed in: the response is filed under the account, whatever the form says.
+  const signedIn = await getCurrentUser();
+  if (signedIn && !signedIn.impersonatedBy) {
+    data.facultyEmail = signedIn.email;
+    data.facultyName = signedIn.name || data.facultyName;
+  }
 
   const parent = await getSubmissionByToken(data.shareToken);
   if (!parent) return { ok: false, error: "This link is no longer valid. Ask your HOD for a new one." };
@@ -268,6 +274,7 @@ export async function inviteFaculty(
       password: await hashPassword(password),
       auth_provider: "faculty_invite",
       invited_by: user.email,
+      invited_by_name: sub.identity.hodName || user.name,
       created_at: nowStamp(),
       first_time_login: false,
       can_readiness: false,

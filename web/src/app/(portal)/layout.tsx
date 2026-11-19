@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { collections } from "@/lib/db";
-import { getSettings, listNotifications } from "@/lib/data";
+import { getSettings, listNotifications, toObjectId } from "@/lib/data";
 import { moduleAccess } from "@/lib/access";
 import { LISTED_MODULE_KEYS, MODULES } from "@/lib/constants";
 import { AppShell, type NavGroup } from "@/components/app-shell";
@@ -30,6 +30,17 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
       ? { uploaded_by_email: user.email, "review.status": { $in: ["returned", "not_sent"] } }
       : { dept: user.department, "review.status": "pending" };
   const docBadge = await collections.documents().countDocuments(docFilter);
+  if (user.isFaculty) {
+    const answered = await collections.facultySubmissions().distinct("parent_submission_id", { faculty_email: user.email });
+    const waiting = user.department
+      ? await collections.submissions().countDocuments({
+          "identity.dept": user.department,
+          share_token: { $exists: true, $ne: "" },
+          _id: { $nin: answered.map((id) => toObjectId(String(id))).filter((id) => id !== null) },
+        })
+      : 0;
+    workspace.items.push({ href: "/checklists", label: "My Checklists", icon: "submissions", badge: waiting });
+  }
   workspace.items.push({ href: "/documents", label: "Document Library", icon: "documents", badge: docBadge });
   workspace.items.push({ href: "/profile", label: "Profile & Password", icon: "profile" });
 

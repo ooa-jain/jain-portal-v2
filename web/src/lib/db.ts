@@ -54,4 +54,6 @@ export const collections = {
   sentReminders: () => col<{ _id: string } & Document>("sent_reminders"),
   pwaAnalytics: () => col<{ _id: string } & Document>("pwa_analytics"),
   documents: () => col<Document>("documents"),
+  /** Pending faculty sign-ups from a checklist link: a hashed email code, short-lived. */
+  facultySignups: () => col<Document>("faculty_signups"),
 };
