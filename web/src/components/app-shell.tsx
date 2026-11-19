@@ -20,7 +20,8 @@ const ICONS: Record<string, LucideIcon> = {
   notifications: BellRing, settings: Settings, documents: FolderOpen, analytics: LineChart,
 };
 
-export type NavItem = { href: string; label: string; icon: keyof typeof ICONS | string; badge?: number };
+/** `hidden` items are left out of the menu but still name the tab when their page is open. */
+export type NavItem = { href: string; label: string; icon: keyof typeof ICONS | string; badge?: number; hidden?: boolean };
 export type NavGroup = { title: string; items: NavItem[] };
 
 export type ShellProps = {
@@ -133,6 +134,7 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
           label: item.label,
           icon: ICONS[item.icon] ?? Home,
           badge: item.badge,
+          hidden: item.hidden,
           section: index > 0 ? group.title : undefined,
         })),
       ),

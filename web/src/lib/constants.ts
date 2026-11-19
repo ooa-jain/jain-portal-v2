@@ -57,6 +57,12 @@ export const MODULES: Record<ModuleKey, ModuleMeta> = {
 
 export const MODULE_KEYS: ModuleKey[] = ["readiness", "closure", "iea"];
 export const FORM_MODULE_KEYS: FormModuleKey[] = ["readiness", "closure"];
+/**
+ * Modules listed in menus and on the home and overview pages. Innovation &
+ * Emerging Areas is left out on purpose: it opens only from its own address
+ * (/iea, or the short link /innovate).
+ */
+export const LISTED_MODULE_KEYS: ModuleKey[] = ["readiness", "closure"];
 
 export function isModuleKey(value: unknown): value is ModuleKey {
   return value === "readiness" || value === "closure" || value === "iea";

@@ -23,6 +23,8 @@ export interface NavItem {
   section?: string;
   /** Optional count shown as a badge (e.g. open requests). */
   badge?: number;
+  /** Left out of the sidebar and quick-open list, but still names a tab showing it. */
+  hidden?: boolean;
 }
 
 /** A single browser-like tab. */
@@ -653,6 +655,7 @@ export function SidebarWithTabs({
   const canCloseTab = tabs.length > 1;
   const hasOtherTabs = tabs.length > 1;
   const content = renderContent ? renderContent(activeNavId) : children;
+  const menuItems = useMemo(() => navItems.filter((item) => !item.hidden), [navItems]);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -710,7 +713,7 @@ export function SidebarWithTabs({
               )}
 
               <div className="scrollbar-hide flex-1 overflow-y-auto py-3">
-                <SidebarNavigation navItems={navItems} activeNavId={activeNavId} isCollapsed={isCollapsed} onItemClick={handleNavItemClick} />
+                <SidebarNavigation navItems={menuItems} activeNavId={activeNavId} isCollapsed={isCollapsed} onItemClick={handleNavItemClick} />
               </div>
 
               <div className="flex min-h-[73px] items-center justify-center overflow-hidden border-t border-sidebar-border p-3">
@@ -751,7 +754,7 @@ export function SidebarWithTabs({
                 <MobileSidebar
                   logo={logo}
                   companyName={companyName}
-                  navItems={navItems}
+                  navItems={menuItems}
                   activeNavId={activeNavId}
                   footer={footer}
                   onItemClick={handleNavItemClick}
@@ -800,7 +803,7 @@ export function SidebarWithTabs({
                 </Reorder.Group>
 
                 <motion.div layout className="flex-shrink-0">
-                  <NewTabButton navItems={navItems} onAddTab={addTab} />
+                  <NewTabButton navItems={menuItems} onAddTab={addTab} />
                 </motion.div>
               </div>
 

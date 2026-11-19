@@ -3,8 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { listMySubmissions, listNotifications } from "@/lib/data";
 import { allModuleAccess } from "@/lib/access";
-import { listMyIea } from "@/lib/iea";
-import { MODULES, MODULE_KEYS } from "@/lib/constants";
+import { LISTED_MODULE_KEYS, MODULES } from "@/lib/constants";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { DepartmentForm } from "@/components/department-form";
 import { FacultyHome } from "@/components/faculty-home";
@@ -19,32 +18,21 @@ import { formatDateTime, formatDeadline, parseDeadline } from "@/lib/utils";
 export default async function DashboardPage() {
   const user = await requireUser();
   if (user.isFaculty) return <FacultyHome user={user} />;
-  const [access, submissions, iea, notifications] = await Promise.all([
+  const [access, submissions, notifications] = await Promise.all([
     allModuleAccess(user),
     listMySubmissions(user),
-    listMyIea(user.email),
     listNotifications(5),
   ]);
 
-  const drafts = submissions.filter((s) => s._draft).length + iea.filter((s) => !s.submitted).length;
-  const submitted = submissions.filter((s) => !s._draft).length + iea.filter((s) => s.submitted).length;
+  const drafts = submissions.filter((s) => s._draft).length;
+  const submitted = submissions.filter((s) => !s._draft).length;
   const facultyTotal = submissions.reduce((sum, s) => sum + (s.faculty_submission_count ?? 0), 0);
-  const upcoming = MODULE_KEYS.filter((k) => access[k].open && access[k].deadline && !access[k].deadlinePassed)
+  const upcoming = LISTED_MODULE_KEYS.filter((k) => access[k].open && access[k].deadline && !access[k].deadlinePassed)
     .map((k) => ({ key: k, at: parseDeadline(access[k].deadline)! }))
     .sort((a, b) => a.at.getTime() - b.at.getTime())[0];
 
-  const rows = MODULE_KEYS.map((key) => {
+  const rows = LISTED_MODULE_KEYS.map((key) => {
     const a = access[key];
-    if (key === "iea") {
-      const latest = [...iea].sort((x, y) => y.lastUpdated.localeCompare(x.lastUpdated))[0];
-      return {
-        key, a,
-        status: latest ? (latest.submitted ? "Submitted" : "Draft") : "Not started",
-        last: latest?.lastUpdated ?? "",
-        href: "/iea",
-          action: latest ? "Open" : a.canWrite ? "Start" : "View",
-      };
-    }
     const latest = submissions.find((s) => s.form_type === key);
     return {
       key, a,

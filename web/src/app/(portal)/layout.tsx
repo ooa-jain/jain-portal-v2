@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { collections } from "@/lib/db";
 import { getSettings, listNotifications } from "@/lib/data";
 import { moduleAccess } from "@/lib/access";
-import { MODULES, MODULE_KEYS } from "@/lib/constants";
+import { LISTED_MODULE_KEYS, MODULES } from "@/lib/constants";
 import { AppShell, type NavGroup } from "@/components/app-shell";
 
 export default async function PortalLayout({ children }: LayoutProps<"/">) {
@@ -10,10 +10,15 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
   const [settings, notifications] = await Promise.all([getSettings(), listNotifications(10)]);
 
   const workspace: NavGroup = { title: "Workspace", items: [{ href: "/", label: "Home", icon: "dashboard" }] };
-  for (const key of MODULE_KEYS) {
+  for (const key of LISTED_MODULE_KEYS) {
     if (moduleAccess(user, settings, key).open) {
       workspace.items.push({ href: MODULES[key].href, label: MODULES[key].label, icon: key });
     }
+  }
+  // Innovation & Emerging Areas is not in the menu; it opens only from its address.
+  // Hidden items still name the tab when one of its pages is open.
+  if (!user.isFaculty) {
+    workspace.items.push({ href: MODULES.iea.href, label: MODULES.iea.label, icon: "iea", hidden: true });
   }
   // The latest academic year offered in forms, e.g. "2027-28" -> "2027–28".
   const cycle = [...settings.enabled_years].sort().pop()?.replace("-", "–") ?? "";
@@ -34,7 +39,7 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
         items: [
           { href: "/analytics", label: "Analytics", icon: "analytics" },
           { href: "/analysis", label: "Faculty Responses", icon: "analysis" },
-          { href: "/iea-analysis", label: "IEA Analysis", icon: "ieaAnalysis" },
+          { href: "/iea-analysis", label: "IEA Analysis", icon: "ieaAnalysis", hidden: true },
         ],
       };
   const groups = reports.items.length ? [workspace, reports] : [workspace];
@@ -49,7 +54,7 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
       items: [
         { href: "/admin", label: "Overview", icon: "admin" },
         { href: "/admin/submissions", label: "Submissions", icon: "submissions" },
-        { href: "/admin/iea", label: "IEA Submissions", icon: "iea" },
+        { href: "/admin/iea", label: "IEA Submissions", icon: "iea", hidden: true },
         { href: "/admin/users", label: "Users & Access", icon: "users" },
         { href: "/admin/requests", label: "Requests", icon: "requests", badge: accessPending + editPending },
         { href: "/admin/notifications", label: "Notifications", icon: "notifications" },

@@ -4,7 +4,7 @@ import { Download } from "lucide-react";
 import { collections } from "@/lib/db";
 import { getSettings, listAllSubmissions } from "@/lib/data";
 import { listAllIea } from "@/lib/iea";
-import { DEPARTMENTS, FORM_MODULE_KEYS, MODULES, MODULE_KEYS, type FormModuleKey } from "@/lib/constants";
+import { DEPARTMENTS, FORM_MODULE_KEYS, LISTED_MODULE_KEYS, MODULES, type FormModuleKey } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,8 +55,7 @@ export default async function AdminOverviewPage() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Readiness" value={final.filter((s) => s.form_type === "readiness").length} tone="success" hint="Submitted" />
         <Stat label="Closure" value={final.filter((s) => s.form_type === "closure").length} tone="success" hint="Submitted" />
-        <Stat label="IEA" value={iea.filter((s) => s.submitted).length} tone="success" hint="Submitted" />
-        <Stat label="Drafts" value={submissions.length - final.length + iea.filter((s) => !s.submitted).length} tone="warning" hint="All modules" />
+        <Stat label="Drafts" value={submissions.length - final.length} tone="warning" hint="Readiness and closure" />
         <Stat label="Faculty responses" value={submissions.reduce((n, s) => n + (s.faculty_submission_count ?? 0), 0)} />
         <Stat label="Users" value={userCount} hint={`${activeToday} signed in today`} />
         <Stat label="Open requests" value={accessPending + editPending} tone={accessPending + editPending ? "danger" : "default"} hint={<Link href="/admin/requests" className="underline">Review</Link>} />
@@ -68,7 +67,7 @@ export default async function AdminOverviewPage() {
         <Table>
           <THead><tr><TH>Module</TH><TH>State</TH><TH>Deadline (IST)</TH><TH>Departments submitted</TH></tr></THead>
           <TBody>
-            {MODULE_KEYS.map((key) => {
+            {LISTED_MODULE_KEYS.map((key) => {
               const meta = MODULES[key];
               const deadline = settings[meta.deadlineKey];
               return (

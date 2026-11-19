@@ -3,17 +3,10 @@
 import { useState, useTransition } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ClipboardCheck, FolderOpen, Loader2, Lightbulb } from "lucide-react";
-import { SignInPage, type Testimonial } from "@/components/ui/sign-in";
+import { Loader2 } from "lucide-react";
+import { SignInPage } from "@/components/ui/sign-in";
 import { signInAsDemo, signInWithPassword } from "@/app/actions/auth";
 import type { DemoRole } from "@/lib/constants";
-
-// What the portal covers, shown as cards over the campus video.
-const HIGHLIGHTS: Testimonial[] = [
-  { icon: <ClipboardCheck className="h-5 w-5" />, name: "Semester Readiness", handle: "Before the semester", text: "Curriculum, faculty allocation, timetable and approvals, filed by every department." },
-  { icon: <FolderOpen className="h-5 w-5" />, name: "Document Library", handle: "One copy per course", text: "TLEPs, lesson plans and reports, checked on upload and reviewed by the HOD." },
-  { icon: <Lightbulb className="h-5 w-5" />, name: "Innovation & Emerging Areas", handle: "UGC data collection", text: "Programmes and courses in emerging areas, with evidence, year by year." },
-];
 
 /** The portal's sign-in, using the shared SignInPage layout. */
 export function SignInCard({ domain, demo }: { domain: string; demo: boolean }) {
@@ -62,7 +55,6 @@ export function SignInCard({ domain, demo }: { domain: string; demo: boolean }) 
       heroImageSrc="/login/campus-poster.jpg"
       heroVideoSrc="/login/campus.mp4"
       heroOverlay={<Image src="/brand/jain-logo-light.png" alt="" width={900} height={223} className="h-11 w-auto drop-shadow-[0_2px_10px_rgba(0,0,0,.35)]" />}
-      testimonials={HIGHLIGHTS}
       error={error || undefined}
       pending={busy === "password"}
       resetPasswordLabel="Forgot password?"
