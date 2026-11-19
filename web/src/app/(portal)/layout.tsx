@@ -31,13 +31,14 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
       : { dept: user.department, "review.status": "pending" };
   const docBadge = await collections.documents().countDocuments(docFilter);
   workspace.items.push({ href: "/documents", label: "Document Library", icon: "documents", badge: docBadge });
+  workspace.items.push({ href: "/profile", label: "Profile & Password", icon: "profile" });
 
   const reports: NavGroup = user.isFaculty
     ? { title: "Reports", items: [] }
     : {
         title: "Reports",
         items: [
-          { href: "/analytics", label: "Analytics", icon: "analytics" },
+          { href: "/analytics", label: "Analysis", icon: "analytics" },
           { href: "/analysis", label: "Faculty Responses", icon: "analysis" },
           { href: "/iea-analysis", label: "IEA Analysis", icon: "ieaAnalysis", hidden: true },
         ],

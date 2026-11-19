@@ -19,7 +19,7 @@ function useSetParam() {
 export function SemesterPicker({ value, semesters }: { value: string; semesters: string[] }) {
   const set = useSetParam();
   return (
-    <Select aria-label="Semester" className="w-auto bg-white" value={value} onChange={(e) => set("semester", e.target.value)}>
+    <Select aria-label="Semester" className="w-auto bg-card" value={value} onChange={(e) => set("semester", e.target.value)}>
       {semesters.map((s) => <option key={s}>{s}</option>)}
     </Select>
   );
@@ -28,7 +28,7 @@ export function SemesterPicker({ value, semesters }: { value: string; semesters:
 export function DeptPicker({ value }: { value: string }) {
   const set = useSetParam();
   return (
-    <Select aria-label="Department" className="w-auto max-w-72 bg-white" value={value} onChange={(e) => set("dept", e.target.value)}>
+    <Select aria-label="Department" className="w-auto max-w-72 bg-card" value={value} onChange={(e) => set("dept", e.target.value)}>
       <option value="">All departments</option>
       {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
     </Select>

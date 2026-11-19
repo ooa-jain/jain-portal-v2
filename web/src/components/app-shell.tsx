@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Popover } from "radix-ui";
 import {
-  BarChart3, Bell, BellRing, FolderOpen, LineChart, ClipboardCheck, FileCheck2, Home, Inbox, Lightbulb, ListChecks, LogOut,
+  BarChart3, Bell, BellRing, FolderOpen, LineChart, ClipboardCheck, FileCheck2, Home, Inbox, Lightbulb, ListChecks, LogOut, UserRound,
   PieChart, Settings, ShieldCheck, Users, type LucideIcon,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
@@ -13,11 +13,12 @@ import { stopImpersonating } from "@/app/actions/admin";
 import type { PortalNotification } from "@/lib/types";
 import { formatDateTime, initials } from "@/lib/utils";
 import { SidebarWithTabs, type NavItem as TabNavItem } from "@/components/ui/sidebar-with-chrome-like-tabs";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const ICONS: Record<string, LucideIcon> = {
   dashboard: Home, readiness: ClipboardCheck, closure: FileCheck2, iea: Lightbulb, analysis: BarChart3,
   ieaAnalysis: PieChart, admin: ShieldCheck, submissions: ListChecks, users: Users, requests: Inbox,
-  notifications: BellRing, settings: Settings, documents: FolderOpen, analytics: LineChart,
+  notifications: BellRing, settings: Settings, documents: FolderOpen, analytics: LineChart, profile: UserRound,
 };
 
 /** `hidden` items are left out of the menu but still name the tab when their page is open. */
@@ -69,7 +70,7 @@ function NotificationBell({ notifications }: { notifications: PortalNotification
       }}
     >
       <Popover.Trigger
-        className="relative flex size-9 items-center justify-center rounded-full border bg-white text-[#475467] hover:bg-hover hover:text-primary"
+        className="relative flex size-9 items-center justify-center rounded-full border bg-card text-muted-foreground hover:bg-hover hover:text-foreground"
         aria-label={unread ? `Notifications, ${unread} new` : "Notifications"}
       >
         <Bell className="size-[18px]" strokeWidth={1.8} />
@@ -89,7 +90,7 @@ function NotificationBell({ notifications }: { notifications: PortalNotification
               {notifications.map((n) => (
                 <li key={n._id} className="px-4 py-3">
                   <p className="text-[13px] font-semibold text-primary">{n.title}</p>
-                  <p className="mt-0.5 text-[13px] text-[#475467]">{n.body}</p>
+                  <p className="mt-0.5 text-[13px] text-muted-foreground">{n.body}</p>
                   <p className="mt-1 text-[11.5px] text-muted-foreground">{formatDateTime(n.created_at)}</p>
                 </li>
               ))}
@@ -173,7 +174,7 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
         </div>
       )}
       {impersonatedBy && (
-        <form action={stopImpersonating} className="flex flex-wrap items-center justify-center gap-3 border-b border-[#f2cd73] bg-[#fdf6e3] px-4 py-2 text-[13px] text-[#7a5e05]">
+        <form action={stopImpersonating} className="flex flex-wrap items-center justify-center gap-3 border-b border-warning/40 bg-warning-soft px-4 py-2 text-[13px] text-warning">
           <span>
             You are viewing the portal as <strong>{user.name}</strong> ({user.email}). Changes you make are made as this user.
           </span>
@@ -198,10 +199,17 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
       banner={banner}
       toolbar={
         <>
-          <span className="hidden whitespace-nowrap rounded-full bg-background px-3 py-1 text-[11.5px] font-semibold tracking-[0.06em] text-muted-foreground lg:inline">
-            JAIN OOA PORTAL · {cycle}
+          <span className="hidden whitespace-nowrap text-[12px] font-bold uppercase tracking-[0.06em] text-primary dark:text-foreground xl:inline">
+            Jain OOA Portal <span className="ml-1 rounded-full bg-secondary px-2.5 py-0.5 text-[11.5px]">{cycle}</span>
           </span>
+          <ThemeToggle />
           <NotificationBell notifications={notifications} />
+          <span
+            title={`${user.name} · ${user.email}`}
+            className="hidden size-9 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground sm:flex"
+          >
+            {initials(user.name)}
+          </span>
         </>
       }
     >

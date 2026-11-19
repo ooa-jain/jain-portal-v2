@@ -4,45 +4,95 @@
 /* Jain OOA Portal: a clean, professional look. White surfaces on a light
    neutral ground, charcoal for text and actions, one quiet blue for links. */
 :root {
-  /* Clean professional palette: white surfaces on a light neutral ground,
-     charcoal ink and actions, one quiet blue for links and focus. */
-  --background: #f5f6f7;
-  --foreground: #1d2330;
+  /* Board of Studies palette: a neutral grey ground and menu, white surfaces,
+     navy for what matters, one blue for links. */
+  --background: #f4f5f7;
+  --foreground: #1f2937;
   --card: #ffffff;
-  --card-foreground: #1d2330;
-  --primary: #283139;
+  --card-foreground: #1f2937;
+  --primary: #0e2a5c;
   --primary-foreground: #ffffff;
-  --secondary: #f0f1f3;
-  --secondary-foreground: #1d2330;
-  --muted: #f5f6f7;
+  --secondary: #eef1f6;
+  --secondary-foreground: #0e2a5c;
+  --muted: #f4f5f7;
   --muted-foreground: #6b7280;
-  --accent: #eceef1;
-  --accent-foreground: #1d2330;
-  --accent-soft: #f3f4f6;
-  --link: #2b6cb0;
-  --destructive: #c8372d;
-  --destructive-soft: #fdf1f0;
-  --success: #1a7f52;
-  --success-soft: #ecf7f1;
-  --warning: #a15c07;
-  --warning-soft: #fdf6e9;
-  --border: #e4e6ea;
-  --input: #d4d7dd;
-  --ring: #2b6cb0;
-  --hover: #f0f1f3;
-  /* Sidebar and tab strip frame around the page. */
-  --sidebar: #e9ebef;
-  --sidebar-foreground: #1d2330;
-  --sidebar-primary: #283139;
+  --accent: #eef1f6;
+  --accent-foreground: #0e2a5c;
+  --accent-soft: #f2f4f8;
+  --link: #1d4ed8;
+  --destructive: #b42318;
+  --destructive-soft: #fef3f2;
+  --success: #067647;
+  --success-soft: #ecfdf3;
+  --warning: #93370d;
+  --warning-soft: #fdf6e3;
+  --border: #e4e7ec;
+  --input: #d0d5dd;
+  --ring: #2563eb;
+  --hover: #e9ebef;
+  /* menu, top bar and tabs */
+  --sidebar: #f4f5f7;
+  --sidebar-foreground: #374151;
+  --sidebar-primary: #0e2a5c;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #ffffff;
-  --sidebar-accent-foreground: #1d2330;
-  --sidebar-border: #dadde3;
-  --sidebar-ring: #2b6cb0;
+  --sidebar-accent-foreground: #0e2a5c;
+  --sidebar-border: #e4e7ec;
+  --sidebar-ring: #2563eb;
+  --topbar: #ffffff;
   --popover: #ffffff;
-  --popover-foreground: #1d2330;
+  --popover-foreground: #1f2937;
+  /* the dark "continue" card */
+  --hero: #0f2440;
+  --hero-foreground: #ffffff;
+  --page-grid: rgba(15, 36, 64, 0.045);
   --radius: 0.75rem;
 }
+
+/* Dark: the Board of Studies dark palette. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #15181d;
+  --foreground: #dbe3ee;
+  --card: #1d2129;
+  --card-foreground: #dbe3ee;
+  --primary: #3874e1;
+  --primary-foreground: #ffffff;
+  --secondary: #252b35;
+  --secondary-foreground: #dbe3ee;
+  --muted: #191d23;
+  --muted-foreground: #a9b0be;
+  --accent: #252b35;
+  --accent-foreground: #dbe3ee;
+  --accent-soft: #1f252e;
+  --link: #a6c1f2;
+  --destructive: #f0857a;
+  --destructive-soft: #3a1f1f;
+  --success: #6fd39b;
+  --success-soft: #16301f;
+  --warning: #f2cd73;
+  --warning-soft: #352c16;
+  --border: #2e3542;
+  --input: #3a4252;
+  --ring: #3874e1;
+  --hover: #262c36;
+  --sidebar: #121519;
+  --sidebar-foreground: #ced8e6;
+  --sidebar-primary: #3874e1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #20252e;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #262c36;
+  --sidebar-ring: #3874e1;
+  --topbar: #181b21;
+  --popover: #1d2129;
+  --popover-foreground: #dbe3ee;
+  --hero: #161d29;
+  --hero-foreground: #ffffff;
+  --page-grid: rgba(255, 255, 255, 0.035);
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme inline {
   --color-background: var(--background);
@@ -79,11 +129,14 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-topbar: var(--topbar);
+  --color-hero: var(--hero);
+  --color-hero-foreground: var(--hero-foreground);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-sans: "Roboto Variable", "Roboto", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
   --font-mono: "Roboto Mono", ui-monospace, monospace;
 }
 
@@ -110,10 +163,44 @@
 }
 
 /* A painted brush-stroke highlight behind a key word or two in a title. */
+/* A painted brush-stroke highlight behind a key word (from the Board of Studies portal). */
 .hl {
-  /* Titles stay plain: no painted highlight in the clean theme. */
-  color: inherit;
+  display: inline-block;
+  padding: 0.06em 0.45em 0.1em;
+  margin: 0 -0.05em;
+  line-height: 1.15;
+  color: #1f2937;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20200%2040'%20preserveAspectRatio='none'%3E%3Cpath%20fill='%23a3d3aa'%20d='M5%209C40%204%2090%207%20128%205C158%204%20182%203%20196%207L191%2013L198%2019L190%2025L197%2031C160%2037%20112%2034%2072%2036C42%2037%2020%2036%206%2034L11%2028L2%2022L9%2016Z'/%3E%3Cpath%20fill='none'%20stroke='%23fff'%20stroke-opacity='.28'%20stroke-width='1.6'%20d='M14%2014C60%2011%20120%2012%20182%2011M20%2024C80%2022%20130%2024%20186%2023M30%2030C90%2029%20140%2031%20176%2029'/%3E%3C/svg%3E");
 }
+/* Page titles stay plain; only the welcome name is painted. */
+h1 .hl:not(.hl-on) { background-image: none; padding: 0; margin: 0; color: inherit; }
+
+/* A faint graph-paper grid behind pages (as on the Board of Studies portal). */
+.page-grid {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(0deg, transparent 24%, var(--page-grid) 25%, var(--page-grid) 26%, transparent 27%, transparent 74%, var(--page-grid) 75%, var(--page-grid) 76%, transparent 77%, transparent),
+    linear-gradient(90deg, transparent 24%, var(--page-grid) 25%, var(--page-grid) 26%, transparent 27%, transparent 74%, var(--page-grid) 75%, var(--page-grid) 76%, transparent 77%, transparent);
+  background-size: 55px 55px;
+}
+
+/* In dark mode, logos with dark lettering switch to the light version. */
+[data-theme="dark"] img[src*="jain-logo.png"] { content: url("/brand/jain-logo-light.png"); }
+
+/* Light / dark switch: a pill with a knob carrying a sun or a moon. */
+.theme-toggle { display: inline-flex; align-items: center; flex: none; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 999px; }
+.tt-track { position: relative; display: block; width: 46px; height: 26px; border-radius: 999px; background: #e4e7ec; border: 1px solid #d0d5dd; transition: background 0.35s ease, border-color 0.35s ease; }
+.tt-knob { position: absolute; top: 2px; left: 2px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #fff; color: #b45309; box-shadow: 0 1px 3px rgba(16, 24, 40, 0.25); transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1), background 0.35s ease, color 0.35s ease; }
+.tt-knob svg { position: absolute; width: 13px; height: 13px; transition: opacity 0.25s ease, transform 0.35s ease; }
+.tt-moon { opacity: 0; transform: rotate(-60deg) scale(0.6); }
+.theme-toggle[aria-pressed="true"] .tt-track { background: #111827; border-color: #374151; }
+.theme-toggle[aria-pressed="true"] .tt-knob { transform: translateX(20px); background: #f8fafc; color: #1e3a8a; }
+.theme-toggle[aria-pressed="true"] .tt-sun { opacity: 0; transform: rotate(60deg) scale(0.6); }
+.theme-toggle[aria-pressed="true"] .tt-moon { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .tt-track, .tt-knob, .tt-knob svg { transition: none; } }
 
 /* The sign-in scene: three stacked panels on a navy stage. */
 .login-stage {
@@ -240,3 +327,7 @@
 /* Hide scrollbars on the tab strip and side menu (they still scroll). */
 .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Dark mode: navy headings and labels become light text (buttons keep their blue). */
+:root[data-theme="dark"] .text-primary { color: #e6ecf5; }
+:root[data-theme="dark"] .hl.hl-on { color: #111827; }

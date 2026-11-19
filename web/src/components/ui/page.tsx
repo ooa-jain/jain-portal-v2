@@ -27,7 +27,7 @@ export function PageHeader({
   return (
     <div className={cn("flex flex-wrap items-end justify-between gap-3", className)}>
       <div className="min-w-0">
-        {eyebrow && <p className="text-[11.5px] font-bold uppercase tracking-[0.14em] text-[#475467]">{eyebrow}</p>}
+        {eyebrow && <p className="text-[11.5px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{eyebrow}</p>}
         <h1 className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[28px] font-bold leading-tight text-primary">
           {highlight && <span className="hl">{highlight}</span>}
           {/* A plain-text title wears the highlight itself, as on the Board of Studies portal. */}
@@ -39,7 +39,7 @@ export function PageHeader({
             </>
           )}
         </h1>
-        {description && <p className="mt-1 max-w-3xl text-[13.5px] text-[#5b6474]">{description}</p>}
+        {description && <p className="mt-1 max-w-3xl text-[13.5px] text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -48,9 +48,9 @@ export function PageHeader({
 
 const TONES = {
   default: "",
-  success: "text-[#067647]",
-  warning: "text-[#1d4ed8]",
-  danger: "text-[#b42318]",
+  success: "text-success",
+  warning: "text-link",
+  danger: "text-destructive",
 };
 
 /** KPI tile: label, a big navy number, one line underneath. */
@@ -70,23 +70,23 @@ export function Stat({
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card px-4 py-3.5 shadow-[0_1px_2px_rgba(16,24,40,.04)]">
-      <p className="text-[13px] font-semibold text-[#344054]">{label}</p>
+      <p className="text-[13px] font-semibold text-foreground">{label}</p>
       <p className={cn("mt-1.5 text-[28px] font-bold tabular-nums leading-none text-primary", TONES[tone])}>{value}</p>
       {progress !== undefined && (
-        <span className="mt-2.5 block h-1.5 rounded-full bg-[#e4e7ec]">
+        <span className="mt-2.5 block h-1.5 rounded-full bg-secondary">
           <span className="block h-1.5 rounded-full bg-primary" style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
         </span>
       )}
-      {hint && <p className="mt-2 text-[12.5px] text-[#5b6474]">{hint}</p>}
+      {hint && <p className="mt-2 text-[12.5px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
 
 const NOTICE = {
-  info: "border-[#bfdbfe] bg-[#eff6ff] text-[#1e3a8a]",
-  warning: "border-[#f2cd73] bg-[#fdf6e3] text-[#7a5e05]",
-  danger: "border-[#fecaca] bg-[#fef2f2] text-[#b42318]",
-  success: "border-[#abefc6] bg-[#ecfdf3] text-[#067647]",
+  info: "border-link/30 bg-link/10 text-link",
+  warning: "border-warning/40 bg-warning-soft text-warning",
+  danger: "border-destructive/30 bg-destructive-soft text-destructive",
+  success: "border-success/30 bg-success-soft text-success",
 };
 
 /** Inline message bar with a coloured left edge. */
@@ -105,7 +105,7 @@ export function Notice({
     <div className={cn("flex flex-wrap items-center justify-between gap-3 rounded-lg border border-l-4 px-4 py-3 text-[13.5px]", NOTICE[tone])}>
       <div className="min-w-0">
         {title && <p className="font-bold">{title}</p>}
-        {children && <div className="text-[#344054]">{children}</div>}
+        {children && <div className="text-foreground">{children}</div>}
       </div>
       {action}
     </div>

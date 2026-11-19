@@ -1,165 +1,203 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check, FileText } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { listMySubmissions, listNotifications } from "@/lib/data";
+import { getSettings, listMySubmissions } from "@/lib/data";
 import { allModuleAccess } from "@/lib/access";
-import { LISTED_MODULE_KEYS, MODULES } from "@/lib/constants";
-import { ChangePasswordForm } from "@/components/change-password-form";
+import { listDocuments, scopeFilter } from "@/lib/documents";
+import { DOC_TYPES, LISTED_MODULE_KEYS, MODULES } from "@/lib/constants";
 import { DepartmentForm } from "@/components/department-form";
 import { FacultyHome } from "@/components/faculty-home";
-import { SubmissionTable } from "@/components/submission-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Notice, PageHeader, Stat } from "@/components/ui/page";
-import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Notice } from "@/components/ui/page";
 import { formatDateTime, formatDeadline, parseDeadline } from "@/lib/utils";
 
+const DOC_LABEL = new Map(DOC_TYPES.map((t) => [t.key, t.label]));
+const REVIEW_LABEL: Record<string, { text: string; variant: "success" | "warning" | "destructive" | "muted" }> = {
+  approved: { text: "Approved", variant: "success" },
+  pending: { text: "With HOD", variant: "warning" },
+  returned: { text: "Returned", variant: "destructive" },
+  not_sent: { text: "Needs re-upload", variant: "destructive" },
+};
+
+/** "Odd 2026-27" already names the year; add the academic year only when it does not. */
+function semesterLabel(semester: string, acYear: string) {
+  if (!semester) return acYear;
+  return acYear && !semester.includes(acYear) ? `${semester} ${acYear}` : semester;
+}
+
+/** Home: where you left off, your readiness and closure submissions, and the latest uploads. */
 export default async function DashboardPage() {
   const user = await requireUser();
   if (user.isFaculty) return <FacultyHome user={user} />;
-  const [access, submissions, notifications] = await Promise.all([
+
+  const [access, submissions, settings, docs] = await Promise.all([
     allModuleAccess(user),
     listMySubmissions(user),
-    listNotifications(5),
+    getSettings(),
+    listDocuments(scopeFilter(user, user.department || undefined)),
   ]);
 
-  const drafts = submissions.filter((s) => s._draft).length;
-  const submitted = submissions.filter((s) => !s._draft).length;
-  const facultyTotal = submissions.reduce((sum, s) => sum + (s.faculty_submission_count ?? 0), 0);
+  const cycle = [...settings.enabled_years].sort().pop()?.replace("-", "–") ?? "";
+  // "Dr. Meera Nair" -> "Meera": skip a title before the first name.
+  const nameParts = user.name.split(/\s+/).filter(Boolean);
+  const firstName = nameParts.find((part) => !/^(dr|prof|mr|mrs|ms|miss|shri|smt)\.?$/i.test(part)) ?? user.name;
+  const latest = submissions[0];
+  const latestAccess = latest ? access[latest.form_type] : null;
+  const submittedModules = LISTED_MODULE_KEYS.filter((key) => submissions.some((s) => s.form_type === key && !s._draft));
   const upcoming = LISTED_MODULE_KEYS.filter((k) => access[k].open && access[k].deadline && !access[k].deadlinePassed)
     .map((k) => ({ key: k, at: parseDeadline(access[k].deadline)! }))
     .sort((a, b) => a.at.getTime() - b.at.getTime())[0];
-
-  const rows = LISTED_MODULE_KEYS.map((key) => {
-    const a = access[key];
-    const latest = submissions.find((s) => s.form_type === key);
-    return {
-      key, a,
-      status: latest ? (latest._draft ? "Draft" : "Submitted") : "Not started",
-      last: latest?.timestamp ?? "",
-      href: latest ? `/${key}/form/${latest._id}` : a.canWrite ? `/${key}/form` : `/${key}`,
-      action: latest ? (latest._draft && a.canWrite ? "Continue" : "Open") : a.canWrite ? "Start" : "View",
-    };
-  });
+  const recentUploads = [...docs].sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at)).slice(0, 6);
+  const progress = LISTED_MODULE_KEYS.length ? (submittedModules.length / LISTED_MODULE_KEYS.length) * 100 : 0;
 
   return (
     <>
-      <PageHeader
-        highlight={`Welcome, ${user.name.replace(/^(dr|prof|mr|mrs|ms)\.?\s+/i, "").split(" ")[0] || user.name}`}
-        description={`${user.name}${user.department ? ` · ${user.department}` : ""}`}
-      />
+      <div>
+        <h1 className="text-[26px] font-bold tracking-tight text-primary">
+          Welcome back, <span className="hl hl-on">{firstName}</span>
+        </h1>
+        <p className="mt-1 text-[13.5px] text-muted-foreground">
+          {[user.isAdmin ? "Office of Academic Affairs" : user.department, `Jain OOA Portal | ${cycle}`].filter(Boolean).join(" · ")}
+        </p>
+      </div>
 
-      {!user.department && (
+      {!user.department && !user.isAdmin && (
         <Notice tone="warning" title="Select your department">
-          <p className="mb-2">It pre-fills your forms and shows you submissions from your department.</p>
+          <p className="mb-2">It pre-fills your forms and shows you your department&apos;s submissions and uploads.</p>
           <DepartmentForm current="" />
         </Notice>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Submitted" value={submitted} tone="success" hint="Across all modules" />
-        <Stat label="Drafts in progress" value={drafts} tone="warning" hint={drafts ? "Finish and submit before the deadline" : "Nothing pending"} />
-        <Stat label="Faculty responses" value={facultyTotal} hint="Received through your share links" />
-        <Stat
-          label="Next deadline"
-          value={<span className="text-base">{upcoming ? formatDeadline(access[upcoming.key].deadline) : "None set"}</span>}
-          tone={upcoming ? "danger" : "default"}
-          hint={upcoming ? MODULES[upcoming.key].label : "No upcoming deadlines"}
-        />
-      </div>
+      {latest ? (
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-hero px-6 py-6 text-hero-foreground shadow-[0_18px_40px_-24px_rgba(15,36,64,.6)] dark:border dark:border-border">
+          <div className="min-w-0">
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/70">Continue where you left off</p>
+            <h2 className="mt-2 text-[22px] font-bold leading-tight sm:text-[26px]">
+              {MODULES[latest.form_type].label}
+              {latest.identity.dept ? ` · ${latest.identity.dept}` : ""}
+              {semesterLabel(latest.identity.semester, latest.identity.acYear) ? ` · ${semesterLabel(latest.identity.semester, latest.identity.acYear)}` : ""}
+            </h2>
+            <p className="mt-1.5 text-[13px] text-white/75">
+              {latest._draft ? "Draft" : "Submitted"} · last saved {formatDateTime(latest.timestamp)}
+              {latest.identity.submitterName ? ` by ${latest.identity.submitterName}` : ""}
+            </p>
+          </div>
+          <Link
+            href={`/${latest.form_type}/form/${latest._id}`}
+            className="inline-flex h-12 items-center gap-2 rounded-xl bg-white px-6 text-[15px] font-bold text-[#0f2440] shadow-sm transition hover:bg-white/90"
+          >
+            {latest._draft && latestAccess?.canWrite ? "Continue" : "Open"} <ArrowRight className="size-4" />
+          </Link>
+        </section>
+      ) : (
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-hero px-6 py-6 text-hero-foreground dark:border dark:border-border">
+          <div>
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/70">Get started</p>
+            <h2 className="mt-2 text-[22px] font-bold">Start your Semester Readiness checklist</h2>
+            <p className="mt-1.5 text-[13px] text-white/75">Your drafts are saved as you go, and you can come back to them here.</p>
+          </div>
+          <Link
+            href="/readiness/form"
+            className="inline-flex h-12 items-center gap-2 rounded-xl bg-white px-6 text-[15px] font-bold text-[#0f2440] shadow-sm transition hover:bg-white/90"
+          >
+            Start <ArrowRight className="size-4" />
+          </Link>
+        </section>
+      )}
 
-      <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Modules</CardTitle>
-            <CardDescription>Your status in each module for the current cycle.</CardDescription>
-          </CardHeader>
-          <Table>
-            <THead>
-              <tr>
-                <TH>Module</TH><TH>Window</TH><TH>Deadline (IST)</TH><TH>Your status</TH><TH>Last activity</TH><TH className="text-right">Action</TH>
-              </tr>
-            </THead>
-            <TBody>
-              {rows.map(({ key, a, status, last, href, action }) => (
-                <TR key={key}>
-                  <TD className="min-w-56">
-                    <span className="font-semibold text-primary">{MODULES[key].label}</span>
-                    <span className="block text-xs text-muted-foreground">{MODULES[key].description}</span>
-                  </TD>
-                  <TD>
-                    {!a.open ? <Badge variant="muted">Closed</Badge>
-                      : a.canWrite ? <Badge variant="success">{a.deadlinePassed ? "Late access" : "Open"}</Badge>
-                      : <Badge variant="destructive">Deadline passed</Badge>}
-                  </TD>
-                  <TD className="whitespace-nowrap">{a.deadline ? formatDeadline(a.deadline) : "—"}</TD>
-                  <TD>
-                    <Badge variant={status === "Submitted" ? "success" : status === "Draft" ? "warning" : "muted"}>{status}</Badge>
-                  </TD>
-                  <TD className="whitespace-nowrap text-xs text-muted-foreground">{last ? formatDateTime(last) : "—"}</TD>
-                  <TD className="text-right">
-                    {a.open ? (
-                      <Button size="sm" variant={action === "Start" || action === "Continue" ? "default" : "outline"} asChild>
-                        <Link href={href}>{action}<ArrowRight /></Link>
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Not available</span>
-                    )}
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Announcements</CardTitle>
-            <CardDescription>From the Office of Academic Affairs.</CardDescription>
-          </CardHeader>
-          {notifications.length === 0 ? (
-            <CardContent className="text-[13px] text-muted-foreground">No announcements.</CardContent>
-          ) : (
-            <ul className="divide-y">
-              {notifications.map((n) => (
-                <li key={n._id} className="px-4 py-2.5">
-                  <p className="text-[13px] font-semibold">{n.title}</p>
-                  <p className="text-[13px] text-muted-foreground">{n.body}</p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">{formatDateTime(n.created_at)}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent readiness and closure submissions</CardTitle>
-        </CardHeader>
-        <SubmissionTable submissions={submissions.slice(0, 8)} currentEmail={user.email} isAdmin={user.isAdmin} showModule />
+      <Card className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
+        <span className="h-2 w-44 rounded-full bg-secondary">
+          <span className="block h-2 rounded-full bg-[#2563eb]" style={{ width: `${progress}%` }} />
+        </span>
+        <span className="text-[14px] text-foreground">
+          {submittedModules.length} of {LISTED_MODULE_KEYS.length} modules submitted
+        </span>
+        {upcoming && (
+          <span className="text-[13px] text-muted-foreground">
+            · Next deadline: <strong className="font-semibold text-destructive">{MODULES[upcoming.key].label}, {formatDeadline(access[upcoming.key].deadline)}</strong>
+          </span>
+        )}
+        <Button variant="outline" size="sm" className="ml-auto" asChild>
+          <Link href="/analytics">See analysis <ArrowRight /></Link>
+        </Button>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>{user.email}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          {user.department && (
-            <div>
-              <p className="mb-1.5 text-[13px] font-semibold text-[#344054]">Department</p>
-              <DepartmentForm current={user.department} />
-            </div>
-          )}
-          {!user.impersonatedBy && (
-            <div className="border-t pt-4">
-              <p className="mb-2 text-[13px] font-semibold text-[#344054]">Password</p>
-              <ChangePasswordForm hasPassword={user.hasPassword} />
-            </div>
-          )}
-        </CardContent>
+        <div className="flex items-center justify-between border-b bg-accent-soft px-4 py-3">
+          <h2 className="text-[15px] font-bold text-primary">Submissions</h2>
+          <span className="text-[13px] text-muted-foreground">Semester Readiness and Semester Closure</span>
+        </div>
+        {submissions.length === 0 ? (
+          <p className="px-4 py-8 text-center text-[13.5px] text-muted-foreground">Nothing submitted yet.</p>
+        ) : (
+          <ul className="divide-y">
+            {submissions.slice(0, 8).map((s) => (
+              <li key={s._id} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-semibold text-primary">
+                    {MODULES[s.form_type].label}
+                    {s.identity.dept ? ` · ${s.identity.dept}` : ""}
+                  </span>
+                  <span className="block text-[12.5px] text-muted-foreground">
+                    {semesterLabel(s.identity.semester, s.identity.acYear) || "No semester yet"} · {formatDateTime(s.timestamp)}
+                    {s.identity.submitterName ? ` · ${s.identity.submitterName}` : ""}
+                  </span>
+                </span>
+                {s._draft ? (
+                  <Badge variant="warning">Draft</Badge>
+                ) : (
+                  <Badge variant="success"><Check className="size-3" /> Submitted</Badge>
+                )}
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/${s.form_type}/form/${s._id}`}>
+                    {s._draft && access[s.form_type].canWrite && s.identity.submitterEmail === user.email ? "Continue" : "See submission"} <ArrowRight />
+                  </Link>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
+      <Card>
+        <div className="flex items-center justify-between border-b bg-accent-soft px-4 py-3">
+          <h2 className="text-[15px] font-bold text-primary">Last uploaded files</h2>
+          <Link href="/documents" className="text-[13px] font-semibold text-link hover:underline">
+            Document Library →
+          </Link>
+        </div>
+        {recentUploads.length === 0 ? (
+          <p className="px-4 py-8 text-center text-[13.5px] text-muted-foreground">No files uploaded yet.</p>
+        ) : (
+          <ul className="divide-y">
+            {recentUploads.map((d) => {
+              const review = REVIEW_LABEL[d.review.status] ?? REVIEW_LABEL.pending;
+              return (
+                <li key={d._id} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
+                    <FileText className="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14px] font-semibold text-primary">
+                      {d.course_code} · {DOC_LABEL.get(d.doc_type) ?? d.doc_type}
+                    </span>
+                    <span className="block truncate text-[12.5px] text-muted-foreground">
+                      {d.file_name} · {d.semester} · {d.uploaded_by_name || d.uploaded_by_email}, {formatDateTime(d.uploaded_at)}
+                    </span>
+                  </span>
+                  <Badge variant={review.variant}>{review.text}</Badge>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`/api/documents/${d._id}/file`} target="_blank" rel="noreferrer">
+                      Open <ArrowRight />
+                    </a>
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </Card>
     </>
   );

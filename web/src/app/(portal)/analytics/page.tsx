@@ -8,16 +8,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { EmptyRow, Notice, PageHeader, Stat } from "@/components/ui/page";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { DeptPicker, SemesterPicker } from "./pickers";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatDateTime } from "@/lib/utils";
+import { SubmissionTable } from "@/components/submission-list";
+import { Badge } from "@/components/ui/badge";
 
-export const metadata: Metadata = { title: "Analytics" };
+export const metadata: Metadata = { title: "Analysis" };
 
 function Bar({ value, total, tone = "bg-primary" }: { value: number; total: number; tone?: string }) {
   const pct = total ? Math.round((value / total) * 100) : 0;
   return (
     <span className="flex items-center gap-2.5">
-      <span className="h-2 flex-1 rounded-full bg-[#e4e7ec]"><span className={`block h-2 rounded-full ${tone}`} style={{ width: `${pct}%` }} /></span>
-      <span className="w-20 text-right text-xs tabular-nums text-[#475467]">{value}/{total} · {pct}%</span>
+      <span className="h-2 flex-1 rounded-full bg-secondary"><span className={`block h-2 rounded-full ${tone}`} style={{ width: `${pct}%` }} /></span>
+      <span className="w-20 text-right text-xs tabular-nums text-muted-foreground">{value}/{total} · {pct}%</span>
     </span>
   );
 }
@@ -34,7 +36,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
   if (!user.isAdmin && !dept) {
     return (
       <>
-        <PageHeader title="Analytics" />
+        <PageHeader title="Analysis" />
         <Notice tone="warning" title="Set your department">Choose your department on the Home page to see its analytics.</Notice>
       </>
     );
@@ -126,7 +128,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
               );
             })}
             {totalSlots > 0 && (
-              <p className="border-t pt-3 text-[13px] text-[#475467]">
+              <p className="border-t pt-3 text-[13px] text-muted-foreground">
                 Overall: <strong className="text-primary">{approved}</strong> of {totalSlots} required documents approved for {semester}.
               </p>
             )}
@@ -140,7 +142,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
               <div className="flex h-36 items-end gap-2" role="img" aria-label={`Weekly uploads: ${weeks.map((w) => `${w.label} ${w.count}`).join(", ")}`}>
                 {weeks.map((w) => (
                   <div key={w.label} className="flex flex-1 flex-col items-center gap-1">
-                    <span className="text-[11px] tabular-nums text-[#475467]">{w.count || ""}</span>
+                    <span className="text-[11px] tabular-nums text-muted-foreground">{w.count || ""}</span>
                     <span className="w-full rounded-t bg-primary" style={{ height: `${Math.max(2, (w.count / maxWeek) * 100)}px`, opacity: w.count ? 1 : 0.15 }} />
                     <span className="text-[10.5px] text-muted-foreground">{w.label}</span>
                   </div>
@@ -198,6 +200,46 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
           </Table>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All submissions</CardTitle>
+          <CardDescription>
+            Every Semester Readiness and Semester Closure submission{user.isAdmin ? " in the university" : " from your department"}, newest first.
+          </CardDescription>
+        </CardHeader>
+        <SubmissionTable submissions={dept && user.isAdmin ? submissions.filter((s) => s.identity.dept === dept) : submissions} currentEmail={user.email} isAdmin={user.isAdmin} showModule />
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All uploads</CardTitle>
+          <CardDescription>Every file in the Document Library{dept ? ` for ${dept}` : ""}, newest first.</CardDescription>
+        </CardHeader>
+        <Table>
+          <THead>
+            <tr><TH>Course</TH><TH>Document</TH><TH>File</TH><TH>Semester</TH><TH>Uploaded by</TH><TH>Uploaded</TH><TH>Status</TH></tr>
+          </THead>
+          <TBody>
+            {[...allDocs].sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at)).slice(0, 200).map((d) => (
+              <TR key={d._id}>
+                <TD className="whitespace-nowrap font-medium text-primary">{d.course_code}</TD>
+                <TD className="min-w-48">{DOC_TYPES.find((t) => t.key === d.doc_type)?.label ?? d.doc_type}</TD>
+                <TD className="max-w-64 truncate"><a href={`/api/documents/${d._id}/file`} target="_blank" rel="noreferrer" className="text-link hover:underline">{d.file_name}</a></TD>
+                <TD className="whitespace-nowrap">{d.semester}</TD>
+                <TD className="whitespace-nowrap">{d.uploaded_by_name || d.uploaded_by_email}</TD>
+                <TD className="whitespace-nowrap text-xs text-muted-foreground">{formatDateTime(d.uploaded_at)}</TD>
+                <TD>
+                  <Badge variant={d.review.status === "approved" ? "success" : d.review.status === "pending" ? "warning" : "destructive"}>
+                    {d.review.status === "approved" ? "Approved" : d.review.status === "pending" ? "With HOD" : "Needs changes"}
+                  </Badge>
+                </TD>
+              </TR>
+            ))}
+            {allDocs.length === 0 && <EmptyRow colSpan={7}>No uploads yet.</EmptyRow>}
+          </TBody>
+        </Table>
+      </Card>
     </>
   );
 }

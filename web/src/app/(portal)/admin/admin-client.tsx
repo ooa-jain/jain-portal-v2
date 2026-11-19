@@ -192,7 +192,7 @@ function PasswordReveal({ email, password, onClose }: { email: string; password:
             signing in, from their Home page.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center gap-2 rounded-lg border bg-[#f9fafb] p-3">
+        <div className="flex items-center gap-2 rounded-lg border bg-muted p-3">
           <code className="flex-1 font-mono text-[18px] font-semibold tracking-wide text-primary">{password}</code>
           <Button variant="outline" size="sm" onClick={async () => {
             try { await navigator.clipboard.writeText(password); toast.success("Password copied."); } catch { toast.error("Copy it by hand."); }
@@ -220,7 +220,7 @@ function PasswordChoice({ mode, setMode, password, setPassword, noneLabel }: {
   ];
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-1.5 text-[13px] font-semibold text-[#344054]">Email and password sign-in</legend>
+      <legend className="mb-1.5 text-[13px] font-semibold text-foreground">Email and password sign-in</legend>
       {options.map((o) => (
         <label key={o.value} className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 text-[13px] ${mode === o.value ? "border-primary bg-secondary" : ""}`}>
           <input type="radio" name="password-mode" className="mt-0.5 accent-[var(--primary)]" checked={mode === o.value} onChange={() => setMode(o.value)} />

@@ -65,7 +65,7 @@ const GlassInputWrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 const TestimonialCard = ({ testimonial, delay }: { testimonial: Testimonial; delay: string }) => (
-  <div className={`animate-testimonial ${delay} flex w-64 items-start gap-3 rounded-3xl border border-white/15 bg-white/70 p-5 text-foreground backdrop-blur-xl`}>
+  <div className={`animate-testimonial ${delay} flex w-64 items-start gap-3 rounded-3xl border border-white/15 bg-card/70 p-5 text-foreground backdrop-blur-xl`}>
     {testimonial.avatarSrc ? (
       // eslint-disable-next-line @next/next/no-img-element
       <img src={testimonial.avatarSrc} className="h-10 w-10 rounded-2xl object-cover" alt="" />

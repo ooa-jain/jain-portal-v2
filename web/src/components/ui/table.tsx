@@ -9,18 +9,18 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   );
 }
 function THead(props: React.ComponentProps<"thead">) {
-  return <thead className="border-y bg-[#f9fafb]" {...props} />;
+  return <thead className="border-y bg-muted" {...props} />;
 }
 function TBody(props: React.ComponentProps<"tbody">) {
   return <tbody className="[&_tr:last-child]:border-0" {...props} />;
 }
 function TR({ className, ...props }: React.ComponentProps<"tr">) {
-  return <tr className={cn("border-b transition-colors hover:bg-[#f9fafb]", className)} {...props} />;
+  return <tr className={cn("border-b transition-colors hover:bg-muted", className)} {...props} />;
 }
 function TH({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
-      className={cn("h-10 whitespace-nowrap px-[18px] text-left text-[12.5px] font-semibold text-[#475467]", className)}
+      className={cn("h-10 whitespace-nowrap px-[18px] text-left text-[12.5px] font-semibold text-muted-foreground", className)}
       {...props}
     />
   );

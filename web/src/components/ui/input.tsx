@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const fieldBase =
-  "w-full rounded-lg border border-input bg-card px-3 text-[13.5px] text-foreground placeholder:text-[#98a2b3] focus:border-ring focus:outline-none focus:ring-4 focus:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-70 read-only:bg-muted";
+  "w-full rounded-lg border border-input bg-card px-3 text-[13.5px] text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-4 focus:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-70 read-only:bg-muted";
 
 function Input({ className, ...props }: React.ComponentProps<"input">) {
   return <input className={cn(fieldBase, "h-10", className)} {...props} />;
@@ -35,7 +35,7 @@ function Field({
 }) {
   return (
     <label className={cn("flex flex-col gap-1.5", className)}>
-      <span className="text-[13px] font-semibold text-[#344054]">
+      <span className="text-[13px] font-semibold text-foreground">
         {label}
         {required && <span className="text-destructive"> *</span>}
       </span>

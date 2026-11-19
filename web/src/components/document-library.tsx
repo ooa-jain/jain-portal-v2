@@ -186,12 +186,12 @@ function UploadDialog({
                 </Select>
               </Field>
               <div className="sm:col-span-2">
-                <p className="mb-1.5 text-[13px] font-semibold text-[#344054]">File <span className="text-destructive">*</span></p>
+                <p className="mb-1.5 text-[13px] font-semibold text-foreground">File <span className="text-destructive">*</span></p>
                 <input ref={fileInput} type="file" accept={DOC_EXTENSIONS.join(",")} className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
                 <button
                   type="button"
                   onClick={() => fileInput.current?.click()}
-                  className="flex w-full items-center gap-3 rounded-lg border-2 border-dashed border-input bg-[#f9fafb] px-4 py-5 text-left hover:border-primary"
+                  className="flex w-full items-center gap-3 rounded-lg border-2 border-dashed border-input bg-muted px-4 py-5 text-left hover:border-primary"
                 >
                   <Upload className="size-5 shrink-0 text-primary" />
                   <span className="min-w-0">
@@ -201,7 +201,7 @@ function UploadDialog({
                 </button>
               </div>
             </div>
-            {error && <p role="alert" className="rounded-lg border border-[#fecaca] bg-destructive-soft px-3 py-2 text-[13px] text-[#b42318]">{error}</p>}
+            {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-[13px] text-destructive">{error}</p>}
             <DialogFooter>
               <Button variant="outline" onClick={onClose}>Cancel</Button>
               <Button onClick={upload} disabled={busy}>
@@ -289,16 +289,16 @@ function DocumentDialog({ doc, me, onClose, onReplace }: { doc: LibraryDocument;
         <CheckSummary doc={doc} />
 
         {doc.review.status !== "pending" && doc.review.by && (
-          <p className="text-[13px] text-[#475467]">
+          <p className="text-[13px] text-muted-foreground">
             <span className="font-semibold">{doc.review.status === "approved" ? "Approved" : "Returned"}</span> by {doc.review.by} on{" "}
             {formatDateTime(doc.review.at)}{doc.review.remarks && `: ${doc.review.remarks}`}
           </p>
         )}
 
         {canReview(me, doc) && doc.review.status !== "not_sent" && (
-          <div className="flex flex-col gap-2 rounded-lg border bg-[#f9fafb] p-3">
+          <div className="flex flex-col gap-2 rounded-lg border bg-muted p-3">
             <p className="text-[13px] font-semibold text-primary">HOD review</p>
-            <Textarea aria-label="Remarks" rows={2} className="min-h-10 bg-white" placeholder="Remarks (needed when returning)" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
+            <Textarea aria-label="Remarks" rows={2} className="min-h-10 bg-card" placeholder="Remarks (needed when returning)" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
             <div className="flex flex-wrap justify-end gap-2">
               <Button variant="outline" size="sm" disabled={pending} onClick={() => act(() => reviewDocument(doc._id, "returned", remarks), "Returned to the uploader.")}>
                 <Undo2 />Return for changes
@@ -348,7 +348,7 @@ const DOT: Record<string, string> = {
   pending: "bg-[#2563eb]",
   returned: "bg-destructive",
   not_sent: "bg-destructive",
-  missing: "bg-[#d0d5dd]",
+  missing: "bg-secondary",
 };
 
 export function DocumentLibrary({
@@ -425,10 +425,10 @@ export function DocumentLibrary({
 
       <Card>
         <div className="flex flex-wrap items-center gap-2 border-b p-3">
-          <div className="inline-flex rounded-full border bg-white p-1" role="tablist" aria-label="View">
+          <div className="inline-flex rounded-full border bg-card p-1" role="tablist" aria-label="View">
             {([["course", "By course"], ["all", "All documents"]] as const).map(([v, label]) => (
               <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}
-                className={cn("rounded-full px-3.5 py-1.5 text-[13px] font-semibold", view === v ? "bg-primary text-white" : "text-[#344054] hover:bg-hover")}>
+                className={cn("rounded-full px-3.5 py-1.5 text-[13px] font-semibold", view === v ? "bg-primary text-white" : "text-foreground hover:bg-hover")}>
                 {label}
               </button>
             ))}
@@ -471,7 +471,7 @@ export function DocumentLibrary({
             </p>
           ) : (
             <div className="flex flex-col">
-              <p className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-[18px] py-2.5 text-xs text-[#475467]">
+              <p className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-[18px] py-2.5 text-xs text-muted-foreground">
                 {([["approved", "Approved"], ["pending", "With HOD"], ["returned", "Returned / needs re-upload"], ["missing", "Not uploaded"]] as const).map(([k, l]) => (
                   <span key={k} className="flex items-center gap-1.5"><span className={cn("size-2.5 rounded-full", DOT[k])} />{l}</span>
                 ))}
@@ -479,7 +479,7 @@ export function DocumentLibrary({
               </p>
               {grouped.map(([programme, list]) => (
                 <details key={programme} open className="border-b last:border-b-0">
-                  <summary className="flex cursor-pointer items-center gap-2 bg-[#f9fafb] px-[18px] py-2.5 text-[13.5px] font-bold text-primary">
+                  <summary className="flex cursor-pointer items-center gap-2 bg-muted px-[18px] py-2.5 text-[13.5px] font-bold text-primary">
                     <ChevronDown className="size-4" />{programme}<span className="font-normal text-muted-foreground">· {list.length} course{list.length === 1 ? "" : "s"}</span>
                   </summary>
                   <Table>
@@ -512,7 +512,7 @@ export function DocumentLibrary({
                                     onClick={() => (d ? setOpenDoc(d) : setUploadPrefill({ ...c, semester, doc_type: t.key }))}
                                     className="inline-flex size-7 items-center justify-center rounded-full hover:bg-hover disabled:opacity-40"
                                   >
-                                    <span className={cn("size-3 rounded-full", DOT[state], d?.check.status === "warnings" && state === "pending" && "ring-2 ring-[#f2cd73] ring-offset-1")} />
+                                    <span className={cn("size-3 rounded-full", DOT[state], d?.check.status === "warnings" && state === "pending" && "ring-2 ring-warning/40 ring-offset-1")} />
                                   </button>
                                 </TD>
                               );
@@ -561,7 +561,7 @@ export function DocumentLibrary({
       </Card>
 
       {me.isFaculty && (
-        <p className="flex items-center gap-2 text-[12.5px] text-[#5b6474]">
+        <p className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
           <ShieldCheck className="size-4" />
           Documents you upload here also tick the matching items on your faculty checklist, so you never upload the same file twice.
         </p>

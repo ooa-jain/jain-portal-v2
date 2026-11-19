@@ -200,11 +200,11 @@ function ChromeTab({
           {isActive && (
             <motion.div className="absolute inset-0 rounded-t-xl bg-background" layoutId="activeTabBg" transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}>
               <div className="absolute -left-3 bottom-0 h-3 w-3 overflow-hidden">
-                <div className="absolute bottom-0 right-0 z-[1] h-6 w-6 rounded-full bg-sidebar" />
+                <div className="absolute bottom-0 right-0 z-[1] h-6 w-6 rounded-full bg-topbar" />
                 <div className="absolute inset-0 bg-background" />
               </div>
               <div className="absolute -right-3 bottom-0 h-3 w-3 overflow-hidden">
-                <div className="absolute bottom-0 left-0 z-[1] h-6 w-6 rounded-full bg-sidebar" />
+                <div className="absolute bottom-0 left-0 z-[1] h-6 w-6 rounded-full bg-topbar" />
                 <div className="absolute inset-0 bg-background" />
               </div>
             </motion.div>
@@ -562,7 +562,6 @@ export function SidebarWithTabs({
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const activeNavId = routeMode ? routeNavId || activeTab?.activeNavId || defaultNav : activeTab?.activeNavId || defaultNav;
-  const activeTabIndex = tabs.findIndex((t) => t.id === activeTabId);
 
   const show = useCallback(
     (tab: Tab | undefined) => {
@@ -665,7 +664,7 @@ export function SidebarWithTabs({
             initial={false}
             animate={{ width: isCollapsed ? 68 : 248 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="hidden flex-col overflow-hidden bg-sidebar md:flex"
+            className="hidden flex-col overflow-hidden border-r border-sidebar-border bg-sidebar md:flex"
           >
             <div className="flex h-full flex-col overflow-hidden">
               <div className={cn("flex h-[60px] items-center border-b border-sidebar-border px-4", isCollapsed ? "justify-center" : "justify-between")}>
@@ -749,7 +748,7 @@ export function SidebarWithTabs({
           </motion.aside>
 
           <div className="relative flex flex-1 flex-col overflow-hidden">
-            <div className="flex items-end bg-sidebar pt-2">
+            <div className="flex items-end bg-topbar pt-2 shadow-[inset_0_-1px_0_var(--sidebar-border)]">
               <div className="ml-2 flex-shrink-0 self-center md:hidden">
                 <MobileSidebar
                   logo={logo}
@@ -833,14 +832,8 @@ export function SidebarWithTabs({
               </DropdownMenu>
             </div>
 
-            <main className="flex-1 overflow-hidden bg-sidebar p-0 md:pb-3 md:pr-3">
-              <div
-                className={cn(
-                  "flex h-full flex-col overflow-auto bg-background transition-all duration-300 ease-in-out",
-                  "md:rounded-bl-3xl md:rounded-br-3xl md:rounded-tr-3xl",
-                  activeTabIndex !== 0 && "md:rounded-tl-3xl",
-                )}
-              >
+            <main className="flex-1 overflow-hidden">
+              <div className="page-grid flex h-full flex-col overflow-auto">
                 {banner}
                 {routeMode ? (
                   <div className="flex-1">{content}</div>

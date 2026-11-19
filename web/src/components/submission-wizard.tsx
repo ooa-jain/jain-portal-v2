@@ -815,7 +815,7 @@ function FacultyLogins({ submissionId, mailEnabled }: { submissionId: string; ma
               </TBody>
             </Table>
             {results.some((r) => r.password) && (
-              <p className="border-t bg-[#fdf6e3] px-3 py-2 text-xs text-[#7a5e05]">Copy these now: passwords are not shown again. Faculty can change theirs after signing in.</p>
+              <p className="border-t bg-warning-soft px-3 py-2 text-xs text-warning">Copy these now: passwords are not shown again. Faculty can change theirs after signing in.</p>
             )}
           </div>
         )}
