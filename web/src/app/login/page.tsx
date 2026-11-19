@@ -6,9 +6,9 @@ import { SignInCard } from "./sign-in-card";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-// Hero video from the MotionSites "Real-Time Alerts" design (served from its CDN).
-const HERO_VIDEO =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260813_052122_e77a27e6-17f1-4794-889b-3ceaa0e9e8cb.mp4";
+// JAIN campus aerial video (muted, looped). The poster shows while it loads.
+const HERO_VIDEO = "/login/campus.mp4";
+const HERO_POSTER = "/login/campus-poster.jpg";
 
 function BadgeGlyph() {
   return (
@@ -31,7 +31,8 @@ export default async function LoginPage() {
       {/* media column */}
       <section className="relative h-[clamp(264px,36svh,320px)] shrink-0 overflow-hidden bg-[linear-gradient(160deg,#3a4250_0%,#7b828c_45%,#c9cdd2_100%)] md:h-auto md:w-[57%]">
         <video
-          className="absolute inset-0 h-full w-full object-cover object-[64%_48%] md:object-[100%_50%]"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          poster={HERO_POSTER}
           autoPlay
           muted
           loop
@@ -41,14 +42,14 @@ export default async function LoginPage() {
         >
           <source src={HERO_VIDEO} type="video/mp4" />
         </video>
-        {/* dark scrim on phones so the white headline reads over the video */}
-        <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,10,13,.02)_18%,rgba(7,10,13,.12)_48%,rgba(7,10,13,.78)_100%)] md:hidden" />
+        {/* dark scrim at the bottom so the white headline reads over the video */}
+        <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,10,13,0)_30%,rgba(7,10,13,.18)_55%,rgba(7,10,13,.8)_100%)]" />
         <div className="absolute bottom-0 left-0 p-6 pb-12 md:p-[clamp(24px,4.5vh,44px)]">
-          <div className="rta-in inline-flex h-[31px] items-center gap-2.5 rounded-full bg-[rgba(24,27,30,.82)] px-3 text-[11px] text-white shadow-[0_4px_16px_rgba(0,0,0,.18)] backdrop-blur-[7px] [--d:120ms] md:h-[34px] md:bg-[#2f2a27] md:pl-[19px] md:pr-4 md:text-[13.6px]">
+          <div className="rta-in inline-flex h-[31px] items-center gap-2.5 rounded-full bg-[rgba(24,27,30,.82)] px-3 text-[11px] text-white shadow-[0_4px_16px_rgba(0,0,0,.18)] backdrop-blur-[7px] [--d:120ms] md:h-[34px] md:pl-[19px] md:pr-4 md:text-[13.6px]">
             <BadgeGlyph />
-            Built for every department
+            JAIN (Deemed-to-be University)
           </div>
-          <h1 className="mt-3 font-[640] leading-[1.02] tracking-[-0.035em] text-white [text-shadow:0_2px_18px_rgba(0,0,0,.32)] md:mt-[clamp(10px,2vh,20px)] md:text-[#000] md:[text-shadow:none]">
+          <h1 className="mt-3 font-[640] leading-[1.02] tracking-[-0.035em] text-white [text-shadow:0_2px_18px_rgba(0,0,0,.32)] md:mt-[clamp(10px,2vh,20px)]">
             <span className="rta-in rta-clip block text-[clamp(30px,8.8vw,38px)] [--d:240ms] md:text-[min(4.6vw,8.2vh,66px)]">Plan, Review &amp; Submit</span>
             <span className="rta-in rta-clip block text-[clamp(30px,8.8vw,38px)] [--d:330ms] md:text-[min(4.6vw,8.2vh,66px)]">Effortlessly</span>
           </h1>
