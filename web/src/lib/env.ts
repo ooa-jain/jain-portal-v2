@@ -60,14 +60,21 @@ export const env = {
     };
   },
   /** SMTP is optional: when EMAIL_USER / EMAIL_PASS are unset, emails are skipped. */
+  /**
+   * Outgoing email. Reads EMAIL_USER / EMAIL_PASS / MAIL_SERVER / MAIL_PORT /
+   * MAIL_USE_SSL (the old Flask names), or SMTP_EMAIL / SMTP_PASSWORD /
+   * SMTP_SERVER / SMTP_PORT. Port 465 uses SSL from the start.
+   */
   get mail() {
-    const user = optional("EMAIL_USER");
-    const pass = optional("EMAIL_PASS");
+    const user = optional("EMAIL_USER") || optional("SMTP_EMAIL");
+    const pass = optional("EMAIL_PASS") || optional("SMTP_PASSWORD");
     if (!user || !pass) return null;
+    const port = Number(optional("MAIL_PORT") || optional("SMTP_PORT") || "587");
+    const ssl = optional("MAIL_USE_SSL") || optional("SMTP_USE_SSL");
     return {
-      host: optional("MAIL_SERVER", "smtp.gmail.com"),
-      port: Number(optional("MAIL_PORT", "587")),
-      secure: ["true", "1", "yes"].includes(optional("MAIL_USE_SSL", "false").toLowerCase()),
+      host: optional("MAIL_SERVER") || optional("SMTP_SERVER") || "smtp.gmail.com",
+      port,
+      secure: ssl ? ["true", "1", "yes"].includes(ssl.toLowerCase()) : port === 465,
       user,
       pass,
     };

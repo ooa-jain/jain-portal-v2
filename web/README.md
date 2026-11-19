@@ -79,6 +79,13 @@ matters: it is what brings the service back after a reboot). Then change the
 Nginx `proxy_pass` from port 8087 to 8088 and reload Nginx. The old Flask
 service can stay installed as a fallback until the new one is confirmed.
 
+## Email
+
+Set either the old Flask names (`EMAIL_USER`, `EMAIL_PASS`, `MAIL_SERVER`,
+`MAIL_PORT`, `MAIL_USE_SSL`) or `SMTP_EMAIL`, `SMTP_PASSWORD`, `SMTP_SERVER`,
+`SMTP_PORT` in `.env`. Port 465 uses SSL automatically. Email is used for the
+faculty registration code, reminders and notices; without it those are skipped.
+
 ## Updating the live site
 
 After the first time (when `deploy/deploy.sh` arrives with `git pull`), one command does the whole update:
