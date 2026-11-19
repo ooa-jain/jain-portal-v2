@@ -43,3 +43,5 @@ next-env.d.ts
 # uploaded evidence files
 /uploads/
 !.env.example
+/.next-new/
+/.next-prev/

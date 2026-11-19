@@ -2,6 +2,7 @@ import "server-only";
 import JSZip from "jszip";
 import { docType } from "./constants";
 import type { DocCheck } from "./types";
+import { ocrText } from "./ocr";
 
 /**
  * The automatic first check on an uploaded document. It reads the file's
@@ -69,10 +70,24 @@ export async function checkDocument(
     };
   }
 
-  const clean = norm(text);
-  const chars = clean.replace(/\s/g, "").length;
+  let clean = norm(text);
+  let chars = clean.replace(/\s/g, "").length;
   // A scanned PDF has pages but almost no text layer.
   if (!unreadable && ext === ".pdf" && pages > 0 && chars < 40 * pages) unreadable = true;
+
+  // Scans and photos: read the text with OCR when the server has it.
+  let fromOcr = false;
+  if (unreadable) {
+    const scanned = await ocrText(data, ext);
+    const scannedClean = scanned ? norm(scanned.text) : "";
+    if (scanned && scannedClean.replace(/\s/g, "").length >= 60) {
+      clean = scannedClean;
+      chars = clean.replace(/\s/g, "").length;
+      pages = pages || scanned.pages;
+      unreadable = false;
+      fromOcr = true;
+    }
+  }
 
   if (unreadable) {
     notes.push(
@@ -106,6 +121,12 @@ export async function checkDocument(
   const status: DocCheck["status"] =
     expected > 0 && missing.length === expected && !courseCodeFound ? "failed" : notes.length > 0 ? "warnings" : "passed";
   if (status === "failed") notes.unshift(`This does not look like a ${type?.label ?? "document of this type"}.`);
+
+  if (fromOcr) {
+    // Text read from a scan can have small mistakes, so a scan is never failed automatically: the HOD decides.
+    notes.unshift("Read from a scanned copy (OCR). Small reading mistakes are possible, so the HOD should confirm.");
+    return { status: "warnings", notes, pages, textChars: chars, courseCodeFound };
+  }
 
   return { status, notes, pages, textChars: chars, courseCodeFound };
 }

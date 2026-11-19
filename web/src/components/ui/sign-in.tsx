@@ -48,6 +48,10 @@ export interface SignInPageProps {
   children?: React.ReactNode;
   /** Replaces the "New to our platform? Create Account" line. */
   footer?: React.ReactNode;
+  /** Shown between the description and the form (e.g. a Log in / Register switch). */
+  beforeForm?: React.ReactNode;
+  /** Replaces the email and password form (e.g. a registration form). */
+  form?: React.ReactNode;
   resetPasswordLabel?: string;
   onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
   /** The Google button is shown only when this is set. */
@@ -95,6 +99,8 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   pending = false,
   children,
   footer,
+  beforeForm,
+  form,
   resetPasswordLabel = "Reset password",
   onSignIn,
   onGoogleSignIn,
@@ -113,6 +119,9 @@ export const SignInPage: React.FC<SignInPageProps> = ({
             <h1 className="animate-element animate-delay-100 text-[clamp(30px,min(9vw,6.2vh),48px)] font-semibold leading-tight">{title}</h1>
             <p className="animate-element animate-delay-200 text-muted-foreground">{description}</p>
 
+            {beforeForm && <div className="animate-element animate-delay-200">{beforeForm}</div>}
+
+            {form ?? (
             <form className="space-y-[clamp(12px,2.2vh,20px)]" onSubmit={onSignIn} noValidate>
               <div className="animate-element animate-delay-300">
                 <label htmlFor="signin-email" className="text-sm font-medium text-muted-foreground">
@@ -194,6 +203,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 Sign In
               </button>
             </form>
+            )}
 
             {onGoogleSignIn && (
               <>
