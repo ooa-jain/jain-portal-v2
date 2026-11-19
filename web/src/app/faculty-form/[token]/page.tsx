@@ -12,7 +12,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <>
       <header className="border-b bg-card">
         <div className="mx-auto flex h-16 w-full max-w-3xl items-center gap-3 px-4 sm:px-6">
-          <Image src="/brand/jain.png" alt="JAIN (Deemed-to-be University)" width={138} height={40} className="h-9 w-auto" priority />
+          <Image src="/brand/jain-logo.png" alt="JAIN (Deemed-to-be University)" width={900} height={223} className="h-10 w-auto" priority />
           <span className="border-l pl-3 text-[13px] font-bold uppercase tracking-[0.08em] text-primary">Jain OOA Portal</span>
         </div>
       </header>

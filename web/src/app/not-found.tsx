@@ -7,11 +7,10 @@ export default function NotFound() {
   return (
     <main className="relative flex flex-1 flex-col overflow-hidden bg-background">
       <header className="relative flex items-center justify-between px-6 py-5">
-        <Link href="/" className="flex items-center gap-2 text-[17px] font-bold text-foreground">
-          <Image src="/brand/jgi-icon-192.png" alt="" width={28} height={28} className="rounded-full" />
-          Jain OOA Portal
+        <Link href="/" aria-label="Jain OOA Portal home">
+          <Image src="/brand/jain-logo.png" alt="JAIN (Deemed-to-be University)" width={900} height={223} className="h-11 w-auto" />
         </Link>
-        <Link href="/login" className="rounded-full bg-primary px-4 py-2 text-[13px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(35,38,63,.5)] hover:bg-[#f5f6f7]">
+        <Link href="/login" className="rounded-full bg-primary px-4 py-2 text-[13px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(35,38,63,.5)] hover:bg-[#3a4450]">
           Log in
         </Link>
       </header>

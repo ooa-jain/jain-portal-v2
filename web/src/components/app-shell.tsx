@@ -245,7 +245,7 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
             {collapsed ? (
               <Image src="/brand/jgi-icon-192.png" alt="" width={34} height={34} className="mx-auto rounded-full" />
             ) : (
-              <Image src="/brand/jain.png" alt="JAIN (Deemed-to-be University)" width={110} height={32} className="h-8 w-auto" priority />
+              <Image src="/brand/jain-logo.png" alt="JAIN (Deemed-to-be University)" width={900} height={223} className="h-10 w-auto" priority />
             )}
           </Link>
           <button
@@ -265,7 +265,7 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
       {drawer && (
         <div className="fixed inset-0 z-50 flex flex-col bg-white lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="flex h-[60px] items-center justify-between border-b px-4">
-            <Image src="/brand/jain.png" alt="JAIN (Deemed-to-be University)" width={92} height={28} className="h-7 w-auto" />
+            <Image src="/brand/jain-logo.png" alt="JAIN (Deemed-to-be University)" width={900} height={223} className="h-9 w-auto" />
             <button type="button" aria-label="Close menu" onClick={() => setDrawer(false)} className="flex size-10 items-center justify-center rounded-lg hover:bg-hover">
               <X className="size-5" />
             </button>
@@ -279,7 +279,7 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
         {/* phone bar */}
         <div className="sticky top-0 z-30 flex h-[60px] items-center justify-between border-b bg-white px-4 lg:hidden">
           <Link href="/" aria-label="Jain OOA Portal home">
-            <Image src="/brand/jain.png" alt="JAIN (Deemed-to-be University)" width={92} height={28} className="h-7 w-auto" />
+            <Image src="/brand/jain-logo.png" alt="JAIN (Deemed-to-be University)" width={900} height={223} className="h-9 w-auto" />
           </Link>
           <button type="button" aria-label="Open menu" onClick={() => setDrawer(true)} className="flex size-10 items-center justify-center rounded-lg text-[#374151] hover:bg-hover">
             <Menu className="size-5" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, FlaskConical, GraduationCap, Loader2, UserRound } from "lucide-react";
 import { signInAsDemo, signInWithPassword } from "@/app/actions/auth";
@@ -39,8 +40,16 @@ export function SignInCard({ domain, demo }: { domain: string; demo: boolean }) 
 
   return (
     <div className="mx-auto w-full max-w-[460px]">
+      <Image
+        src="/brand/jain-logo.png"
+        alt="JAIN (Deemed-to-be University)"
+        width={900}
+        height={223}
+        priority
+        className="rta-in mx-auto mb-[clamp(8px,1.8vh,22px)] h-[clamp(34px,6vh,46px)] w-auto [--d:300ms]"
+      />
       {demo && (
-        <div className="rta-in mb-[clamp(16px,3vh,28px)] rounded-2xl border border-dashed border-[#c8c8ca] bg-[#fafafa] p-3 [--d:380ms]">
+        <div className="rta-in mb-[clamp(10px,2.4vh,28px)] rounded-2xl border border-dashed border-[#c8c8ca] bg-[#fafafa] p-3 [--d:380ms]">
           <p className="flex items-center gap-1.5 px-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#5a5a5b]">
             <FlaskConical className="size-3.5" /> Demo login for test users
           </p>

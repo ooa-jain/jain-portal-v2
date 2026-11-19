@@ -15,13 +15,20 @@ const globalForMongo = globalThis as unknown as {
 
 function getClient(): MongoClient {
   if (!globalForMongo.__mongoClient) {
-    globalForMongo.__mongoClient = new MongoClient(env.mongoUri, {
+    const client = new MongoClient(env.mongoUri, {
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 5000,
       socketTimeoutMS: 15000,
       maxIdleTimeMS: 60000,
       maxPoolSize: 10,
     });
+    // If the database was unreachable, the driver closes this client for good
+    // ("Topology is closed"). Forget it so the next request starts a new one,
+    // instead of every page failing until the app is restarted.
+    client.on("topologyClosed", () => {
+      if (globalForMongo.__mongoClient === client) globalForMongo.__mongoClient = undefined;
+    });
+    globalForMongo.__mongoClient = client;
   }
   return globalForMongo.__mongoClient;
 }
