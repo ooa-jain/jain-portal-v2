@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, FlaskConical, GraduationCap, Loader2, UserRound } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { signInAsDemo, signInWithPassword } from "@/app/actions/auth";
 import type { DemoRole } from "@/lib/constants";
+
+const field =
+  "h-12 w-full border-0 border-b-2 border-[#d4d7dd] bg-transparent px-0 text-[17px] text-[#1d2330] placeholder:text-[#a0a5ad] focus:border-[#1d2330] focus:outline-none";
 
 export function SignInCard({ domain, demo }: { domain: string; demo: boolean }) {
   const router = useRouter();
@@ -39,50 +41,15 @@ export function SignInCard({ domain, demo }: { domain: string; demo: boolean }) 
   }
 
   return (
-    <div className="mx-auto w-full max-w-[460px]">
-      <Image
-        src="/brand/jain-logo.png"
-        alt="JAIN (Deemed-to-be University)"
-        width={900}
-        height={223}
-        priority
-        className="rta-in mx-auto mb-[clamp(8px,1.8vh,22px)] h-[clamp(34px,6vh,46px)] w-auto [--d:300ms]"
-      />
-      {demo && (
-        <div className="rta-in mb-[clamp(10px,2.4vh,28px)] rounded-2xl border border-dashed border-[#c8c8ca] bg-[#fafafa] p-3 [--d:380ms]">
-          <p className="flex items-center gap-1.5 px-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#5a5a5b]">
-            <FlaskConical className="size-3.5" /> Demo login for test users
-          </p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {(
-              [
-                ["hod", "Demo HOD", UserRound],
-                ["faculty", "Demo Faculty", GraduationCap],
-              ] as const
-            ).map(([role, label, Icon]) => (
-              <button
-                key={role}
-                type="button"
-                disabled={busy !== ""}
-                onClick={() => go(role, () => signInAsDemo(role))}
-                className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[#d4d7dd] bg-white text-[14px] font-semibold text-[#2c3343] transition hover:border-[#2c3343] hover:shadow-[0_3px_10px_rgba(0,0,0,.06)] disabled:opacity-60"
-              >
-                {busy === role ? <Loader2 className="size-4 animate-spin" /> : <Icon className="size-4" />}
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="w-full max-w-[420px]">
+      <p className="rta-in text-[13px] font-semibold uppercase tracking-[0.16em] text-[#8a9099] [--d:200ms]">Jain OOA Portal</p>
+      <h1 className="rta-in mt-3 text-[clamp(32px,min(8vw,5.6vh),42px)] font-[650] leading-[1.05] tracking-[-0.04em] text-[#1d2330] [--d:300ms]">
+        Good to see
+        <br />
+        you again.
+      </h1>
 
-      <h2 className="rta-in text-center text-[clamp(30px,min(8.8vw,5.4vh),40px)] font-[600] tracking-[-0.05em] text-[#2c3343] [--d:470ms]">
-        Welcome Back!
-      </h2>
-      <p className="rta-in mt-1.5 text-center text-[15px] tracking-[-0.012em] text-[#797979] [--d:570ms] md:text-[17px]">
-        <b className="text-[#2c3343]">Log in</b> to continue to the Jain OOA Portal.
-      </p>
-
-      <form onSubmit={submit} className="mt-[clamp(18px,3.4vh,32px)] flex flex-col gap-3" noValidate>
+      <form onSubmit={submit} className="mt-[clamp(20px,4vh,36px)] flex flex-col gap-[clamp(14px,2.6vh,22px)]" noValidate>
         <input
           type="email"
           autoComplete="email"
@@ -90,10 +57,10 @@ export function SignInCard({ domain, demo }: { domain: string; demo: boolean }) 
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder={`Eg. name@${domain}`}
-          className="rta-in h-[clamp(48px,7vh,58px)] w-full rounded-xl border-[1.5px] border-[#acacae] bg-[#fafafa] px-[17px] text-[16px] text-[#000] placeholder:text-[#606060] focus:border-[#2c3343] focus:outline-none [--d:720ms] md:text-[15.5px]"
+          placeholder={`name@${domain}`}
+          className={`rta-in ${field} [--d:420ms]`}
         />
-        <span className="rta-in relative block [--d:790ms]">
+        <span className="rta-in relative block [--d:490ms]">
           <input
             type={show ? "text" : "password"}
             autoComplete="current-password"
@@ -102,29 +69,29 @@ export function SignInCard({ domain, demo }: { domain: string; demo: boolean }) 
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
-            className="h-[clamp(48px,7vh,58px)] w-full rounded-xl border-[1.5px] border-transparent bg-[#f4f4f5] px-[18px] pr-12 text-[16px] text-[#000] placeholder:text-[#606060] focus:border-[#2c3343] focus:outline-none md:text-[15.5px]"
+            className={`${field} pr-10`}
           />
           <button
             type="button"
             onClick={() => setShow((v) => !v)}
             aria-label={show ? "Hide password" : "Show password"}
-            className="absolute right-2.5 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-[#606060] hover:bg-black/5 hover:text-[#000]"
+            className="absolute right-0 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-[#6b7280] hover:text-[#1d2330]"
           >
             {show ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
           </button>
         </span>
 
-        <div className="rta-in flex items-center justify-between px-1 text-[13.5px] [--d:840ms]">
-          <label className="flex cursor-pointer items-center gap-2 text-[#2c3343]">
-            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="size-4 accent-[#283139]" />
-            Keep me signed in
+        <div className="rta-in flex items-center justify-between text-[14px] [--d:560ms]">
+          <label className="flex cursor-pointer items-center gap-2 text-[#1d2330]">
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="size-4 accent-[#1d2330]" />
+            Remember me
           </label>
-          <button type="button" onClick={() => setHelp((v) => !v)} aria-expanded={help} className="font-bold text-[#000] underline decoration-2 underline-offset-[3px]">
+          <button type="button" onClick={() => setHelp((v) => !v)} aria-expanded={help} className="text-[#6b7280] hover:text-[#1d2330]">
             Forgot password?
           </button>
         </div>
         {help && (
-          <p className="rounded-xl bg-[#f4f4f5] px-4 py-2.5 text-[13px] text-[#2c3343]">
+          <p className="rounded-xl bg-[#f3f4f6] px-4 py-2.5 text-[13px] text-[#1d2330]">
             Passwords are issued by the Office of Academic Affairs. Ask them to reset yours.
           </p>
         )}
@@ -137,22 +104,45 @@ export function SignInCard({ domain, demo }: { domain: string; demo: boolean }) 
         <button
           type="submit"
           disabled={busy !== "" || !email || !password}
-          className="rta-in mt-1 flex h-[clamp(50px,7.4vh,60px)] items-center justify-center gap-2.5 rounded-full bg-[linear-gradient(180deg,#283139_0%,#293340_100%)] text-[16px] tracking-[0.2px] text-white shadow-[0_8px_20px_rgba(18,26,34,.16),0_2px_5px_rgba(18,26,34,.10)] transition-[transform,filter,box-shadow] duration-200 [--d:930ms] hover:brightness-[1.12] active:translate-y-px disabled:opacity-60"
+          className="rta-in group mt-1 flex h-14 items-center justify-between rounded-full bg-[#1d2330] pl-7 pr-2 text-[16px] font-semibold text-white transition hover:bg-[#283139] disabled:opacity-60 [--d:640ms]"
         >
-          {busy === "password" ? <Loader2 className="size-4 animate-spin" /> : null}
-          Login
-          {busy !== "password" && (
-            <svg viewBox="0 0 22 22" aria-hidden className="w-[13px]">
-              <path d="M3 11h15.4M11 3.3l7.7 7.7-7.7 7.7" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </svg>
-          )}
+          Sign in
+          <span className="flex size-10 items-center justify-center rounded-full bg-white/15 transition group-hover:translate-x-0.5">
+            {busy === "password" ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
+          </span>
         </button>
       </form>
 
-      <p className="rta-in mt-[clamp(16px,3vh,28px)] text-center text-[14px] text-[#0a0a0a] [--d:1060ms] md:text-[15px]">
-        Don&#8217;t have an account? <b className="underline decoration-2 underline-offset-[3px]">Ask the Office of Academic Affairs</b>
+      {demo && (
+        <div className="rta-in [--d:740ms]">
+          <div className="my-[clamp(16px,3vh,26px)] flex items-center gap-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#a0a5ad]">
+            <i className="h-px flex-1 bg-[#e4e6ea]" /> or try a demo <i className="h-px flex-1 bg-[#e4e6ea]" />
+          </div>
+          <div className="flex gap-2">
+            {(
+              [
+                ["hod", "Demo HOD"],
+                ["faculty", "Demo Faculty"],
+              ] as const
+            ).map(([role, label]) => (
+              <button
+                key={role}
+                type="button"
+                disabled={busy !== ""}
+                onClick={() => go(role, () => signInAsDemo(role))}
+                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-[#d4d7dd] text-[14px] font-semibold text-[#1d2330] transition hover:border-[#1d2330] disabled:opacity-60"
+              >
+                {busy === role && <Loader2 className="size-4 animate-spin" />}
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="rta-in mt-[clamp(16px,3vh,28px)] text-[13px] leading-relaxed text-[#8a9099] [--d:820ms]">
+        No account? Ask the Office of Academic Affairs. Faculty filling a checklist can use the link their HOD shared, without signing in.
       </p>
-      <p className="mt-2 text-center text-[12px] text-[#797979]">Faculty filling a checklist do not need to sign in: open the link your HOD shared.</p>
     </div>
   );
 }
