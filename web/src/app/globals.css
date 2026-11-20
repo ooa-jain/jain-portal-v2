@@ -1,0 +1,338 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Jain OOA Portal: a clean, professional look. White surfaces on a light
+   neutral ground, charcoal for text and actions, one quiet blue for links. */
+:root {
+  /* Board of Studies palette: a neutral grey ground and menu, white surfaces,
+     navy for what matters, one blue for links. */
+  --background: #f4f5f7;
+  --foreground: #1f2937;
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --primary: #0e2a5c;
+  --primary-foreground: #ffffff;
+  --secondary: #eef1f6;
+  --secondary-foreground: #0e2a5c;
+  --muted: #f4f5f7;
+  --muted-foreground: #6b7280;
+  --accent: #eef1f6;
+  --accent-foreground: #0e2a5c;
+  --accent-soft: #f2f4f8;
+  --link: #1d4ed8;
+  --destructive: #b42318;
+  --destructive-soft: #fef3f2;
+  --success: #067647;
+  --success-soft: #ecfdf3;
+  --warning: #93370d;
+  --warning-soft: #fdf6e3;
+  --border: #e4e7ec;
+  --input: #d0d5dd;
+  --ring: #2563eb;
+  --hover: #e9ebef;
+  /* menu, top bar and tabs */
+  --sidebar: #f4f5f7;
+  --sidebar-foreground: #374151;
+  --sidebar-primary: #0e2a5c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #0e2a5c;
+  --sidebar-border: #e4e7ec;
+  --sidebar-ring: #2563eb;
+  --topbar: #ffffff;
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
+  /* the dark "continue" card */
+  --hero: #0f2440;
+  --hero-foreground: #ffffff;
+  --page-grid: rgba(15, 36, 64, 0.045);
+  --radius: 0.75rem;
+}
+
+/* Dark: the Board of Studies dark palette. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #15181d;
+  --foreground: #dbe3ee;
+  --card: #1d2129;
+  --card-foreground: #dbe3ee;
+  --primary: #3874e1;
+  --primary-foreground: #ffffff;
+  --secondary: #252b35;
+  --secondary-foreground: #dbe3ee;
+  --muted: #191d23;
+  --muted-foreground: #a9b0be;
+  --accent: #252b35;
+  --accent-foreground: #dbe3ee;
+  --accent-soft: #1f252e;
+  --link: #a6c1f2;
+  --destructive: #f0857a;
+  --destructive-soft: #3a1f1f;
+  --success: #6fd39b;
+  --success-soft: #16301f;
+  --warning: #f2cd73;
+  --warning-soft: #352c16;
+  --border: #2e3542;
+  --input: #3a4252;
+  --ring: #3874e1;
+  --hover: #262c36;
+  --sidebar: #121519;
+  --sidebar-foreground: #ced8e6;
+  --sidebar-primary: #3874e1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #20252e;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #262c36;
+  --sidebar-ring: #3874e1;
+  --topbar: #181b21;
+  --popover: #1d2129;
+  --popover-foreground: #dbe3ee;
+  --hero: #161d29;
+  --hero-foreground: #ffffff;
+  --page-grid: rgba(255, 255, 255, 0.035);
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-link: var(--link);
+  --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-hover: var(--hover);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-topbar: var(--topbar);
+  --color-hero: var(--hero);
+  --color-hero-foreground: var(--hero-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: "Roboto Variable", "Roboto", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* A painted brush-stroke highlight behind a key word or two in a title. */
+/* A painted brush-stroke highlight behind a key word (from the Board of Studies portal). */
+.hl {
+  display: inline-block;
+  padding: 0.06em 0.45em 0.1em;
+  margin: 0 -0.05em;
+  line-height: 1.15;
+  color: #1f2937;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20200%2040'%20preserveAspectRatio='none'%3E%3Cpath%20fill='%23a3d3aa'%20d='M5%209C40%204%2090%207%20128%205C158%204%20182%203%20196%207L191%2013L198%2019L190%2025L197%2031C160%2037%20112%2034%2072%2036C42%2037%2020%2036%206%2034L11%2028L2%2022L9%2016Z'/%3E%3Cpath%20fill='none'%20stroke='%23fff'%20stroke-opacity='.28'%20stroke-width='1.6'%20d='M14%2014C60%2011%20120%2012%20182%2011M20%2024C80%2022%20130%2024%20186%2023M30%2030C90%2029%20140%2031%20176%2029'/%3E%3C/svg%3E");
+}
+/* Page titles stay plain; only the welcome name is painted. */
+h1 .hl:not(.hl-on) { background-image: none; padding: 0; margin: 0; color: inherit; }
+
+/* A faint graph-paper grid behind pages (as on the Board of Studies portal). */
+.page-grid {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(0deg, transparent 24%, var(--page-grid) 25%, var(--page-grid) 26%, transparent 27%, transparent 74%, var(--page-grid) 75%, var(--page-grid) 76%, transparent 77%, transparent),
+    linear-gradient(90deg, transparent 24%, var(--page-grid) 25%, var(--page-grid) 26%, transparent 27%, transparent 74%, var(--page-grid) 75%, var(--page-grid) 76%, transparent 77%, transparent);
+  background-size: 55px 55px;
+}
+
+/* In dark mode, logos with dark lettering switch to the light version. */
+[data-theme="dark"] img[src*="jain-logo.png"] { content: url("/brand/jain-logo-light.png"); }
+
+/* Light / dark switch: a pill with a knob carrying a sun or a moon. */
+.theme-toggle { display: inline-flex; align-items: center; flex: none; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 999px; }
+.tt-track { position: relative; display: block; width: 46px; height: 26px; border-radius: 999px; background: #e4e7ec; border: 1px solid #d0d5dd; transition: background 0.35s ease, border-color 0.35s ease; }
+.tt-knob { position: absolute; top: 2px; left: 2px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #fff; color: #b45309; box-shadow: 0 1px 3px rgba(16, 24, 40, 0.25); transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1), background 0.35s ease, color 0.35s ease; }
+.tt-knob svg { position: absolute; width: 13px; height: 13px; transition: opacity 0.25s ease, transform 0.35s ease; }
+.tt-moon { opacity: 0; transform: rotate(-60deg) scale(0.6); }
+.theme-toggle[aria-pressed="true"] .tt-track { background: #111827; border-color: #374151; }
+.theme-toggle[aria-pressed="true"] .tt-knob { transform: translateX(20px); background: #f8fafc; color: #1e3a8a; }
+.theme-toggle[aria-pressed="true"] .tt-sun { opacity: 0; transform: rotate(60deg) scale(0.6); }
+.theme-toggle[aria-pressed="true"] .tt-moon { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .tt-track, .tt-knob, .tt-knob svg { transition: none; } }
+
+/* The sign-in scene: three stacked panels on a navy stage. */
+.login-stage {
+  background: linear-gradient(180deg, #8fbfe9 0%, #c4def6 60%, #e8f3fd 100%);
+  box-shadow: 0 30px 60px -36px rgba(14, 42, 92, 0.8);
+}
+.login-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+.lp {
+  position: absolute;
+  padding: 22px 16px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 30px 50px -24px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  transform-style: preserve-3d;
+}
+.lp-blue { background: linear-gradient(160deg, rgba(88, 112, 240, 0.95), rgba(47, 79, 216, 0.9)); }
+.lp-slate { background: linear-gradient(160deg, rgba(148, 163, 184, 0.9), rgba(71, 85, 105, 0.88)); }
+.lp-glass { background: linear-gradient(160deg, rgba(232, 237, 247, 0.9), rgba(160, 174, 198, 0.78)); }
+.lp-card {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 12px 40px 12px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.6);
+}
+.lp-card i { display: block; height: 4px; border-radius: 4px; background: #c9d2e3; width: 88%; }
+.lp-card i + i { width: 55%; }
+
+/* Mascot motion */
+@keyframes mascot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes mascot-shadow { 0%, 100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(0.88); opacity: 0.75; } }
+@keyframes mascot-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes mascot-wave { 0%, 60%, 100% { transform: rotate(0deg); } 10%, 30% { transform: rotate(-16deg); } 20%, 40% { transform: rotate(10deg); } }
+@keyframes mascot-scratch { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-7deg); } }
+@keyframes mascot-question { 0%, 100% { transform: translateY(0) rotate(8deg); opacity: 0.75; } 50% { transform: translateY(-6px) rotate(-4deg); opacity: 1; } }
+@keyframes mascot-tassel { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(5deg); } }
+@keyframes cloud-drift { from { transform: translateX(0); } to { transform: translateX(40px); } }
+.mascot .mascot-float { animation: mascot-float 4s ease-in-out infinite; }
+.mascot .mascot-shadow { animation: mascot-shadow 4s ease-in-out infinite; transform-origin: 130px 272px; transform-box: view-box; }
+.mascot .mascot-blink { animation: mascot-blink 5s infinite; transform-origin: 130px 140px; transform-box: view-box; }
+.mascot .mascot-wave { animation: mascot-wave 2.8s ease-in-out infinite; transform-box: view-box; }
+.mascot .mascot-scratch { animation: mascot-scratch 0.9s ease-in-out infinite; transform-box: view-box; }
+.mascot .mascot-question { animation: mascot-question 2.2s ease-in-out infinite; transform-origin: 244px 44px; transform-box: view-box; }
+.mascot .mascot-tassel { animation: mascot-tassel 3s ease-in-out infinite; transform-origin: 130px 44px; transform-box: view-box; }
+@keyframes login-chip { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes login-ring { 0% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.7; } 50% { transform: translate(-50%, -50%) scale(1.03); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.7; } }
+.login-chip { animation: login-chip 5s ease-in-out infinite; }
+.login-ring { animation: login-ring 6s ease-in-out infinite; }
+/* Sign-in entrance (Real-Time Alerts): card, then headline, then the form, once. */
+@keyframes rta-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes rta-clip { from { opacity: 0; transform: translateY(16px); clip-path: inset(100% 0 0 0); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); } }
+.rta-in { animation: rta-in 560ms cubic-bezier(.16, 1, .3, 1) var(--d, 0ms) both; }
+.rta-clip { animation: rta-clip 760ms cubic-bezier(.16, 1, .3, 1) var(--d, 0ms) both; }
+.cloud-drift { animation: cloud-drift 18s ease-in-out infinite alternate; }
+.cloud-drift-slow { animation: cloud-drift 28s ease-in-out infinite alternate-reverse; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* Sign-in page (components/ui/sign-in.tsx): elements fade and slide in, in order. */
+@keyframes fadeSlideIn {
+  to { opacity: 1; filter: blur(0px); transform: translateY(0px); }
+}
+@keyframes slideRightIn {
+  to { opacity: 1; filter: blur(0px); transform: translateX(0px); }
+}
+@keyframes testimonialIn {
+  to { opacity: 1; filter: blur(0px); transform: translateY(0px) scale(1); }
+}
+.animate-element { opacity: 0; filter: blur(4px); transform: translateY(10px); animation: fadeSlideIn 0.6s ease-out forwards; }
+.animate-slide-right { opacity: 0; filter: blur(4px); transform: translateX(30px); animation: slideRightIn 0.8s ease-out forwards; }
+.animate-testimonial { opacity: 0; filter: blur(4px); transform: translateY(20px) scale(0.95); animation: testimonialIn 0.6s ease-out forwards; }
+.animate-delay-100 { animation-delay: 0.1s; }
+.animate-delay-200 { animation-delay: 0.2s; }
+.animate-delay-300 { animation-delay: 0.3s; }
+.animate-delay-400 { animation-delay: 0.4s; }
+.animate-delay-500 { animation-delay: 0.5s; }
+.animate-delay-600 { animation-delay: 0.6s; }
+.animate-delay-700 { animation-delay: 0.7s; }
+.animate-delay-800 { animation-delay: 0.8s; }
+.animate-delay-900 { animation-delay: 0.9s; }
+.animate-delay-1000 { animation-delay: 1s; }
+.animate-delay-1200 { animation-delay: 1.2s; }
+.animate-delay-1400 { animation-delay: 1.4s; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-element, .animate-slide-right, .animate-testimonial { animation: none; opacity: 1; filter: none; transform: none; }
+}
+
+.custom-checkbox {
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid var(--input);
+  border-radius: 0.35rem;
+  background: var(--card);
+  display: inline-grid;
+  place-content: center;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.custom-checkbox::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.6rem;
+  transform: scale(0);
+  transition: transform 0.15s ease-in-out;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  background: var(--primary-foreground);
+}
+.custom-checkbox:checked { background: var(--primary); border-color: var(--primary); }
+.custom-checkbox:checked::before { transform: scale(1); }
+
+/* Hide scrollbars on the tab strip and side menu (they still scroll). */
+.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Dark mode: navy headings and labels become light text (buttons keep their blue). */
+:root[data-theme="dark"] .text-primary { color: #e6ecf5; }
+:root[data-theme="dark"] .hl.hl-on { color: #111827; }
+
+/* Thin bar at the top while a page is on its way. */
+@keyframes nav-progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+.nav-progress { animation: nav-progress 1.1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .nav-progress { animation: none; width: 100%; } }

@@ -1,0 +1,89 @@
+import { requireUser } from "@/lib/auth";
+import { collections } from "@/lib/db";
+import { getSettings, listNotifications, toObjectId } from "@/lib/data";
+import { moduleAccess } from "@/lib/access";
+import { LISTED_MODULE_KEYS, MODULES } from "@/lib/constants";
+import { AppShell, type NavGroup } from "@/components/app-shell";
+
+export default async function PortalLayout({ children }: LayoutProps<"/">) {
+  const user = await requireUser();
+  const [settings, notifications] = await Promise.all([getSettings(), listNotifications(10)]);
+
+  const workspace: NavGroup = { title: "Workspace", items: [{ href: "/", label: "Home", icon: "dashboard" }] };
+  for (const key of LISTED_MODULE_KEYS) {
+    if (moduleAccess(user, settings, key).open) {
+      workspace.items.push({ href: MODULES[key].href, label: MODULES[key].label, icon: key });
+    }
+  }
+  // Innovation & Emerging Areas is not in the menu; it opens only from its address.
+  // Hidden items still name the tab when one of its pages is open.
+  if (!user.isFaculty) {
+    workspace.items.push({ href: MODULES.iea.href, label: MODULES.iea.label, icon: "iea", hidden: true });
+  }
+  // The latest academic year offered in forms, e.g. "2027-28" -> "2027–28".
+  const cycle = [...settings.enabled_years].sort().pop()?.replace("-", "–") ?? "";
+
+  // Documents waiting for this user: HODs see ones to review; uploaders see ones to fix.
+  const docFilter = user.isAdmin
+    ? { "review.status": "pending" }
+    : user.isFaculty || !user.department
+      ? { uploaded_by_email: user.email, "review.status": { $in: ["returned", "not_sent"] } }
+      : { dept: user.department, "review.status": "pending" };
+  const docBadge = await collections.documents().countDocuments(docFilter);
+  if (user.isFaculty) {
+    const answered = await collections.facultySubmissions().distinct("parent_submission_id", { faculty_email: user.email });
+    const waiting = user.department
+      ? await collections.submissions().countDocuments({
+          "identity.dept": user.department,
+          share_token: { $exists: true, $ne: "" },
+          _id: { $nin: answered.map((id) => toObjectId(String(id))).filter((id) => id !== null) },
+        })
+      : 0;
+    workspace.items.push({ href: "/checklists", label: "My Checklists", icon: "submissions", badge: waiting });
+  }
+  workspace.items.push({ href: "/documents", label: "Document Library", icon: "documents", badge: docBadge });
+  workspace.items.push({ href: "/profile", label: "Profile & Password", icon: "profile" });
+
+  const reports: NavGroup = user.isFaculty
+    ? { title: "Reports", items: [] }
+    : {
+        title: "Reports",
+        items: [
+          { href: "/analytics", label: "Analysis", icon: "analytics" },
+          { href: "/analysis", label: "Faculty Responses", icon: "analysis" },
+          { href: "/iea-analysis", label: "IEA Analysis", icon: "ieaAnalysis", hidden: true },
+        ],
+      };
+  const groups = reports.items.length ? [workspace, reports] : [workspace];
+
+  if (user.isAdmin && !user.impersonatedBy) {
+    const [accessPending, editPending] = await Promise.all([
+      collections.accessRequests().countDocuments({ status: "pending" }),
+      collections.submissions().countDocuments({ "edit_request.status": "pending" }),
+    ]);
+    groups.push({
+      title: "Administration",
+      items: [
+        { href: "/admin", label: "Overview", icon: "admin" },
+        { href: "/admin/submissions", label: "Submissions", icon: "submissions" },
+        { href: "/admin/iea", label: "IEA Submissions", icon: "iea", hidden: true },
+        { href: "/admin/users", label: "Users & Access", icon: "users" },
+        { href: "/admin/requests", label: "Requests", icon: "requests", badge: accessPending + editPending },
+        { href: "/admin/notifications", label: "Notifications", icon: "notifications" },
+        { href: "/admin/settings", label: "Settings", icon: "settings" },
+      ],
+    });
+  }
+
+  return (
+    <AppShell
+      groups={groups}
+      user={{ name: user.name, email: user.email, department: user.department, isAdmin: user.isAdmin, isFaculty: user.isFaculty, isDemo: user.isDemo }}
+      impersonatedBy={user.impersonatedBy}
+      notifications={notifications}
+      cycle={cycle}
+    >
+      {children}
+    </AppShell>
+  );
+}
