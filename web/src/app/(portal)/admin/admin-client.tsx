@@ -19,7 +19,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { EmptyRow, Notice } from "@/components/ui/page";
 import { Switch } from "@/components/ui/switch";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { DEPARTMENTS, IEA_SCHOOLS, IEA_YEARS, MODULES, MODULE_KEYS, FORM_MODULE_KEYS } from "@/lib/constants";
+import { DEPARTMENTS, IEA_SCHOOLS, IEA_YEARS, MODULES, MODULE_KEYS, FORM_MODULE_KEYS, CAMPUSES } from "@/lib/constants";
 import type { AccessRequest, ActionResult, GlobalSettings, IeaSubmission, PortalNotification, PortalUser, Submission } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 
@@ -49,44 +49,62 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 
 // ── Readiness / closure submissions ─────────────────────────────────
 
-export function SubmissionsAdmin({ submissions }: { submissions: Submission[] }) {
-  const [query, setQuery] = useState("");
-  const [module, setModule] = useState("");
-  const [status, setStatus] = useState("");
-  const [campus, setCampus] = useState("");
+/** Submissions, searched and paged on the server (100 a page). */
+export function SubmissionsAdmin({
+  submissions,
+  total,
+  page,
+  pageSize,
+  initial,
+}: {
+  submissions: Submission[];
+  total: number;
+  page: number;
+  pageSize: number;
+  initial: { q: string; module: string; status: string; campus: string };
+}) {
+  const router = useRouter();
+  const [query, setQuery] = useState(initial.q);
+  const [module, setModule] = useState(initial.module);
+  const [status, setStatus] = useState(initial.status);
+  const [campus, setCampus] = useState(initial.campus);
   const { pending, run } = useAction();
+  const [searching, startSearch] = useTransition();
+  const campuses = CAMPUSES;
+  const filtered = submissions;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
 
-  const campuses = useMemo(() => [...new Set(submissions.map((s) => s.identity.campus).filter(Boolean))].sort(), [submissions]);
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return submissions.filter((s) => {
-      if (module && s.form_type !== module) return false;
-      if (status && (status === "draft") !== s._draft) return false;
-      if (campus && s.identity.campus !== campus) return false;
-      if (!q) return true;
-      const i = s.identity;
-      return [i.dept, i.hodName, i.hodEmail, i.semester, i.submitterEmail].some((v) => v.toLowerCase().includes(q));
-    });
-  }, [submissions, query, module, status, campus]);
+  function go(next: Partial<{ q: string; module: string; status: string; campus: string; page: number }>) {
+    const values = { q: query, module, status, campus, ...next };
+    const params = new URLSearchParams();
+    for (const key of ["q", "module", "status", "campus"] as const) if (values[key]) params.set(key, String(values[key]).trim());
+    if (next.page && next.page > 1) params.set("page", String(next.page));
+    startSearch(() => router.replace(`/admin/submissions${params.size ? `?${params}` : ""}`));
+  }
 
   return (
     <Card>
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
-        <SearchBox value={query} onChange={setQuery} placeholder="Search department, HOD, semester or email" />
-        <Select aria-label="Module" className="w-auto" value={module} onChange={(e) => setModule(e.target.value)}>
+        <form className="flex min-w-56 flex-1" onSubmit={(e) => { e.preventDefault(); go({ q: query, page: 1 }); }}>
+          <SearchBox value={query} onChange={setQuery} placeholder="Search department, HOD, semester or email, then press Enter" />
+        </form>
+        <Select aria-label="Module" className="w-auto" value={module} onChange={(e) => { setModule(e.target.value); go({ module: e.target.value, page: 1 }); }}>
           <option value="">All modules</option>
           {FORM_MODULE_KEYS.map((key) => <option key={key} value={key}>{MODULES[key].label}</option>)}
         </Select>
-        <Select aria-label="Campus" className="w-auto" value={campus} onChange={(e) => setCampus(e.target.value)}>
+        <Select aria-label="Campus" className="w-auto" value={campus} onChange={(e) => { setCampus(e.target.value); go({ campus: e.target.value, page: 1 }); }}>
           <option value="">All campuses</option>
           {campuses.map((c) => <option key={c}>{c}</option>)}
         </Select>
-        <Select aria-label="Status" className="w-auto" value={status} onChange={(e) => setStatus(e.target.value)}>
+        <Select aria-label="Status" className="w-auto" value={status} onChange={(e) => { setStatus(e.target.value); go({ status: e.target.value, page: 1 }); }}>
           <option value="">Any status</option>
           <option value="final">Submitted</option>
           <option value="draft">Draft</option>
         </Select>
-        <span className="ml-auto text-xs text-muted-foreground">{filtered.length} of {submissions.length}</span>
+        <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+          {searching && <Loader2 className="size-3.5 animate-spin" />}
+          {total === 0 ? "0 submissions" : `${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + submissions.length} of ${total.toLocaleString("en-IN")}`}
+        </span>
       </div>
       <Table>
         <THead>
@@ -126,6 +144,13 @@ export function SubmissionsAdmin({ submissions }: { submissions: Submission[] })
           {filtered.length === 0 && <EmptyRow colSpan={10}>No submissions match these filters.</EmptyRow>}
         </TBody>
       </Table>
+      {pages > 1 && (
+        <div className="flex items-center justify-end gap-2 border-t p-3 text-xs text-muted-foreground">
+          <Button variant="outline" size="sm" disabled={page <= 1 || searching} onClick={() => go({ page: page - 1 })}>Previous</Button>
+          <span>Page {page} of {pages.toLocaleString("en-IN")}</span>
+          <Button variant="outline" size="sm" disabled={page >= pages || searching} onClick={() => go({ page: page + 1 })}>Next</Button>
+        </div>
+      )}
     </Card>
   );
 }
@@ -365,33 +390,78 @@ function PasswordDialog({ user }: { user: PortalUser }) {
   );
 }
 
-export function UsersAdmin({ users, currentEmail, fixedAdmins }: { users: PortalUser[]; currentEmail: string; fixedAdmins: string[] }) {
-  const [query, setQuery] = useState("");
-  const [role, setRole] = useState("");
+/**
+ * Users, searched and paged on the server (100 a page), so the list stays
+ * fast with hundreds of thousands of accounts.
+ */
+export function UsersAdmin({
+  users,
+  total,
+  page,
+  pageSize,
+  initialQuery,
+  initialRole,
+  currentEmail,
+  fixedAdmins,
+}: {
+  users: PortalUser[];
+  total: number;
+  page: number;
+  pageSize: number;
+  initialQuery: string;
+  initialRole: string;
+  currentEmail: string;
+  fixedAdmins: string[];
+}) {
+  const router = useRouter();
+  const [query, setQuery] = useState(initialQuery);
+  const [role, setRole] = useState(initialRole);
   const { pending, run } = useAction();
   const [viewing, startView] = useTransition();
+  const [searching, startSearch] = useTransition();
+  const filtered = users;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return users.filter((u) => {
-      if (role === "admin" && !u.is_admin) return false;
-      if (role === "faculty" && !u.is_faculty) return false;
-      if (role === "user" && (u.is_admin || u.is_faculty)) return false;
-      return !q || [u.name, u.email, u.department].some((v) => v.toLowerCase().includes(q));
-    });
-  }, [users, query, role]);
+  function go(next: { q?: string; role?: string; page?: number }) {
+    const params = new URLSearchParams();
+    const q = (next.q ?? query).trim();
+    const r = next.role ?? role;
+    if (q) params.set("q", q);
+    if (r) params.set("role", r);
+    if (next.page && next.page > 1) params.set("page", String(next.page));
+    startSearch(() => router.replace(`/admin/users${params.size ? `?${params}` : ""}`));
+  }
 
   return (
     <Card>
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
-        <SearchBox value={query} onChange={setQuery} placeholder="Search name, email or department" />
-        <Select aria-label="Role" className="w-auto" value={role} onChange={(e) => setRole(e.target.value)}>
+        <form
+          className="flex min-w-56 flex-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            go({ q: query, page: 1 });
+          }}
+        >
+          <SearchBox value={query} onChange={setQuery} placeholder="Search name, email or department, then press Enter" />
+        </form>
+        <Select
+          aria-label="Role"
+          className="w-auto"
+          value={role}
+          onChange={(e) => {
+            setRole(e.target.value);
+            go({ role: e.target.value, page: 1 });
+          }}
+        >
           <option value="">All roles</option>
           <option value="admin">Admins</option>
           <option value="faculty">Faculty</option>
           <option value="user">HOD / department users</option>
         </Select>
-        <span className="text-xs text-muted-foreground">{filtered.length} of {users.length}</span>
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {searching && <Loader2 className="size-3.5 animate-spin" />}
+          {total === 0 ? "0 users" : `${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + users.length} of ${total.toLocaleString("en-IN")}`}
+        </span>
         <span className="ml-auto"><AddUserDialog /></span>
       </div>
       <Table>
@@ -471,6 +541,13 @@ export function UsersAdmin({ users, currentEmail, fixedAdmins }: { users: Portal
           {filtered.length === 0 && <EmptyRow colSpan={10}>No users match this search.</EmptyRow>}
         </TBody>
       </Table>
+      {pages > 1 && (
+        <div className="flex items-center justify-end gap-2 border-t p-3 text-xs text-muted-foreground">
+          <Button variant="outline" size="sm" disabled={page <= 1 || searching} onClick={() => go({ page: page - 1 })}>Previous</Button>
+          <span>Page {page} of {pages.toLocaleString("en-IN")}</span>
+          <Button variant="outline" size="sm" disabled={page >= pages || searching} onClick={() => go({ page: page + 1 })}>Next</Button>
+        </div>
+      )}
     </Card>
   );
 }

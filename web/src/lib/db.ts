@@ -20,7 +20,7 @@ function getClient(): MongoClient {
       connectTimeoutMS: 5000,
       socketTimeoutMS: 15000,
       maxIdleTimeMS: 60000,
-      maxPoolSize: 10,
+      maxPoolSize: Number(process.env.MONGO_POOL_SIZE) || 50,
     });
     // If the database was unreachable, the driver closes this client for good
     // ("Topology is closed"). Forget it so the next request starts a new one,

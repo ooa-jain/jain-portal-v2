@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth";
 import { getSettings } from "@/lib/data";
-import { knownCourses, listDocuments, scopeFilter } from "@/lib/documents";
+import { collections } from "@/lib/db";
+import { ALL_DEPTS_LIMIT, knownCourses, listDocuments, scopeFilter } from "@/lib/documents";
 import { DEPARTMENTS } from "@/lib/constants";
 import { PageHeader } from "@/components/ui/page";
 import { DocumentLibrary } from "@/components/document-library";
@@ -14,17 +15,25 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
   const deptParam = typeof params.dept === "string" ? params.dept : "";
   const dept = user.isAdmin ? (DEPARTMENTS.includes(deptParam) ? deptParam : "") : user.department;
 
-  const [settings, documents, courses] = await Promise.all([
+  const scope = user.isAdmin && !dept ? {} : scopeFilter(user, dept || undefined);
+  const semesterParam = typeof params.semester === "string" ? params.semester : "";
+  const [settings, usedSemesters, newest, courses] = await Promise.all([
     getSettings(),
-    listDocuments(scopeFilter(user, dept || undefined)),
+    collections.documents().distinct("semester", scope),
+    collections.documents().find(scope, { projection: { semester: 1 } }).sort({ uploaded_at: -1 }).limit(1).next(),
     knownCourses(dept),
   ]);
   const offered = [...settings.enabled_years].sort().reverse().flatMap((y) => settings.enabled_semesters.map((s) => `${s} ${y}`));
   // Semesters that already hold documents stay selectable even if no longer offered.
-  const semesters = [...new Set([...offered, ...documents.map((d) => d.semester).filter(Boolean)])];
+  const semesters = [...new Set([...offered, ...usedSemesters.map(String).filter(Boolean)])];
   // Open on the semester people are working in: the most recent upload's, else the newest offered.
-  const latest = [...documents].sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at))[0];
-  const initialSemester = latest?.semester || offered[0] || "";
+  // Only that semester's documents are loaded ("all" loads every semester, capped), so the page stays light.
+  const initialSemester =
+    semesterParam === "all" ? "" : semesters.includes(semesterParam) ? semesterParam : String(newest?.semester ?? "") || offered[0] || "";
+  const documents = await listDocuments(
+    initialSemester ? { ...scope, semester: initialSemester } : scope,
+    user.isAdmin && !dept ? { limit: ALL_DEPTS_LIMIT } : initialSemester ? {} : { limit: ALL_DEPTS_LIMIT },
+  );
 
   return (
     <>

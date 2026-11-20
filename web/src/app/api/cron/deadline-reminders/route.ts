@@ -1,6 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
 import { env } from "@/lib/env";
-import { runDeadlineReminders, runFacultyChecklistReminders } from "@/lib/reminders";
+import { EMAILS_PER_RUN, runDeadlineReminders, runFacultyChecklistReminders } from "@/lib/reminders";
+
+// One run at a time per server process: a slow run is not stacked on by the next schedule tick.
+let running = false;
 
 /**
  * Scheduled reminders: module deadlines (HODs) and faculty checklists (faculty,
@@ -16,7 +19,15 @@ export async function POST(request: Request) {
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
     return new Response("Unauthorized", { status: 401 });
   }
-  const modules = await runDeadlineReminders();
-  const faculty = await runFacultyChecklistReminders();
-  return Response.json({ ok: true, modules, faculty });
+  if (running) return Response.json({ ok: true, busy: true });
+  running = true;
+  try {
+    // Both kinds share one budget, so a run always ends in about a minute or two.
+    const budget = { left: EMAILS_PER_RUN };
+    const modules = await runDeadlineReminders(new Date(), budget);
+    const faculty = await runFacultyChecklistReminders(new Date(), budget);
+    return Response.json({ ok: true, modules, faculty, budgetLeft: budget.left });
+  } finally {
+    running = false;
+  }
 }

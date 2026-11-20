@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireDepartmentUser } from "@/lib/auth";
-import { getSettings, listAllSubmissions, listMySubmissions } from "@/lib/data";
-import { knownCourses, listDocuments, scopeFilter, weeklyUploads } from "@/lib/documents";
+import { getSettings, listFormSubmissions, listMySubmissions, listSubmissionsPage } from "@/lib/data";
+import { ALL_DEPTS_LIMIT, knownCourses, listDocuments, scopeFilter, weeklyUploads, weeksAgoStamp } from "@/lib/documents";
+import { collections } from "@/lib/db";
 import { DEPARTMENTS, DOC_TYPES } from "@/lib/constants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyRow, Notice, PageHeader, Stat } from "@/components/ui/page";
@@ -42,10 +43,21 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
     );
   }
 
-  const [allDocs, courses, submissions] = await Promise.all([
-    listDocuments(scopeFilter(user, dept || undefined)),
+  // All departments (admin): only the selected semester and the last 8 weeks are needed,
+  // so the page does not load every document in the university.
+  const allDepartments = user.isAdmin && !dept;
+  let semesterForAll = semesterParam;
+  if (allDepartments && !semesterForAll) {
+    const newest = await collections.documents().find({}, { projection: { semester: 1 } }).sort({ uploaded_at: -1 }).limit(1).next();
+    semesterForAll = newest && semesters.includes(String(newest.semester)) ? String(newest.semester) : semesters[0] ?? "";
+  }
+  const eightWeeksAgo = weeksAgoStamp(8);
+  const [allDocs, courses, mine] = await Promise.all([
+    allDepartments
+      ? listDocuments({ $or: [{ semester: semesterForAll }, { uploaded_at: { $gte: eightWeeksAgo } }] }, { limit: ALL_DEPTS_LIMIT * 4 })
+      : listDocuments(scopeFilter(user, dept || undefined)),
     dept ? knownCourses(dept) : Promise.resolve([]),
-    user.isAdmin ? listAllSubmissions() : listMySubmissions(user),
+    user.isAdmin ? Promise.resolve(null) : listMySubmissions(user),
   ]);
   // Default to the semester of the most recent upload, else the newest one offered.
   const latestUpload = [...allDocs].sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at))[0];
@@ -62,8 +74,16 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
   const weeks = weeklyUploads(allDocs);
   const maxWeek = Math.max(1, ...weeks.map((w) => w.count));
 
-  const subsForDept = dept ? submissions.filter((s) => s.identity.dept === dept) : submissions;
-  const subsSem = subsForDept.filter((s) => s.identity.semester === semester);
+  // Admins: only this semester's submissions for the counts, and the newest 200 for the table,
+  // instead of every submission in the university.
+  const deptWhere = dept ? { "identity.dept": dept } : {};
+  const [subsSem, latestSubs] = mine
+    ? [mine.filter((s) => s.identity.dept === dept && s.identity.semester === semester), mine.filter((s) => s.identity.dept === dept)]
+    : await Promise.all([
+        listFormSubmissions({ ...deptWhere, "identity.semester": semester }),
+        listSubmissionsPage({ form_type: { $in: ["readiness", "closure"] }, ...deptWhere }, 1, 200).then((r) => r.items),
+      ]);
+  const SUBMISSION_ROWS = 200;
 
   // Admin, all departments: one row per department.
   const deptRows = user.isAdmin && !dept
@@ -205,10 +225,10 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
         <CardHeader>
           <CardTitle>All submissions</CardTitle>
           <CardDescription>
-            Every Semester Readiness and Semester Closure submission{user.isAdmin ? " in the university" : " from your department"}, newest first.
+            Every Semester Readiness and Semester Closure submission{user.isAdmin ? " in the university" : " from your department"}, newest first{latestSubs.length >= SUBMISSION_ROWS ? ` (latest ${SUBMISSION_ROWS}; see Submissions for the rest)` : ""}.
           </CardDescription>
         </CardHeader>
-        <SubmissionTable submissions={dept && user.isAdmin ? submissions.filter((s) => s.identity.dept === dept) : submissions} currentEmail={user.email} isAdmin={user.isAdmin} showModule />
+        <SubmissionTable submissions={latestSubs.slice(0, SUBMISSION_ROWS)} currentEmail={user.email} isAdmin={user.isAdmin} showModule />
       </Card>
 
       <Card>

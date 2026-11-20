@@ -71,14 +71,25 @@ export function canChangeDocument(user: CurrentUser, doc: LibraryDocument) {
   return doc.uploaded_by_email === user.email || canReviewDocument(user, doc);
 }
 
-export async function listDocuments(filter: Filter<Document>): Promise<LibraryDocument[]> {
-  const docs = await collections
-    .documents()
-    .find(filter, { projection: { text: 0 } })
-    .sort({ programme: 1, course_code: 1, semester: -1, doc_type: 1 })
-    .toArray();
+/**
+ * Documents matching `filter`. `limit` keeps very large result sets (the whole
+ * university) bounded: the newest are returned first.
+ */
+export async function listDocuments(filter: Filter<Document>, options: { limit?: number } = {}): Promise<LibraryDocument[]> {
+  const cursor = collections.documents().find(filter, { projection: { text: 0 } });
+  const docs = options.limit
+    ? await cursor.sort({ uploaded_at: -1 }).limit(options.limit).toArray()
+    : await cursor.sort({ programme: 1, course_code: 1, semester: -1, doc_type: 1 }).toArray();
   return docs.map(normalizeDocument);
 }
+
+/** The stored-timestamp form of "n weeks ago" (stamps compare as strings). */
+export function weeksAgoStamp(weeks: number) {
+  return new Date(Date.now() - weeks * 7 * 86_400_000).toISOString().replace("Z", "");
+}
+
+/** Upper bound on documents loaded at once for the all-departments views. */
+export const ALL_DEPTS_LIMIT = 5000;
 
 export async function getDocument(id: string): Promise<LibraryDocument | null> {
   const _id = toObjectId(id);

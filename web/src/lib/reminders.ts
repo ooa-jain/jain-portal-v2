@@ -7,6 +7,15 @@ import { esc, sendEmail } from "./mail";
 import { env } from "./env";
 import { formatDeadline, parseDeadline, str } from "./utils";
 
+/** Everyone (lower-case emails) with a final submission for the module: one query, not one per person. */
+async function submittedEmails(module: ModuleKey): Promise<Set<string>> {
+  const emails =
+    module === "iea"
+      ? await collections.iea().distinct("submitterEmail", { submitted: true })
+      : await collections.submissions().distinct("identity.submitterEmail", { form_type: module, _draft: false });
+  return new Set(emails.map((e) => String(e).toLowerCase()));
+}
+
 /** True when this person already has a final (non-draft) submission for the module. */
 export async function hasSubmitted(module: ModuleKey, email: string): Promise<boolean> {
   if (module === "iea") {
@@ -74,8 +83,9 @@ export async function remindPending(recipients: Recipient[], modules: ModuleKey[
   for (const key of modules) {
     if (!settings[MODULES[key].enabledKey]) continue;
     const deadline = settings[MODULES[key].deadlineKey];
+    const done = await submittedEmails(key);
     for (const person of recipients) {
-      if (await hasSubmitted(key, person.email)) continue;
+      if (done.has(person.email)) continue;
       if (await sendReminderEmail(person.email, person.name, key, deadline, "manual")) sent++;
     }
   }
@@ -87,7 +97,15 @@ export async function remindPending(recipients: Recipient[], modules: ModuleKey[
  * everyone who has not submitted. Each (module, window, deadline, person) is
  * recorded so a reminder is never sent twice, however often this runs.
  */
-export async function runDeadlineReminders(now = new Date()): Promise<{ sent: number; checked: string[] }> {
+/**
+ * Emails one scheduled run may send. Each run stops here and the next run
+ * (10 minutes later) carries on, so a run never takes long and a large
+ * department is reached over a few runs. Reminders are never sent twice.
+ */
+export const EMAILS_PER_RUN = Number(process.env.REMINDER_EMAILS_PER_RUN) || 400;
+export type Budget = { left: number };
+
+export async function runDeadlineReminders(now = new Date(), budget: Budget = { left: EMAILS_PER_RUN }): Promise<{ sent: number; checked: string[] }> {
   const checked: string[] = [];
   // Without SMTP nothing can be sent; do not record anything as sent.
   if (!env.mail) return { sent: 0, checked };
@@ -104,18 +122,27 @@ export async function runDeadlineReminders(now = new Date()): Promise<{ sent: nu
     const hoursLeft = (due.getTime() - now.getTime()) / 3_600_000;
     if (hoursLeft <= 0) continue;
 
+    const done = await submittedEmails(key);
     for (const [window, limit] of [["2day", 48], ["1hour", 1]] as const) {
       if (hoursLeft > limit) continue;
       checked.push(`${key}:${window}`);
+      // Reminders already sent for this window, fetched once rather than tried one by one.
+      const prefix = `reminder_${key}_${window}_${deadline}_`;
+      const already = new Set(
+        (await collections.sentReminders().find({ _id: { $gte: prefix, $lt: `${prefix}\uffff` } }, { projection: { _id: 1 } }).toArray()).map((d) => d._id),
+      );
       for (const person of recipients) {
-        if (await hasSubmitted(key, person.email)) continue;
-        const reminderId = `reminder_${key}_${window}_${deadline}_${person.email}`;
+        if (budget.left <= 0) return { sent, checked };
+        if (done.has(person.email)) continue;
+        const reminderId = `${prefix}${person.email}`;
+        if (already.has(reminderId)) continue;
         // Claim the key first: if two runs overlap, only one inserts and sends.
         try {
           await collections.sentReminders().insertOne({ _id: reminderId, sent_at: new Date().toISOString().replace("Z", "") });
         } catch {
           continue; // already sent
         }
+        budget.left--;
         if (await sendReminderEmail(person.email, person.name, key, deadline, window)) {
           sent++;
         } else {
@@ -150,7 +177,7 @@ async function claim(id: string): Promise<boolean> {
  * "submit by" date, email the department's registered faculty who have not
  * filled that checklist, and send the HOD one list of who is still pending.
  */
-export async function runFacultyChecklistReminders(now = new Date()): Promise<{ sent: number; links: number }> {
+export async function runFacultyChecklistReminders(now = new Date(), budget: Budget = { left: EMAILS_PER_RUN }): Promise<{ sent: number; links: number }> {
   if (!env.mail) return { sent: 0, links: 0 };
   const base = env.baseUrl;
   const parents = await collections
@@ -181,10 +208,18 @@ export async function runFacultyChecklistReminders(now = new Date()): Promise<{ 
     const done = new Set(answered.map((e) => String(e).toLowerCase()));
     const pending = faculty.filter((f) => !done.has(str(f.email).toLowerCase()));
 
+    const prefix = `faculty_${parentId}_${window}_${deadline}_`;
+    const already = new Set(
+      (await collections.sentReminders().find({ _id: { $gte: prefix, $lt: `${prefix}\uffff` } }, { projection: { _id: 1 } }).toArray()).map((d) => d._id),
+    );
+    // The HOD's list goes first, so the HOD hears even when the run's budget is spent on a big department.
+    await sendHodSummary(parent, identity, window, deadline, label, dept, pending, budget).then((ok) => ok && sent++);
     for (const person of pending) {
+      if (budget.left <= 0) return { sent, links };
       const email = str(person.email).toLowerCase();
-      const id = `faculty_${parentId}_${window}_${deadline}_${email}`;
-      if (!(await claim(id))) continue;
+      const id = `${prefix}${email}`;
+      if (already.has(id) || !(await claim(id))) continue;
+      budget.left--;
       const ok = await sendEmail(
         email,
         window === "1day" ? `Last day: Faculty ${label} checklist` : `Reminder: Faculty ${label} checklist due ${deadline}`,
@@ -199,23 +234,37 @@ export async function runFacultyChecklistReminders(now = new Date()): Promise<{ 
       else await collections.sentReminders().deleteOne({ _id: id });
     }
 
-    const hodEmail = str(identity.hodEmail).toLowerCase();
-    if (hodEmail && pending.length) {
-      const id = `facultysummary_${parentId}_${window}_${deadline}`;
-      if (await claim(id)) {
-        const names = pending.map((f) => `<li>${esc(str(f.name) || str(f.email))} (${esc(str(f.email))})</li>`).join("");
-        const ok = await sendEmail(
-          hodEmail,
-          `${pending.length} faculty yet to fill the ${label} checklist`,
-          `<p>Dear ${esc(str(identity.hodName) || "HOD")},</p>
-           <p>Your faculty ${esc(label)} checklist is due on <strong>${esc(deadline)}</strong>. These registered faculty of
-           ${esc(dept)} have not filled it yet, and have been sent a reminder:</p><ul>${names}</ul>
-           <p>Faculty who have not registered on the portal are not listed; share the link with them directly.</p>`,
-        );
-        if (ok) sent++;
-        else await collections.sentReminders().deleteOne({ _id: id });
-      }
-    }
   }
   return { sent, links };
+}
+
+/** One list to the HOD of the registered faculty still pending (sent once per window). */
+async function sendHodSummary(
+  parent: Record<string, unknown>,
+  identity: Record<string, unknown>,
+  window: string,
+  deadline: string,
+  label: string,
+  dept: string,
+  pending: Record<string, unknown>[],
+  budget: Budget,
+): Promise<boolean> {
+  const hodEmail = str(identity.hodEmail).toLowerCase();
+  if (!hodEmail || !pending.length || budget.left <= 0) return false;
+  const id = `facultysummary_${String(parent._id)}_${window}_${deadline}`;
+  if (!(await claim(id))) return false;
+  budget.left--;
+  const shown = pending.slice(0, 200);
+  const names = shown.map((f) => `<li>${esc(str(f.name) || str(f.email))} (${esc(str(f.email))})</li>`).join("");
+  const ok = await sendEmail(
+    hodEmail,
+    `${pending.length} faculty yet to fill the ${label} checklist`,
+    `<p>Dear ${esc(str(identity.hodName) || "HOD")},</p>
+     <p>Your faculty ${esc(label)} checklist is due on <strong>${esc(deadline)}</strong>. These registered faculty of
+     ${esc(dept)} have not filled it yet, and are being sent a reminder:</p><ul>${names}</ul>
+     ${pending.length > shown.length ? `<p>…and ${pending.length - shown.length} more. See Faculty Responses in the portal.</p>` : ""}
+     <p>Faculty who have not registered on the portal are not listed; share the link with them directly.</p>`,
+  );
+  if (!ok) await collections.sentReminders().deleteOne({ _id: id });
+  return ok;
 }

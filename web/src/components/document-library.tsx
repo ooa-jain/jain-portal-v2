@@ -351,6 +351,18 @@ const DOT: Record<string, string> = {
   missing: "bg-secondary",
 };
 
+const COURSE_STEP = 100;
+const ROW_STEP = 200;
+
+function ShowMore({ shown, total, noun, onClick }: { shown: number; total: number; noun: string; onClick: () => void }) {
+  return (
+    <div className="flex items-center justify-center gap-3 border-t px-[18px] py-3 text-xs text-muted-foreground">
+      Showing {shown.toLocaleString("en-IN")} of {total.toLocaleString("en-IN")} {noun}
+      <Button variant="outline" size="sm" onClick={onClick}>Show more</Button>
+    </div>
+  );
+}
+
 export function DocumentLibrary({
   documents,
   courses,
@@ -372,10 +384,14 @@ export function DocumentLibrary({
   const [view, setView] = useState<"course" | "all">("course");
   const [query, setQuery] = useState("");
   const [semester, setSemester] = useState(initialSemester);
+  const [loadingSemester, startSemester] = useTransition();
   const [phase, setPhase] = useState<"" | "readiness" | "closure">("");
   const [status, setStatus] = useState("");
   const [uploadPrefill, setUploadPrefill] = useState<Prefill | null>(null);
   const [openDoc, setOpenDoc] = useState<LibraryDocument | null>(null);
+  // Large departments hold thousands of documents: draw a screenful at a time.
+  const [courseLimit, setCourseLimit] = useState(COURSE_STEP);
+  const [rowLimit, setRowLimit] = useState(ROW_STEP);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -404,8 +420,27 @@ export function DocumentLibrary({
     return [...byProgramme.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [courses, documents, query]);
 
-  const slot = (code: string, type: string) =>
-    documents.find((d) => d.course_code === code && d.doc_type === type && (!semester || d.semester === semester));
+  // One lookup table instead of searching every document for every cell.
+  const slots = useMemo(() => {
+    const map = new Map<string, LibraryDocument>();
+    for (const d of documents) if (!semester || d.semester === semester) {
+      const key = `${d.course_code}\u0000${d.doc_type}`;
+      if (!map.has(key)) map.set(key, d);
+    }
+    return map;
+  }, [documents, semester]);
+  const slot = (code: string, type: string) => slots.get(`${code}\u0000${type}`);
+  const totalCourses = grouped.reduce((n, [, list]) => n + list.length, 0);
+  const shownGroups = (() => {
+    let left = courseLimit;
+    const out: [string, Course[]][] = [];
+    for (const [programme, list] of grouped) {
+      if (left <= 0) break;
+      out.push([programme, list.slice(0, left)]);
+      left -= list.length;
+    }
+    return out;
+  })();
 
   const stats = {
     total: filtered.length,
@@ -443,10 +478,22 @@ export function DocumentLibrary({
               {departments.map((d) => <option key={d}>{d}</option>)}
             </Select>
           )}
-          <Select aria-label="Semester" className="w-auto" value={semester} onChange={(e) => setSemester(e.target.value)}>
+          <Select
+            aria-label="Semester"
+            className="w-auto"
+            value={semester}
+            onChange={(e) => {
+              // Each semester is loaded on its own, so changing it fetches that semester's documents.
+              setSemester(e.target.value);
+              const params = new URLSearchParams(window.location.search);
+              params.set("semester", e.target.value || "all");
+              startSemester(() => router.replace(`/documents?${params}`));
+            }}
+          >
             <option value="">All semesters</option>
             {semesters.map((s) => <option key={s}>{s}</option>)}
           </Select>
+          {loadingSemester && <Loader2 aria-label="Loading semester" className="size-4 animate-spin text-muted-foreground" />}
           <Select aria-label="Phase" className="w-auto" value={phase} onChange={(e) => setPhase(e.target.value as typeof phase)}>
             <option value="">Readiness and Closure</option>
             <option value="readiness">Readiness documents</option>
@@ -477,10 +524,10 @@ export function DocumentLibrary({
                 ))}
                 <span className="ml-auto">Click a cell to open or upload</span>
               </p>
-              {grouped.map(([programme, list]) => (
+              {shownGroups.map(([programme, list]) => (
                 <details key={programme} open className="border-b last:border-b-0">
                   <summary className="flex cursor-pointer items-center gap-2 bg-muted px-[18px] py-2.5 text-[13.5px] font-bold text-primary">
-                    <ChevronDown className="size-4" />{programme}<span className="font-normal text-muted-foreground">· {list.length} course{list.length === 1 ? "" : "s"}</span>
+                    <ChevronDown className="size-4" />{programme}<span className="font-normal text-muted-foreground">· {(grouped.find(([p]) => p === programme)?.[1].length ?? list.length)} course{list.length === 1 ? "" : "s"}</span>
                   </summary>
                   <Table>
                     <THead>
@@ -525,6 +572,9 @@ export function DocumentLibrary({
                   </Table>
                 </details>
               ))}
+              {totalCourses > courseLimit && (
+                <ShowMore shown={courseLimit} total={totalCourses} noun="courses" onClick={() => setCourseLimit((n) => n + COURSE_STEP)} />
+              )}
               {!semester && <p className="px-[18px] py-2.5 text-xs text-muted-foreground">Choose a semester to upload into empty cells.</p>}
             </div>
           )
@@ -539,7 +589,7 @@ export function DocumentLibrary({
                 <tr><TH>Document</TH><TH>Course</TH><TH>Semester</TH><TH>Uploaded by</TH><TH>Check</TH><TH>Review</TH><TH>Updated</TH></tr>
               </THead>
               <TBody>
-                {filtered.map((d) => (
+                {filtered.slice(0, rowLimit).map((d) => (
                   <TR key={d._id} className="cursor-pointer" onClick={() => setOpenDoc(d)}>
                     <TD>
                       <span className="font-semibold text-primary">{typeLabel(d.doc_type)}</span>
@@ -556,6 +606,9 @@ export function DocumentLibrary({
                 {filtered.length === 0 && <EmptyRow colSpan={7}>No documents match these filters.</EmptyRow>}
               </TBody>
             </Table>
+            {filtered.length > rowLimit && (
+              <ShowMore shown={rowLimit} total={filtered.length} noun="documents" onClick={() => setRowLimit((n) => n + ROW_STEP)} />
+            )}
           </>
         )}
       </Card>

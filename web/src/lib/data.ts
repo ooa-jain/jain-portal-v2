@@ -213,6 +213,18 @@ async function facultyCounts(parentIds: string[]): Promise<Map<string, number>> 
   return counts;
 }
 
+/** One page of submissions (newest first) and how many match in all, for large admin lists. */
+export async function listSubmissionsPage(filter: Filter<Document>, page: number, pageSize: number): Promise<{ items: Submission[]; total: number }> {
+  const [docs, total] = await Promise.all([
+    collections.submissions().find(filter).sort({ timestamp: -1 }).skip((page - 1) * pageSize).limit(pageSize).toArray(),
+    collections.submissions().countDocuments(filter),
+  ]);
+  const items = docs.map(normalizeSubmission);
+  const counts = await facultyCounts(items.map((s) => s._id));
+  for (const item of items) item.faculty_submission_count = counts.get(item._id) ?? 0;
+  return { items, total };
+}
+
 async function listSubmissions(filter: Filter<Document>): Promise<Submission[]> {
   const docs = await collections.submissions().find(filter).sort({ timestamp: -1 }).toArray();
   const subs = docs.map(normalizeSubmission);
@@ -227,6 +239,11 @@ export function listMySubmissions(user: CurrentUser, module?: FormModuleKey) {
     ? { $or: [{ "identity.submitterEmail": user.email }, { "identity.dept": user.department }] }
     : { "identity.submitterEmail": user.email };
   return listSubmissions(module ? { ...scope, form_type: module } : scope);
+}
+
+/** Readiness and closure submissions matching a filter (e.g. one semester), newest first. */
+export function listFormSubmissions(where: Filter<Document> = {}) {
+  return listSubmissions({ form_type: { $in: ["readiness", "closure"] }, ...where });
 }
 
 export function listAllSubmissions() {

@@ -145,6 +145,31 @@ Before switching over:
 - In the Firebase console, both domains must be listed under Authentication → Settings → Authorised domains (they already are for the old app).
 - Make sure every admin's email is in `ADMIN_EMAILS` or flagged as admin in the database; the old username/password admin login is gone.
 
+## Large numbers of users
+
+The portal is tested with 500,000 accounts, 20,000 submissions, 200,000 faculty
+responses and 150,000 documents. What keeps it fast:
+
+- **Database indexes** are created automatically when the app starts (`src/lib/indexes.ts`).
+  The first start on a big database can take a minute while they build.
+- **Long lists are paged in the database**: Users & Access and Submissions show 100 at a
+  time with search; the Document Library loads one semester and draws 100 courses at a
+  time ("Show more"); Analysis shows the latest 200 submissions.
+- **Reminder emails are spread out**: each run of the reminder job sends at most
+  `REMINDER_EMAILS_PER_RUN` emails (default 400) and the next hourly run continues,
+  so the mailbox provider's sending limit is not hit. Nobody gets the same reminder twice.
+
+Optional settings in `.env`:
+
+| Setting | Default | What it does |
+|---|---|---|
+| `MONGO_POOL_SIZE` | 50 | Database connections per app process |
+| `REMINDER_EMAILS_PER_RUN` | 400 | Most reminder emails one run sends |
+
+One app process serves about 40 pages a second. For heavy days (results, deadlines),
+run one copy per CPU core behind nginx (an `upstream` with ports 8091, 8092, …);
+the reminder job and sign-ins work the same with several copies.
+
 ## Demo login for testers
 
 Set `DEMO_LOGIN=1` in `.env` and restart to show **Demo HOD** and **Demo Faculty**
