@@ -29,7 +29,11 @@ function Bars({ rows }: { rows: { label: string; value: number; color?: string }
 
 export default async function IeaAnalysisPage() {
   const user = await requireDepartmentUser();
-  const [submissions, feedback] = await Promise.all([listAllIea(), user.isAdmin ? listIeaFeedback() : Promise.resolve([])]);
+  const [allSubmissions, feedback] = await Promise.all([listAllIea(), user.isAdmin ? listIeaFeedback() : Promise.resolve([])]);
+  // Only the Office of Academic Affairs sees every department.
+  const submissions = user.isAdmin
+    ? allSubmissions
+    : allSubmissions.filter((s) => s.submitterEmail === user.email || (Boolean(user.department) && s.department === user.department));
 
   const totalUnits = Object.values(IEA_SCHOOLS).reduce((n, depts) => n + Object.values(depts).reduce((m, levels) => m + levels.length, 0), 0);
   const submitted = submissions.filter((s) => s.submitted);

@@ -174,6 +174,8 @@ export function normalizeUser(doc: Document, adminEmails: Set<string>): PortalUs
 export function canViewSubmission(user: CurrentUser, sub: Submission): boolean {
   if (user.isAdmin) return true;
   if (sub.identity.submitterEmail.toLowerCase() === user.email) return true;
+  // Faculty accounts see only their own responses, never the department's HOD submissions.
+  if (user.isFaculty) return false;
   return Boolean(user.department) && sub.identity.dept === user.department;
 }
 

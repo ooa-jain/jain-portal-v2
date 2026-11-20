@@ -1,7 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getCurrentUser } from "@/lib/auth";
-import { getSubmissionByToken } from "@/lib/data";
 import { env } from "@/lib/env";
 
 const MAX_BYTES = 16 * 1024 * 1024;
@@ -14,16 +13,13 @@ function fail(error: string, status = 400) {
   return Response.json({ ok: false, error }, { status });
 }
 
-/** Evidence upload. Allowed for signed-in users, or faculty holding a valid share link. */
+/** Evidence upload, for signed-in users only. */
 export async function POST(request: Request) {
   const form = await request.formData().catch(() => null);
   if (!form) return fail("Invalid upload.");
 
   const user = await getCurrentUser();
-  if (!user) {
-    const token = String(form.get("share_token") ?? "");
-    if (!token || !(await getSubmissionByToken(token))) return fail("Please sign in to upload files.", 401);
-  }
+  if (!user) return fail("Please sign in to upload files.", 401);
 
   const file = form.get("file");
   if (!(file instanceof File) || file.size === 0) return fail("No file selected.");

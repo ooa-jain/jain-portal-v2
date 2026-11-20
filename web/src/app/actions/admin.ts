@@ -6,7 +6,7 @@ import { z } from "zod";
 import { collections } from "@/lib/db";
 import { getCurrentUser, isAdminEmail } from "@/lib/auth";
 import { addNotification, getSettings, toObjectId } from "@/lib/data";
-import { DEPARTMENTS, MODULES, MODULE_KEYS, isModuleKey, moduleFromLabel, type ModuleKey } from "@/lib/constants";
+import { DEPARTMENTS, LISTED_MODULE_KEYS, MODULES, MODULE_KEYS, isModuleKey, moduleFromLabel, type ModuleKey } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { esc, sendEmail } from "@/lib/mail";
 import { allRecipients, remindPending } from "@/lib/reminders";
@@ -270,9 +270,21 @@ export async function approveEdit(submissionId: string): Promise<ActionResult> {
   if (!_id) return { ok: false, error: "Submission not found." };
   const result = await collections
     .submissions()
-    .updateOne({ _id }, { $set: { "edit_request.status": "approved", "edit_request.pending": false } });
-  if (result.matchedCount === 0) return { ok: false, error: "Submission not found." };
+    .findOneAndUpdate({ _id }, { $set: { "edit_request.status": "approved", "edit_request.pending": false } });
+  if (!result) return { ok: false, error: "Submission not found." };
   revalidatePath("/", "layout");
+  const identity = (result.identity ?? {}) as Record<string, unknown>;
+  const to = str(identity.submitterEmail);
+  const meta = MODULES[str(result.form_type) as ModuleKey];
+  if (to && meta) {
+    await sendEmail(
+      to,
+      `Approved: you can edit your ${meta.label} submission`,
+      `<p>Dear ${esc(str(identity.submitterName) || "HOD")},</p>
+       <p>Your request to edit your <strong>${esc(meta.label)}</strong> submission${str(identity.semester) ? ` for ${esc(str(identity.semester))}` : ""} has been approved.
+       Sign in, open the submission, make your changes and submit again.</p>`,
+    );
+  }
   return { ok: true };
 }
 
@@ -303,10 +315,10 @@ export async function deleteNotification(id: string): Promise<ActionResult> {
  */
 export async function sendReminders(target: string, department = ""): Promise<ActionResult<{ sent: number }>> {
   if (!(await admin())) return DENIED;
-  if (!env.mail) return { ok: false, error: "Email is not set up on the server (EMAIL_USER / EMAIL_PASS)." };
+  if (!env.mail) return { ok: false, error: "Email is not set up on the server (SMTP_EMAIL / SMTP_PASSWORD in .env)." };
 
   let recipients = await allRecipients();
-  let modules: ModuleKey[] = MODULE_KEYS;
+  let modules: ModuleKey[] = LISTED_MODULE_KEYS;
   if (target.startsWith("pending_")) {
     const key = target.slice("pending_".length);
     if (!isModuleKey(key)) return { ok: false, error: "Unknown reminder group." };

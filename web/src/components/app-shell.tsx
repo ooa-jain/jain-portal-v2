@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useFormStatus } from "react-dom";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Popover } from "radix-ui";
 import {
-  BarChart3, Bell, BellRing, FolderOpen, LineChart, ClipboardCheck, FileCheck2, Home, Inbox, Lightbulb, ListChecks, LogOut, UserRound,
+  BarChart3, Bell, BellRing, FolderOpen, LineChart, ClipboardCheck, FileCheck2, Home, Inbox, Lightbulb, ListChecks, Loader2, LogOut, UserRound,
   PieChart, Settings, ShieldCheck, Users, type LucideIcon,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
@@ -40,6 +41,22 @@ function isActive(pathname: string, href: string, all: string[]) {
   if (pathname !== href && !pathname.startsWith(`${href}/`)) return false;
   // Prefer the most specific matching link (e.g. /admin/users over /admin).
   return !all.some((other) => other.length > href.length && (pathname === other || pathname.startsWith(`${other}/`)));
+}
+
+/** Shows a spinner while signing out, so a slow network does not look like nothing happened. */
+function SignOutButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      title="Sign out"
+      aria-label="Sign out"
+      disabled={pending}
+      className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-hover hover:text-primary disabled:opacity-60"
+    >
+      {pending ? <Loader2 className="size-[18px] animate-spin" /> : <LogOut className="size-[18px]" strokeWidth={1.8} />}
+    </button>
+  );
 }
 
 const SEEN_KEY = "ooa:notifications-seen";
@@ -124,6 +141,7 @@ function usePwa() {
 export function AppShell({ groups, user, impersonatedBy, notifications, cycle, children }: ShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [navigating, startNavigation] = useTransition();
   usePwa();
 
   // The menu, flattened, with each group's title as the section heading.
@@ -142,6 +160,12 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
     [groups],
   );
   const hrefs = navItems.map((item) => item.id);
+
+  // Load each menu page's loading screen in advance, so a click shows it at once.
+  useEffect(() => {
+    for (const href of hrefs) router.prefetch(href);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hrefs.join("|")]);
   const activeNavId = hrefs.find((href) => isActive(pathname, href, hrefs)) ?? "";
 
   const footer = (
@@ -154,14 +178,7 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
         </small>
       </span>
       <form action={signOut}>
-        <button
-          type="submit"
-          title="Sign out"
-          aria-label="Sign out"
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-hover hover:text-primary"
-        >
-          <LogOut className="size-[18px]" strokeWidth={1.8} />
-        </button>
+        <SignOutButton />
       </form>
     </div>
   );
@@ -187,13 +204,19 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
   );
 
   return (
+    <>
+    {navigating && (
+      <div role="progressbar" aria-label="Loading page" className="fixed inset-x-0 top-0 z-[60] h-[3px] overflow-hidden bg-link/15">
+        <div className="nav-progress h-full w-1/3 rounded-full bg-link" />
+      </div>
+    )}
     <SidebarWithTabs
       logo={<Image src="/brand/jain-logo.png" alt="JAIN (Deemed-to-be University)" width={900} height={223} priority className="h-9 w-auto" />}
       collapsedLogo={<Image src="/brand/jgi-icon-192.png" alt="Jain OOA Portal" width={34} height={34} className="rounded-full" />}
       navItems={navItems}
       activeNavId={activeNavId}
       currentPath={pathname}
-      onNavigate={(navId, path) => router.push(path ?? navId)}
+      onNavigate={(navId, path) => startNavigation(() => router.push(path ?? navId))}
       storageKey={`ooa:tabs:${user.email}`}
       footer={footer}
       banner={banner}
@@ -217,5 +240,6 @@ export function AppShell({ groups, user, impersonatedBy, notifications, cycle, c
         <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4">{children}</div>
       </div>
     </SidebarWithTabs>
+    </>
   );
 }

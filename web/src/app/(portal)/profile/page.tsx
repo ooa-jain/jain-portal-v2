@@ -43,7 +43,16 @@ export default async function ProfilePage() {
             <CardDescription>Pre-fills your forms and decides which department&apos;s submissions and documents you see.</CardDescription>
           </CardHeader>
           <CardContent>
-            <DepartmentForm current={user.department} />
+            {!user.isAdmin ? (
+              <p className="text-[13.5px]">
+                <strong className="text-primary">{user.department || "Not set yet"}</strong>
+                <span className="mt-1 block text-muted-foreground">
+                  The Office of Academic Affairs sets departments, so each account sees only its own department. Ask them to set or change it.
+                </span>
+              </p>
+            ) : (
+              <DepartmentForm current={user.department} />
+            )}
           </CardContent>
         </Card>
       )}

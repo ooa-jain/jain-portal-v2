@@ -61,6 +61,9 @@ export async function submitFacultyChecklist(
 
   const parent = await getSubmissionByToken(data.shareToken);
   if (!parent) return { ok: false, error: "This link is no longer valid. Ask your HOD for a new one." };
+  if (signedIn && !signedIn.isAdmin && signedIn.department !== parent.identity.dept) {
+    return { ok: false, error: `This checklist is for ${parent.identity.dept}. Your account belongs to ${signedIn.department || "no department"}.` };
+  }
 
   const checklist: Record<string, { status: string; remark: string }> = {};
   for (const item of facultySectionsFor(parent.form_type).flatMap((s) => s.items)) {
@@ -174,6 +177,23 @@ export async function reviewFaculty(
     },
   );
   revalidatePath("/", "layout");
+
+  if (status !== "pending") {
+    const doc = await collections.facultySubmissions().findOne({ _id: ctx._id });
+    const to = String(doc?.faculty_email ?? "");
+    if (to && to !== ctx.user.email) {
+      const label = MODULES[ctx.parent.form_type].label;
+      await sendEmail(
+        to,
+        status === "reviewed" ? `Reviewed: your ${label} checklist` : `Changes needed: your ${label} checklist`,
+        `<p>Dear ${esc(String(doc?.faculty_name ?? "") || "Faculty")},</p>
+         <p>${esc(ctx.user.name || "Your HOD")} has ${status === "reviewed" ? "reviewed" : "asked for changes to"} your faculty ${esc(label)}
+         checklist for <strong>${esc(String(doc?.course_code ?? ""))}</strong>.</p>
+         ${remarks.trim() ? `<p><strong>Remarks:</strong> ${esc(remarks.trim())}</p>` : ""}
+         ${status === "needs_changes" && ctx.parent.share_token ? `<p>Open the same checklist link to update your answers: <a href="${await publicBaseUrl()}/faculty-form/${ctx.parent.share_token}">open checklist</a>.</p>` : ""}`,
+      );
+    }
+  }
   return { ok: true };
 }
 

@@ -13,6 +13,9 @@ import { DUMMY_HASH, hashPassword, passwordProblem, verifyPassword } from "@/lib
 import { nowStamp, str } from "@/lib/utils";
 
 export async function signInWithGoogle(idToken: string): Promise<ActionResult<{ redirectTo: string }>> {
+  // Google sign-in is off: it would let any university Google account create a login.
+  // Set GOOGLE_LOGIN=1 only if it is offered again (with department set by an admin).
+  if (process.env.GOOGLE_LOGIN !== "1") return { ok: false, error: "Sign in with your email and password." };
   if (!idToken) return { ok: false, error: "Missing sign-in token." };
 
   let identity;
@@ -44,6 +47,11 @@ export async function updateDepartment(department: string): Promise<ActionResult
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Please sign in again." };
   if (user.isDemo) return { ok: false, error: "Demo accounts stay in the demo department." };
+  // The department decides whose data an account sees, so only the Office of
+  // Academic Affairs sets it (Users & Access). Faculty get theirs from the HOD's link.
+  if (!user.isAdmin) {
+    return { ok: false, error: "Only the Office of Academic Affairs can set your department. Please ask them." };
+  }
   if (!DEPARTMENTS.includes(department)) return { ok: false, error: "Choose a department from the list." };
 
   await collections

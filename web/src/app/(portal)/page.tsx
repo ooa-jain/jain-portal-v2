@@ -5,7 +5,6 @@ import { getSettings, listMySubmissions } from "@/lib/data";
 import { allModuleAccess } from "@/lib/access";
 import { listDocuments, scopeFilter } from "@/lib/documents";
 import { DOC_TYPES, LISTED_MODULE_KEYS, MODULES } from "@/lib/constants";
-import { DepartmentForm } from "@/components/department-form";
 import { FacultyHome } from "@/components/faculty-home";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,9 +63,9 @@ export default async function DashboardPage() {
       </div>
 
       {!user.department && !user.isAdmin && (
-        <Notice tone="warning" title="Select your department">
-          <p className="mb-2">It pre-fills your forms and shows you your department&apos;s submissions and uploads.</p>
-          <DepartmentForm current="" />
+        <Notice tone="warning" title="Your department is not set yet">
+          The Office of Academic Affairs sets each account&apos;s department, so you only ever see your own
+          department&apos;s submissions and documents. Please ask them to set yours.
         </Notice>
       )}
 

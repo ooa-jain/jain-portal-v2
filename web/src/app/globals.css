@@ -331,3 +331,8 @@ h1 .hl:not(.hl-on) { background-image: none; padding: 0; margin: 0; color: inher
 /* Dark mode: navy headings and labels become light text (buttons keep their blue). */
 :root[data-theme="dark"] .text-primary { color: #e6ecf5; }
 :root[data-theme="dark"] .hl.hl-on { color: #111827; }
+
+/* Thin bar at the top while a page is on its way. */
+@keyframes nav-progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+.nav-progress { animation: nav-progress 1.1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .nav-progress { animation: none; width: 100%; } }

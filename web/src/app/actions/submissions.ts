@@ -46,6 +46,8 @@ export async function saveSubmission(
   const parsed = payloadSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Some fields are invalid. Please review the form." };
   const data = parsed.data;
+  // Non-admins with a department always file for that department, whatever the form says.
+  if (!user.isAdmin && user.department) data.identity.dept = user.department;
 
   const blocked = await writeBlockedReason(user, data.form_type);
   if (blocked) return { ok: false, error: blocked };

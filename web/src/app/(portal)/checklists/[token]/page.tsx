@@ -21,6 +21,15 @@ export default async function SignedInChecklistPage({ params }: PageProps<"/chec
       </Notice>
     );
   }
+  // A link belongs to one department: accounts from other departments cannot open it.
+  if (!user.isAdmin && user.department !== parent.identity.dept) {
+    return (
+      <Notice tone="danger" title="This checklist is for another department">
+        This link was shared by {parent.identity.dept}. Your account belongs to {user.department || "no department"}, so you cannot open it.{" "}
+        <Link href="/checklists" className="font-semibold underline">See your checklists</Link>
+      </Notice>
+    );
+  }
   const prefills = await facultyPrefills(user.email, parent);
   return (
     <div className="mx-auto w-full max-w-3xl">
